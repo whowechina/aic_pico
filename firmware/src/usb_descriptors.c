@@ -42,7 +42,7 @@
 //--------------------------------------------------------------------+
 // Device Descriptors
 //--------------------------------------------------------------------+
-tusb_desc_device_t desc_device_joy = {
+tusb_desc_device_t desc_device_dev = {
     .bLength = sizeof(tusb_desc_device_t),
     .bDescriptorType = TUSB_DESC_DEVICE,
     .bcdUSB = 0x0200,
@@ -51,11 +51,8 @@ tusb_desc_device_t desc_device_joy = {
     .bDeviceProtocol = 0x00,
     .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
 
-// To match CrazyRedMachine dll
-// vid 0x0f0d, pid 0x0092, interface 1
-
-    .idVendor = 0x0f0d,
-    .idProduct = 0x0092,
+    .idVendor = 0xCaff,
+    .idProduct = USB_PID,
     .bcdDevice = 0x0100,
 
     .iManufacturer = 0x01,
@@ -67,15 +64,15 @@ tusb_desc_device_t desc_device_joy = {
 // Invoked when received GET DEVICE DESCRIPTOR
 // Application return pointer to descriptor
 uint8_t const* tud_descriptor_device_cb(void) {
-    return (uint8_t const*)&desc_device_joy;
+    return (uint8_t const*)&desc_device_dev;
 }
 
 //--------------------------------------------------------------------+
 // HID Report Descriptor
 //--------------------------------------------------------------------+
 
-uint8_t const desc_hid_report_joy[] = {
-    AIC_PICO_REPORT_DESC_JOYSTICK,
+uint8_t const desc_hid_report_cardio[] = {
+    AIC_PICO_REPORT_DESC_CARDIO,
 };
 
 // Invoked when received GET HID REPORT DESCRIPTOR
@@ -85,7 +82,7 @@ uint8_t const* tud_hid_descriptor_report_cb(uint8_t itf)
 {
     switch (itf) {
         case 0:
-            return desc_hid_report_joy;
+            return desc_hid_report_cardio;
         default:
             return NULL;
     }
@@ -94,14 +91,14 @@ uint8_t const* tud_hid_descriptor_report_cb(uint8_t itf)
 // Configuration Descriptor
 //--------------------------------------------------------------------+
 
-enum { ITF_NUM_JOY,
+enum { ITF_NUM_CARDIO,
        ITF_NUM_CLI, ITF_NUM_CLI_DATA,
        ITF_NUM_AIME, ITF_NUM_AIME_DATA,
        ITF_NUM_TOTAL };
 
 #define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN * 1 + TUD_CDC_DESC_LEN * 2)
 
-#define EPNUM_JOY 0x81
+#define EPNUM_CARDIO 0x81
 
 #define EPNUM_CLI_NOTIF 0x85
 #define EPNUM_CLI_OUT   0x06
@@ -111,7 +108,7 @@ enum { ITF_NUM_JOY,
 #define EPNUM_AIME_OUT   0x08
 #define EPNUM_AIME_IN    0x88
 
-uint8_t const desc_configuration_joy[] = {
+uint8_t const desc_configuration_dev[] = {
     // Config number, interface count, string index, total length, attribute,
     // power in mA
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN,
@@ -119,8 +116,8 @@ uint8_t const desc_configuration_joy[] = {
 
     // Interface number, string index, protocol, report descriptor len, EP In
     // address, size & polling interval
-    TUD_HID_DESCRIPTOR(ITF_NUM_JOY, 4, HID_ITF_PROTOCOL_NONE,
-                       sizeof(desc_hid_report_joy), EPNUM_JOY,
+    TUD_HID_DESCRIPTOR(ITF_NUM_CARDIO, 4, HID_ITF_PROTOCOL_NONE,
+                       sizeof(desc_hid_report_cardio), EPNUM_CARDIO,
                        CFG_TUD_HID_EP_BUFSIZE, 1),
 
     TUD_CDC_DESCRIPTOR(ITF_NUM_CLI, 5, EPNUM_CLI_NOTIF,
@@ -134,7 +131,7 @@ uint8_t const desc_configuration_joy[] = {
 // Application return pointer to descriptor
 // Descriptor contents must exist long enough for transfer to complete
 uint8_t const* tud_descriptor_configuration_cb(uint8_t index) {
-    return desc_configuration_joy;
+    return desc_configuration_dev;
 }
 
 //--------------------------------------------------------------------+
@@ -146,10 +143,10 @@ static char serial_number_str[24] = "123456\0";
 // array of pointer to string descriptors
 const char *string_desc_arr[] = {
     (const char[]){0x09, 0x04},  // 0: is supported language is English (0x0409)
-    "WHowe"       ,              // 1: Manufacturer
+    "WHowe",                     // 1: Manufacturer
     "AIC Pico",                  // 2: Product
-    serial_number_str,                    // 3: Serials, should use chip ID
-    "AIC Pico Joystick",
+    serial_number_str,           // 3: Serials, should use chip ID
+    "AIC Pico CardIO",
     "AIC Pico CLI Port",
     "AIC Pico AIME Port",
 };

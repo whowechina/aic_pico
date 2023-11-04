@@ -51,8 +51,8 @@ static void handle_nfc()
 {
     bool ret;
 
-    ret = pn532_config_rf();
-    printf("RF: %d\n", ret);
+//    ret = pn532_config_rf();
+//    printf("RF: %d\n", ret);
 
     ret = pn532_config_sam();
     printf("Sam: %d\n", ret);
@@ -62,17 +62,6 @@ static void handle_nfc()
 
     ret = pn532_poll_mifare(buf, &len);
     printf("Mifare: %d -", len);
-
-    if (ret) {
-        for (int i = 0; i < len; i++) {
-            printf(" %02x", buf[i]);
-        }
-    }
-    printf("\n");
-
-    len = sizeof(buf);
-    ret = pn532_poll_14443b(buf, &len);
-    printf("14443B: %d -", len);
 
     if (ret) {
         for (int i = 0; i < len; i++) {

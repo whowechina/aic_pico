@@ -36,6 +36,13 @@ void pn532_init(i2c_inst_t *i2c, uint8_t scl, uint8_t sda, uint32_t freq)
     i2c_port = i2c;
 }
 
+static pn532_wait_loop_t wait_loop = NULL;
+
+void pn532_set_wait_loop(pn532_wait_loop_t loop)
+{
+    wait_loop = loop;
+}
+
 static int pn532_write(const uint8_t *data, uint8_t len)
 {
     return i2c_write_blocking_until(i2c_port, PN532_I2C_ADDRESS, data, len, false,
@@ -52,11 +59,14 @@ static bool pn532_wait_ready()
 {
     uint8_t status = 0;
 
-    for (int retry = 0; retry < 20; retry++) {
+    for (int retry = 0; retry < 30; retry++) {
         if (pn532_read(&status, 1) == 1 && status == 0x01) {
             return true;
         }
-        sleep_us(1000);
+        if (wait_loop) {
+            wait_loop();
+        }
+        sleep_ms(1);
     }
 
     return false;
@@ -275,7 +285,8 @@ bool pn532_config_sam()
     uint8_t param[] = {0x01, 0x14, 0x01};
     pn532_write_command(0x14, param, sizeof(param));
 
-    return pn532_read_response(0x14, NULL, 0) == 0;
+    uint8_t resp;
+    return pn532_read_response(0x14, &resp, 1) == 0;
 }
 
 
@@ -284,7 +295,8 @@ bool pn532_set_rf_field(uint8_t auto_rf, uint8_t on_off)
     uint8_t param[] = { 1, auto_rf | on_off };
     pn532_write_command(0x32, param, 2);
 
-    return pn532_read_response(0x32, NULL, 0) >= 0;
+    uint8_t resp;
+    return pn532_read_response(0x32, &resp, 1) >= 0;
 }
 
 static uint8_t readbuf[255];
