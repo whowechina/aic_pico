@@ -10,6 +10,9 @@
 #include <stdbool.h>
 
 typedef struct __attribute__((packed)) {
+    struct {
+        uint8_t level;
+    } led;
     uint32_t reserved;
 } aic_cfg_t;
 

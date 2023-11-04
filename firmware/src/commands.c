@@ -30,6 +30,12 @@ void fps_count(int core)
     counter[core] = 0;
 }
 
+static void handle_display()
+{
+    printf("[Config]\n");
+    printf("    LED level: %d\n", aic_cfg->led.level);
+}
+
 static void handle_save()
 {
     save_request(true);
@@ -84,9 +90,30 @@ static void handle_nfc()
     printf("\n");
 }
 
+static void handle_level(int argc, char *argv[])
+{
+    const char *usage = "Usage: level <0..255>\n";
+    if (argc != 1) {
+        printf(usage);
+        return;
+    }
+
+    int level = cli_extract_non_neg_int(argv[0], 0);
+    if ((level < 0) || (level > 255)) {
+        printf(usage);
+        return;
+    }
+
+    aic_cfg->led.level = level;
+    config_changed();
+    handle_display();
+}
+
 void commands_init()
 {
+    cli_register("display", handle_display, "Display all settings.");
     cli_register("save", handle_save, "Save config to flash.");
     cli_register("factory", handle_factory_reset, "Reset everything to default.");
     cli_register("nfc", handle_nfc, "NFC debug.");
+    cli_register("level", handle_level, "Set LED level.");
 }

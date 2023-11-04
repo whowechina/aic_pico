@@ -27,6 +27,7 @@
 #include "config.h"
 #include "cli.h"
 #include "commands.h"
+#include "rgb.h"
 
 #include "pn532.h"
 #include "aime.h"
@@ -44,6 +45,11 @@ static void core1_loop()
         if (mutex_try_enter(&core1_io_lock, NULL)) {
             mutex_exit(&core1_io_lock);
         }
+        rgb_set_color(0, 0x800000);
+        rgb_set_color(1, 0x008000);
+        rgb_set_color(2, 0x000080);
+        rgb_set_color(3, 0x808080);
+        rgb_update();
         cli_fps_count(1);
         sleep_ms(1);
     }
@@ -61,6 +67,7 @@ static void core0_loop()
         cli_fps_count(0);
 
         report_usb_hid();
+        sleep_ms(1);
     }
 }
 
@@ -71,6 +78,7 @@ void init()
     board_init();
     tusb_init();
     stdio_init_all();
+    rgb_init();
 
     config_init();
     mutex_init(&core1_io_lock);

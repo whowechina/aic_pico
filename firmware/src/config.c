@@ -11,7 +11,9 @@
 
 aic_cfg_t *aic_cfg;
 
-static aic_cfg_t default_cfg = { 0 };
+static aic_cfg_t default_cfg = {
+    .led = { .level = 127, }
+};
 
 aic_runtime_t *aic_runtime;
 
