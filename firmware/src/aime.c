@@ -13,6 +13,7 @@
 #include "hardware/i2c.h"
 
 #include "pn532.h"
+#include "aime.h"
 
 #define FRAME_TIMEOUT 200000
 
@@ -80,6 +81,12 @@ static struct {
     const uint8_t syscode[2];
 } virtual_aic = { true, false, "", "\x00\xf1\x00\x00\x00\x01\x43\x00", "\x88\xb4" };
 
+static void putc_trap(uint8_t byte)
+{
+}
+
+static aime_putc_func aime_putc = putc_trap;
+
 void aime_set_baudrate(int mode)
 {
     baudrate_mode = (mode == 0) ? 0 : 1;
@@ -90,11 +97,9 @@ void aime_set_virtual_aic(bool enable)
     virtual_aic.enabled = enable;
 }
 
-static int aime_interface = -1;
-
-void aime_init(int interface)
+void aime_init(aime_putc_func putc_func)
 {
-    aime_interface = interface;
+    aime_putc = putc_func;
     pn532_config_sam();
 }
 
@@ -158,23 +163,21 @@ static void build_response(int payload_len)
 static void send_response()
 {
     uint8_t checksum = 0;
-
     uint8_t sync = 0xe0;
-    tud_cdc_n_write(aime_interface, &sync, 1);
+    aime_putc(sync);
 
     for (int i = 0; i < response.len; i++) {
         uint8_t c = response.raw[i];
         checksum += c;
         if (c == 0xe0 || c == 0xd0) {
             uint8_t escape = 0xd0;
-            tud_cdc_n_write(aime_interface, &escape, 1);
+            aime_putc(escape);
             c--;
         }
-        tud_cdc_n_write(aime_interface, &c, 1);
+        aime_putc(c);
     }
 
-    tud_cdc_n_write(aime_interface, &checksum, 1);
-    tud_cdc_n_write_flush(aime_interface);
+    aime_putc(checksum);
 }
 
 static void send_simple_response(uint8_t status)
@@ -643,7 +646,7 @@ static void aime_handle_frame()
     }
 }
 
-static bool aime_feed(int c)
+bool aime_feed(int c)
 {
     if (c == 0xe0) {
         req_ctx.active = true;
@@ -681,21 +684,6 @@ static bool aime_feed(int c)
     req_ctx.check_sum += c;
 
     return true;
-}
-
-void aime_update()
-{
-    if (req_ctx.active && time_us_64() - req_ctx.time > FRAME_TIMEOUT) {
-        req_ctx.active = false;
-    }
-
-    if (tud_cdc_n_available(aime_interface)) {
-        uint8_t buf[32];
-        uint32_t count = tud_cdc_n_read(aime_interface, buf, sizeof(buf));
-        for (int i = 0; i < count; i++) {
-            aime_feed(buf[i]);
-        }
-    }
 }
 
 uint32_t aime_led_color()

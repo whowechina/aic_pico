@@ -111,7 +111,7 @@ static void generate_color_wheel()
     old_level = aic_cfg->led.level;
 
     for (int i = 0; i < COLOR_WHEEL_SIZE; i++) {
-        color_wheel[i] = rgb32_from_hsv(i, 250, 255);
+        color_wheel[i] = rgb32_from_hsv(i, 208, 255);
         color_wheel[i] = apply_level(color_wheel[i]);
     }
 }

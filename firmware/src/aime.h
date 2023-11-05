@@ -6,8 +6,12 @@
 #ifndef AIME_H
 #define AIME_H
 
-void aime_init(int interface);
-void aime_update();
+/* return true if accepts a byte, false if rejects */
+typedef void (*aime_putc_func)(uint8_t byte);
+
+void aime_init(aime_putc_func putc_func);
+bool aime_feed(int c);
+
 uint32_t aime_led_color();
 
 // mode 0 or 1

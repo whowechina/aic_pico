@@ -111,13 +111,28 @@ void detect_card()
     memset(cardio.current, 0, 9);
 }
 
+const int aime_intf = 1;
+static void cdc_aime_putc(uint8_t byte)
+{
+    tud_cdc_n_write(aime_intf, &byte, 1);
+    tud_cdc_n_write_flush(aime_intf);
+}
+
+static void aime_run()
+{
+    if (tud_cdc_n_available(aime_intf)) {
+        uint8_t buf[32];
+        int count = tud_cdc_n_read(aime_intf, buf, sizeof(buf));
+        for (int i = 0; i < count; i++) {
+            aime_feed(buf[i]);
+        }
+    }
+}
+
 void wait_loop()
 {
     tud_task();
-
     cli_run();
-    aime_update();
-
     cli_fps_count(0);
 }
 
@@ -127,7 +142,7 @@ static void core0_loop()
         tud_task();
 
         cli_run();
-        aime_update();
+        aime_run();
     
         save_loop();
         cli_fps_count(0);
@@ -154,7 +169,7 @@ void init()
 
     pn532_init(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ);
     pn532_set_wait_loop(wait_loop);
-    aime_init(1);
+    aime_init(cdc_aime_putc);
 
     cli_init("aic_pico>", "\n     << AIC Pico >>\n"
                             " https://github.com/whowechina\n\n");
