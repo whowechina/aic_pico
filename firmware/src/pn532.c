@@ -59,7 +59,7 @@ static bool pn532_wait_ready()
 {
     uint8_t status = 0;
 
-    for (int retry = 0; retry < 30; retry++) {
+    for (int retry = 0; retry < 50; retry++) {
         if (pn532_read(&status, 1) == 1 && status == 0x01) {
             return true;
         }
@@ -244,9 +244,11 @@ int pn532_read_response(uint8_t cmd, uint8_t *resp, uint8_t len)
         return -1;
     }
 
-    if (data_len > 0) {
-        memcpy(resp, data + 2, data_len);
+    if (data_len <= 0) {
+        return -1;
     }
+    
+    memcpy(resp, data + 2, data_len);
 
     return data_len;
 }
@@ -377,11 +379,13 @@ bool pn532_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool 
     uint8_t param[] = { 1, 1, 0, 0xff, 0xff, 1, 0};
     int ret = pn532_write_command(0x4a, param, sizeof(param));
     if (ret < 0) {
+        printf("%d\n", __LINE__);
         return false;
     }
 
     int result = pn532_read_response(0x4a, readbuf, sizeof(readbuf));
-    if (result != 22 || readbuf[0] != 1 || readbuf[2] != 20) {
+
+    if ((result != 22) || (readbuf[0] != 1) || (readbuf[2] != 20)) {
         return false;
     }
 

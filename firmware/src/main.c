@@ -43,38 +43,23 @@ void report_usb_hid()
     if (!tud_hid_ready()) {
         return;
     }
+
     uint64_t now = time_us_64();
 
-    bool report = false;
+    if ((memcmp(cardio.current, cardio.reported, 9) != 0) &&
+        (now - cardio.report_time > 1000000)) {
 
-    if (memcmp(cardio.current, cardio.reported, 9) != 0) {
-        const uint8_t empty[9] = { 0 };
-        if ((memcmp(cardio.current, empty, 9) != 0) ||
-            (now - cardio.report_time > 5000000)) {
-            /* Immediate report for new card,
-               5 seconds delay for for card removal */
-            report = true;
-        }
-    } else if (now - cardio.report_time > 1000000) {
-        /* Same card, reports every 0.5 sec */
-        report = true;
-    }
-
-    if (report) {
         tud_hid_n_report(0x00, cardio.current[0], cardio.current + 1, 8);
         memcpy(cardio.reported, cardio.current, 9);
         cardio.report_time = now;
 
-        const uint8_t empty[9] = { 0 };
-        if (memcmp(cardio.current, empty, 9) == 0) {
-            return;
+        if (memcmp(cardio.current, "\0\0\0\0\0\0\0\0\0", 9) != 0) {
+            printf("Card:");
+            for (int i = 0; i < 9; i++) {
+                printf(" %02x", cardio.current[i]);
+            }
+            printf("\n");
         }
-
-        printf("Card:");
-        for (int i = 0; i < 9; i++) {
-            printf(" %02x", cardio.current[i]);
-        }
-        printf("\n");
     }
 }
 
@@ -97,41 +82,33 @@ static void core1_loop()
 
 void detect_card()
 {
-    static bool poll_mifare = false;
-    static bool detected_mifare = false;
+    pn532_config_sam();
 
-    if (poll_mifare) {
-        pn532_config_sam();
-        uint8_t id[8] = { 0 };
-        int len = sizeof(id);
-        detected_mifare = pn532_poll_mifare(id, &len);
-        if (detected_mifare) {
-            cardio.current[0] = REPORT_ID_EAMU;
-            cardio.current[1] = 0xe0;
-            cardio.current[2] = 0x04;
-            if (len == 4) {
-                memcpy(cardio.current + 3, id, 4);
-                memcpy(cardio.current + 7, id, 2);
-            } else if (len == 7) {
-                memcpy(cardio.current + 3, id + 1, 6);
-            } else {
-                detected_mifare = false;
-            }
+    uint8_t id[20] = { 0 };
+
+    int len = sizeof(id);
+    bool mifare = pn532_poll_mifare(id, &len);
+    if (mifare) {
+        cardio.current[0] = REPORT_ID_EAMU;
+        cardio.current[1] = 0xe0;
+        cardio.current[2] = 0x04;
+        if (len == 4) {
+            memcpy(cardio.current + 3, id, 4);
+            memcpy(cardio.current + 7, id, 2);
+        } else if (len == 7) {
+            memcpy(cardio.current + 3, id + 1, 6);
         }
-        poll_mifare = false;
-    } else {
-        pn532_config_sam();
-        uint8_t id[18] = { 0 };
-        //bool detected_felica = pn532_poll_felica(id, id + 8, id + 16, false);
-        bool detected_felica = false;
-        if (detected_felica) {
-            cardio.current[0] = REPORT_ID_FELICA;
-            memcpy(cardio.current + 1, id, 8);
-        } else if (!detected_mifare) {
-            memset(cardio.current, 0, 9);
-        }
-        poll_mifare = true;
+        return;
     }
+
+    bool felica = pn532_poll_felica(id, id + 8, id + 16, false);
+    if (felica) {
+        cardio.current[0] = REPORT_ID_FELICA;
+        memcpy(cardio.current + 1, id, 8);
+        return;
+    }
+
+    memset(cardio.current, 0, 9);
 }
 
 void wait_loop()
