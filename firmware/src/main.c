@@ -46,6 +46,10 @@ void report_usb_hid()
 
     uint64_t now = time_us_64();
 
+    if (memcmp(cardio.current, "\0\0\0\0\0\0\0\0\0", 9) != 0) {
+        rgb_set_rainbow_speed(255);
+    }
+
     if ((memcmp(cardio.current, cardio.reported, 9) != 0) &&
         (now - cardio.report_time > 1000000)) {
 
@@ -70,10 +74,6 @@ static void core1_loop()
         if (mutex_try_enter(&core1_io_lock, NULL)) {
             mutex_exit(&core1_io_lock);
         }
-        rgb_set_color(0, 0x800000);
-        rgb_set_color(1, 0x008000);
-        rgb_set_color(2, 0x000080);
-        rgb_set_color(3, 0x808080);
         rgb_update();
         cli_fps_count(1);
         sleep_ms(1);

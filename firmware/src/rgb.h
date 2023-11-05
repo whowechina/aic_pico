@@ -20,5 +20,6 @@ uint32_t rgb32_from_hsv(uint8_t h, uint8_t s, uint8_t v);
 
 void rgb_set_color(unsigned index, uint32_t color);
 void rgb_set_color_all(uint32_t color);
+void rgb_set_rainbow_speed(uint8_t speed);
 
 #endif

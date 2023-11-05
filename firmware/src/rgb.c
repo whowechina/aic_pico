@@ -83,6 +83,80 @@ uint32_t rgb32_from_hsv(uint8_t h, uint8_t s, uint8_t v)
     }
 }
 
+static inline uint32_t apply_level(uint32_t color)
+{
+    unsigned r = (color >> 16) & 0xff;
+    unsigned g = (color >> 8) & 0xff;
+    unsigned b = color & 0xff;
+
+    r = r * aic_cfg->led.level / 255;
+    g = g * aic_cfg->led.level / 255;
+    b = b * aic_cfg->led.level / 255;
+
+    return r << 16 | g << 8 | b;
+}
+
+/* 6 segment regular hsv color wheel, better color cycle
+ * https://www.arnevogel.com/rgb-rainbow/
+ * https://www.instructables.com/How-to-Make-Proper-Rainbow-and-Random-Colors-With-/
+ */
+#define COLOR_WHEEL_SIZE 256
+static uint32_t color_wheel[COLOR_WHEEL_SIZE];
+static void generate_color_wheel()
+{
+    static uint8_t old_level = 0;
+    if (old_level == aic_cfg->led.level) {
+        return;
+    }
+    old_level = aic_cfg->led.level;
+
+    for (int i = 0; i < COLOR_WHEEL_SIZE; i++) {
+        color_wheel[i] = rgb32_from_hsv(i, 250, 255);
+        color_wheel[i] = apply_level(color_wheel[i]);
+    }
+}
+
+#define RAINBOW_PITCH 37
+#define RAINBOW_MIN_SPEED 1
+static uint32_t rainbow_speed = RAINBOW_MIN_SPEED;
+
+static void rainbow_update()
+{
+    static uint64_t last = 0;
+    uint64_t now = time_us_64();
+    if (now - last < 33333) { // no faster than 30Hz
+        return;
+    }
+    last = now;
+
+    static uint32_t rotator = 0;
+    rotator = (rotator + rainbow_speed) % COLOR_WHEEL_SIZE;
+
+    for (int i = 0; i < ARRAY_SIZE(rgb_buf); i++) {
+        uint32_t index = (rotator + RAINBOW_PITCH * i) % COLOR_WHEEL_SIZE;
+        rgb_buf[i] = color_wheel[index];
+    }
+}
+
+void rgb_set_rainbow_speed(uint8_t speed)
+{
+    rainbow_speed = speed / 8;
+}
+
+static void rainbow_speed_down()
+{
+    static uint64_t last = 0;
+    uint64_t now = time_us_64();
+    if (now - last < 200000) {
+        return;
+    }
+    last = now;
+
+    if (rainbow_speed > RAINBOW_MIN_SPEED) {
+        rainbow_speed = rainbow_speed * 95 / 100;
+    }
+}
+
 static void drive_led()
 {
     static uint64_t last = 0;
@@ -95,19 +169,6 @@ static void drive_led()
     for (int i = 0; i < ARRAY_SIZE(rgb_buf); i++) {
         pio_sm_put_blocking(pio0, 0, rgb_buf[i] << 8u);
     }
-}
-
-static inline uint32_t apply_level(uint32_t color)
-{
-    unsigned r = (color >> 16) & 0xff;
-    unsigned g = (color >> 8) & 0xff;
-    unsigned b = color & 0xff;
-
-    r = r * aic_cfg->led.level / 255;
-    g = g * aic_cfg->led.level / 255;
-    b = b * aic_cfg->led.level / 255;
-
-    return r << 16 | g << 8 | b;
 }
 
 void rgb_set_color(unsigned index, uint32_t color)
@@ -144,12 +205,17 @@ void rgb_set_brg(unsigned index, const uint8_t *brg_array, size_t num)
 void rgb_init()
 {
     uint pio0_offset = pio_add_program(pio0, &ws2812_program);
-
     gpio_set_drive_strength(RGB_PIN, GPIO_DRIVE_STRENGTH_2MA);
     ws2812_program_init(pio0, 0, pio0_offset, RGB_PIN, 800000, false);
+    
+    generate_color_wheel();
 }
 
 void rgb_update()
 {
+    generate_color_wheel();
+
+    rainbow_update();
+    rainbow_speed_down();
     drive_led();
 }

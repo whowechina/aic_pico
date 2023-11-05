@@ -59,14 +59,14 @@ static bool pn532_wait_ready()
 {
     uint8_t status = 0;
 
-    for (int retry = 0; retry < 50; retry++) {
+    for (int retry = 0; retry < 30; retry++) {
         if (pn532_read(&status, 1) == 1 && status == 0x01) {
             return true;
         }
         if (wait_loop) {
             wait_loop();
         }
-        sleep_ms(1);
+        sleep_us(1000);
     }
 
     return false;
