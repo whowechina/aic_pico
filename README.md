@@ -39,7 +39,6 @@ I made this project in my personal time with no financial benefit or sponsorship
 ## About the License
 It's CC-NC. So DIY for yourself and for your friend, don't make money from it.
 
-
 ## HOW TO BUILD
 Seriously, this is the easiest one among all my Pico series projects.
 ### Components
@@ -76,9 +75,10 @@ I'll let these images do the talk.
 
 ### Firmware
 * UF2 file is in `Production\Firmware` folder.
-* For the new build, hold the BOOTSEL button while connect the USB to a PC, there will be a disk named "RPI-RP2" showed up. Drag the UF2 firmware binary file into it. That's it. There's a small hole at the bottom side of the Chu Pico, it is facing right to the BOOTSEL button.
+* For the new build, hold the BOOTSEL button while connect the USB to a PC, there will be a disk named "RPI-RP2" showed up. Drag the UF2 firmware binary file into it. That's it.
 * It has a command line to do configuration. You can use this Web Serial Terminal to connect to the USB serial port of the Chu Pico. (Note: "?" is for help)  
-  https://googlechromelabs.github.io/serial-terminal/  
+  https://googlechromelabs.github.io/serial-terminal/
+* To update the firmware, you can use "update" command in command line. So you don't need to open the housing.
 * Spicetools cardio (Card I/O) HID is supported;
 * SEGA AIME protocol is supported on a second serial port.
 
