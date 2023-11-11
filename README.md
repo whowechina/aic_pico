@@ -1,11 +1,10 @@
-# AIC Pico - Amusement IC Card Reader, AIMEC & Card I/O Emulator
+# AIC Pico - Amusement IC Card Reader, AIME & Cardio Emulator
 
 <img src="doc/main.jpg" width="80%">
 <img src="doc/variants.jpg" width="80%">
 
 Features:
 * It's small, smallest as far as I know.
-* Several variations.
 * Easy to make.
 * Sega AIME I/O and Spicetools CardIO emulation.
 * Command line of rich features.
@@ -13,7 +12,7 @@ Features:
   * ISO/IEC 14443 Type A (Mifare, Felica AIC, Amiibo, etc.)
   * To be updated.
 * Emulates virtual AIC from any Mifare cards.
-* Varians
+* Variants
   * AIC Pico
   * AIC Key PN532 (see notes below)
   * AIC Key PN5180 (see notes below)
@@ -21,7 +20,7 @@ Features:
 
 Notes: Be patient, I'm working on them.
 
-Thanks to many respectful guys/companies who made their tools or materials free or open source (KiCad, OnShape, InkScape, Fritzing, Raspberry things, ChatGPT and GitHub Copilot helped a lot as well).
+Thanks to many respectful guys/companies who made their tools or materials free or open source (KiCad, OnShape, InkScape, Fritzing, Raspberry things), ChatGPT and GitHub Copilot helped a lot as well.
 
 And thanks to community developers that inspired me and helped me: CrazyRedMachine (https://github.com/CrazyRedMachine) for the Spicetools Card IO part, Sucareto's AIME Reader (https://github.com/Sucareto/Arduino-Aime-Reader) for the AIME protocol part.
 
@@ -44,7 +43,7 @@ It's CC-NC. So DIY for yourself and for your friend, don't make money from it.
 ## HOW TO BUILD
 Seriously, this is the easiest one among all my Pico series projects.
 ### Components
-* 1x Rasberry Pico Pi Pico or Pico W (clones work too).  
+* 1x Rasberry Pi Pico or Pico W (clones work too).  
   https://www.raspberrypi.com/products/raspberry-pi-pico
 * 1x PN532 Module (the Red Square board version, cheap clones work too).  
   https://www.elechouse.com/product/pn532-nfc-rfid-module-v4/
@@ -66,7 +65,7 @@ For the top part, choose one that fits your need.
 * **aic_pico_top_tall_ams.3mf**  
   Taller top part, for multi-color printing.
 
-### Assemble
+### Assembly
 I'll let these images do the talk.
 
 <img src="doc/wiring.png" width="80%">
