@@ -9,7 +9,8 @@ Features:
 * Sega AIME I/O and Spicetools CardIO emulation.
 * Command line of rich features.
 * Supported card:
-  * ISO/IEC 14443 Type A (Mifare, Felica AIC, Amiibo, etc.)
+  * Felica (Amusement IC)
+  * ISO/IEC 14443 Type A (BanaPassport, Mifare, Amiibo, some IC tags, some ID tags, etc.)
   * To be updated.
 * Emulates virtual AIC from any Mifare cards.
 * Variants
@@ -27,7 +28,6 @@ And thanks to community developers that inspired me and helped me: CrazyRedMachi
 ## Notes
 Check out my other cool projects, they're all great, I promise.
 https://github.com/whowechina/
-
 
 This project:  
 * Heavily depends on 3D printing, a Bambu AMS system helps a lot.
