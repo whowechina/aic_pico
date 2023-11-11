@@ -76,9 +76,9 @@ I'll let these images do the talk.
 ### Firmware
 * UF2 file is in `Production\Firmware` folder.
 * For the new build, hold the BOOTSEL button while connect the USB to a PC, there will be a disk named "RPI-RP2" showed up. Drag the UF2 firmware binary file into it. That's it.
-* It has a command line to do configuration. You can use this Web Serial Terminal to connect to the USB serial port of the Chu Pico. (Note: "?" is for help)  
+* It has a command line to do configuration. You can use this Web Serial Terminal to connect to the main USB serial port of the board. (Note: "?" is for help)  
   https://googlechromelabs.github.io/serial-terminal/
-* To update the firmware, you can use "update" command in command line. So you don't need to open the housing.
+* You can use "update" command in command line to update the firmware in the future, so you don't need to open the housing.
 * Spicetools cardio (Card I/O) HID is supported;
 * SEGA AIME protocol is supported on a second serial port.
 
