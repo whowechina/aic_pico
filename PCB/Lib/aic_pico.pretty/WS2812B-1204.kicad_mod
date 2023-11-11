@@ -23,7 +23,7 @@
   (pad "I" smd rect (at 0.415 0) (size 0.48 0.8) (layers "F.Cu" "F.Paste" "F.Mask") (tstamp 8ed4f35c-f2de-440f-8e33-c489bf529100))
   (pad "O" smd rect (at -1.555 0) (size 1.1 0.8) (layers "F.Cu" "F.Paste" "F.Mask") (tstamp 717c99df-1956-4765-afce-e90c2d34a2a4))
   (pad "V" smd rect (at -0.415 0) (size 0.48 0.8) (layers "F.Cu" "F.Paste" "F.Mask") (tstamp 2bf938dd-562d-4a98-90c3-767c87723d07))
-  (model "${KIPRJMOD}/3dmodels/User Library-RGB1204.STEP"
+  (model "D:/Code/aic_pico/PCB/Lib/3dmodels/User Library-RGB1204.STEP"
     (offset (xyz 0 0 0.5))
     (scale (xyz 1 1 1))
     (rotate (xyz 180 90 0))

@@ -332,7 +332,7 @@
   (pad "38" smd rect (at 9.8 -19.05) (size 3 1.7) (layers "F.Cu" "F.Mask") (tstamp 8675171b-fc5f-4eaf-85c8-e5262fd113d7))
   (pad "39" smd rect (at 9.8 -21.59) (size 3 1.7) (layers "F.Cu" "F.Mask") (tstamp ddb8ffe4-fc5c-4b39-97af-2e59e0e278bc))
   (pad "40" smd rect (at 9.8 -24.13) (size 3 1.7) (layers "F.Cu" "F.Mask") (tstamp ca947c60-7620-4e29-ad8d-f9861349019a))
-  (model "${KIPRJMOD}/3dmodels/Raspberry Pi Pico-R3.STEP"
+  (model "D:/Code/aic_pico/PCB/Lib/3dmodels/Raspberry Pi Pico-R3.STEP"
     (offset (xyz 0 0 0))
     (scale (xyz 1 1 1))
     (rotate (xyz 90 180 180))

@@ -26,7 +26,7 @@
   (pad "11" smd rect (at 0 10.16) (size 4.6 1.2) (layers "F.Cu" "F.Paste" "F.Mask") (tstamp 82feb2f3-b10a-44f3-8290-c4e88187f65c))
   (pad "12" smd rect (at 0 12.7) (size 4.6 1.2) (layers "F.Cu" "F.Paste" "F.Mask") (tstamp 05ab617b-ac92-4b9d-94bb-deeb2315231e))
   (pad "13" smd rect (at 0 15.24) (size 4.6 1.2) (layers "F.Cu" "F.Paste" "F.Mask") (tstamp 12b1f539-44dd-45cc-9c9b-9278f7dee5b1))
-  (model "${KIPRJMOD}/3dmodels/pn5180.step"
+  (model "D:/Code/aic_pico/PCB/Lib/3dmodels/pn5180.step"
     (offset (xyz 14.5 0 8))
     (scale (xyz 1 1 1))
     (rotate (xyz 0 180 0))

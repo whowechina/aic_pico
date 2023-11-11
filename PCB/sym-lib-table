@@ -1,4 +1,0 @@
-(sym_lib_table
-  (lib (name "aic_pico")(type "KiCad")(uri "${KIPRJMOD}/aic_pico.kicad_sym")(options "")(descr ""))
-  (lib (name "MCU_RaspberryPi_and_Boards")(type "Legacy")(uri "${KIPRJMOD}/RP_Silicon_KiCad/KiCadLibraries/MCU_RaspberryPi_and_Boards.lib")(options "")(descr ""))
-)
