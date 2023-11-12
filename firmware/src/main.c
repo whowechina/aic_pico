@@ -28,6 +28,7 @@
 #include "cli.h"
 #include "commands.h"
 #include "rgb.h"
+#include "keypad.h"
 
 #include "pn532.h"
 #include "aime.h"
@@ -36,9 +37,9 @@ static struct {
     uint8_t current[9];
     uint8_t reported[9];
     uint64_t report_time;
-} cardio;
+} hid_cardio;
 
-void report_usb_hid()
+void report_hid_cardio()
 {
     if (!tud_hid_ready()) {
         return;
@@ -46,25 +47,58 @@ void report_usb_hid()
 
     uint64_t now = time_us_64();
 
-    if (memcmp(cardio.current, "\0\0\0\0\0\0\0\0\0", 9) != 0) {
+    if (memcmp(hid_cardio.current, "\0\0\0\0\0\0\0\0\0", 9) != 0) {
         rgb_set_rainbow_speed(255);
     }
 
-    if ((memcmp(cardio.current, cardio.reported, 9) != 0) &&
-        (now - cardio.report_time > 1000000)) {
+    if ((memcmp(hid_cardio.current, hid_cardio.reported, 9) != 0) &&
+        (now - hid_cardio.report_time > 1000000)) {
 
-        tud_hid_n_report(0x00, cardio.current[0], cardio.current + 1, 8);
-        memcpy(cardio.reported, cardio.current, 9);
-        cardio.report_time = now;
+        tud_hid_n_report(0x00, hid_cardio.current[0], hid_cardio.current + 1, 8);
+        memcpy(hid_cardio.reported, hid_cardio.current, 9);
+        hid_cardio.report_time = now;
 
-        if (memcmp(cardio.current, "\0\0\0\0\0\0\0\0\0", 9) != 0) {
+        if (memcmp(hid_cardio.current, "\0\0\0\0\0\0\0\0\0", 9) != 0) {
             printf("Card:");
             for (int i = 0; i < 9; i++) {
-                printf(" %02x", cardio.current[i]);
+                printf(" %02x", hid_cardio.current[i]);
             }
             printf("\n");
         }
     }
+}
+
+struct __attribute__((packed)) {
+    uint8_t modifier;
+    uint8_t keymap[15];
+} hid_nkro;
+
+static const char keymap[12] = KEYPAD_NKRO_MAP;
+
+void report_hid_key()
+{
+    if (!tud_hid_ready()) {
+        return;
+    }
+
+    uint16_t keys = keypad_read();
+    for (int i = 0; i < keypad_key_num(); i++) {
+        uint8_t code = keymap[i];
+        uint8_t byte = code / 8;
+        uint8_t bit = code % 8;
+        if (keys & (1 << i)) {
+            hid_nkro.keymap[byte] |= (1 << bit);
+        } else {
+            hid_nkro.keymap[byte] &= ~(1 << bit);
+        }
+    }
+    tud_hid_n_report(1, 0, &hid_nkro, sizeof(hid_nkro));
+}
+
+void report_usb_hid()
+{
+    report_hid_cardio();
+    report_hid_key();
 }
 
 static mutex_t core1_io_lock;
@@ -89,26 +123,26 @@ void detect_card()
     int len = sizeof(id);
     bool mifare = pn532_poll_mifare(id, &len);
     if (mifare) {
-        cardio.current[0] = REPORT_ID_EAMU;
-        cardio.current[1] = 0xe0;
-        cardio.current[2] = 0x04;
+        hid_cardio.current[0] = REPORT_ID_EAMU;
+        hid_cardio.current[1] = 0xe0;
+        hid_cardio.current[2] = 0x04;
         if (len == 4) {
-            memcpy(cardio.current + 3, id, 4);
-            memcpy(cardio.current + 7, id, 2);
+            memcpy(hid_cardio.current + 3, id, 4);
+            memcpy(hid_cardio.current + 7, id, 2);
         } else if (len == 7) {
-            memcpy(cardio.current + 3, id + 1, 6);
+            memcpy(hid_cardio.current + 3, id + 1, 6);
         }
         return;
     }
 
     bool felica = pn532_poll_felica(id, id + 8, id + 16, false);
     if (felica) {
-        cardio.current[0] = REPORT_ID_FELICA;
-        memcpy(cardio.current + 1, id, 8);
+        hid_cardio.current[0] = REPORT_ID_FELICA;
+        memcpy(hid_cardio.current + 1, id, 8);
         return;
     }
 
-    memset(cardio.current, 0, 9);
+    memset(hid_cardio.current, 0, 9);
 }
 
 const int aime_intf = 1;
@@ -131,8 +165,12 @@ static void aime_run()
 
 void wait_loop()
 {
+    keypad_update();
+    report_hid_key();
+
     tud_task();
     cli_run();
+
     cli_fps_count(0);
 }
 
@@ -147,8 +185,11 @@ static void core0_loop()
         save_loop();
         cli_fps_count(0);
 
+        keypad_update();
         detect_card();
+    
         report_usb_hid();
+    
         sleep_ms(1);
     }
 }
@@ -161,6 +202,7 @@ void init()
     tusb_init();
     stdio_init_all();
     rgb_init();
+    keypad_init();
 
     config_init();
     mutex_init(&core1_io_lock);

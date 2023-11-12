@@ -75,6 +75,10 @@ uint8_t const desc_hid_report_cardio[] = {
     AIC_PICO_REPORT_DESC_CARDIO,
 };
 
+uint8_t const desc_hid_report_nkro[] = {
+    AIC_PICO_REPORT_DESC_NKRO,
+};
+
 // Invoked when received GET HID REPORT DESCRIPTOR
 // Application return pointer to descriptor
 // Descriptor contents must exist long enough for transfer to complete
@@ -83,6 +87,8 @@ uint8_t const* tud_hid_descriptor_report_cb(uint8_t itf)
     switch (itf) {
         case 0:
             return desc_hid_report_cardio;
+        case 1:
+            return desc_hid_report_nkro;
         default:
             return NULL;
     }
@@ -91,14 +97,15 @@ uint8_t const* tud_hid_descriptor_report_cb(uint8_t itf)
 // Configuration Descriptor
 //--------------------------------------------------------------------+
 
-enum { ITF_NUM_CARDIO,
+enum { ITF_NUM_CARDIO, ITF_NUM_NKRO,
        ITF_NUM_CLI, ITF_NUM_CLI_DATA,
        ITF_NUM_AIME, ITF_NUM_AIME_DATA,
        ITF_NUM_TOTAL };
 
-#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN * 1 + TUD_CDC_DESC_LEN * 2)
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN * 2 + TUD_CDC_DESC_LEN * 2)
 
 #define EPNUM_CARDIO 0x81
+#define EPNUM_KEY 0x82
 
 #define EPNUM_CLI_NOTIF 0x85
 #define EPNUM_CLI_OUT   0x06
@@ -120,10 +127,14 @@ uint8_t const desc_configuration_dev[] = {
                        sizeof(desc_hid_report_cardio), EPNUM_CARDIO,
                        CFG_TUD_HID_EP_BUFSIZE, 1),
 
-    TUD_CDC_DESCRIPTOR(ITF_NUM_CLI, 5, EPNUM_CLI_NOTIF,
+    TUD_HID_DESCRIPTOR(ITF_NUM_NKRO, 5, HID_ITF_PROTOCOL_NONE,
+                       sizeof(desc_hid_report_nkro), EPNUM_KEY,
+                       CFG_TUD_HID_EP_BUFSIZE, 1),
+
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CLI, 6, EPNUM_CLI_NOTIF,
                        8, EPNUM_CLI_OUT, EPNUM_CLI_IN, 64),
 
-    TUD_CDC_DESCRIPTOR(ITF_NUM_AIME, 6, EPNUM_AIME_NOTIF,
+    TUD_CDC_DESCRIPTOR(ITF_NUM_AIME, 7, EPNUM_AIME_NOTIF,
                        8, EPNUM_AIME_OUT, EPNUM_AIME_IN, 64),
 };
 
@@ -147,6 +158,7 @@ const char *string_desc_arr[] = {
     "AIC Pico",                  // 2: Product
     serial_number_str,           // 3: Serials, should use chip ID
     "AIC Pico CardIO",
+    "AIC Pico Keypad",
     "AIC Pico CLI Port",
     "AIC Pico AIME Port",
 };
