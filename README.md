@@ -23,7 +23,7 @@ Features:
 Notes:
 1. Be patient, I'm working on them. And there's chance I will fail.
 2. So one can integrate "AIC Pico" into a Raspberry Pi Pico based controller. Will be ready when I finish AIC Key.  
-  <img src="doc/aic_pico_lib.jpg" width="80%">
+  <img src="doc/aic_pico_lib.jpg" width="40%">
 
 Thanks to many respectful guys/companies who made their tools or materials free or open source (KiCad, OnShape, InkScape, Fritzing, Raspberry things), ChatGPT and GitHub Copilot helped a lot as well.
 
