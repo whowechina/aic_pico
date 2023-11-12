@@ -15,11 +15,15 @@ Features:
 * Emulates virtual AIC from any Mifare cards.
 * Variants
   * AIC Pico
-  * AIC Key PN532 (see notes below)
-  * AIC Key PN5180 (see notes below)
+  * AIC Key PN532 (see notes 1 below)
+  * AIC Key PN5180 (see notes 1 below)
+  * AIC Pico Lib (see notes 2 below)
 * All source files open.
 
-Notes: Be patient, I'm working on them.
+Notes:
+1. Be patient, I'm working on them. And there's chance I will fail.
+2. So one can integrate "AIC Pico" into a Raspberry Pi Pico based controller. Will be ready when I finish AIC Key.  
+  <img src="doc/aic_pico_lib.jpg" width="80%">
 
 Thanks to many respectful guys/companies who made their tools or materials free or open source (KiCad, OnShape, InkScape, Fritzing, Raspberry things), ChatGPT and GitHub Copilot helped a lot as well.
 
@@ -73,6 +77,8 @@ I'll let these images do the talk.
 <img src="doc/assemble_3.jpg" width="80%">
 <img src="doc/assemble_4.jpg" width="80%">
 
+The firmware supports up to 16 LEDs on the WS2812B LED strip. I personally used 3 as shown in main title image. But you can experiment with different LED numbers, as long as they fit within the housing.
+
 ### Firmware
 * UF2 file is in `Production\Firmware` folder.
 * For the new build, hold the BOOTSEL button while connect the USB to a PC, there will be a disk named "RPI-RP2" showed up. Drag the UF2 firmware binary file into it. That's it.
@@ -81,6 +87,11 @@ I'll let these images do the talk.
 * You can use "update" command in command line to update the firmware in the future, so you don't need to open the housing.
 * Spicetools cardio (Card I/O) HID is supported;
 * SEGA AIME protocol is supported on a second serial port.
+* Some command line commands:
+  * "level [0..255]" to adjust the brightness.
+  * "nfc" manually to detect cards.
+  * "update" reboot into firmware update mode.
+* Given my limited hobby time, the firmware may not be fully tested. Please report any anomalies.
 
 ## CAD Source File
 I'll post when I finish all variants.
