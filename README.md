@@ -79,7 +79,7 @@ I'll let these images do the talk.
 
 #### Notes
 * The firmware supports up to 16 LEDs on the WS2812B LED strip. I personally used 3 as shown in main title image. But you can experiment with different LED numbers, as long as they fit within the housing.
-
+* LED might be excessively bright even at low settings, consider covering it with some filter tape.
 * The mode switch on PN532 must be in "I2C" mode, picture below shows the correct settings.  
   <img src="doc/pn532_i2c.jpg" width="40%">
 
