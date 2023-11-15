@@ -27,7 +27,7 @@
 #include "config.h"
 #include "cli.h"
 #include "commands.h"
-#include "rgb.h"
+#include "light.h"
 #include "keypad.h"
 
 #include "pn532.h"
@@ -48,7 +48,7 @@ void report_hid_cardio()
     uint64_t now = time_us_64();
 
     if (memcmp(hid_cardio.current, "\0\0\0\0\0\0\0\0\0", 9) != 0) {
-        rgb_set_rainbow_speed(255);
+        light_set_rainbow_speed(255);
     }
 
     if ((memcmp(hid_cardio.current, hid_cardio.reported, 9) != 0) &&
@@ -108,7 +108,7 @@ static void core1_loop()
         if (mutex_try_enter(&core1_io_lock, NULL)) {
             mutex_exit(&core1_io_lock);
         }
-        rgb_update();
+        light_update();
         cli_fps_count(1);
         sleep_ms(1);
     }
@@ -201,7 +201,7 @@ void init()
     board_init();
     tusb_init();
     stdio_init_all();
-    rgb_init();
+    light_init();
     keypad_init();
 
     config_init();

@@ -1,10 +1,10 @@
 /*
- * RGB LED (WS2812) Strip control
+ * Light (WS2812 + LED) control
  * WHowe <github.com/whowechina>
  * 
  */
 
-#include "rgb.h"
+#include "light.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -14,15 +14,17 @@
 #include "bsp/board.h"
 #include "hardware/pio.h"
 #include "hardware/timer.h"
+#include "hardware/pwm.h"
 
 #include "ws2812.pio.h"
 
 #include "board_defs.h"
 #include "config.h"
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-
 static uint32_t rgb_buf[16];
+static uint8_t led_gpio[] = LED_DEF;
+#define RGB_NUM (sizeof(rgb_buf) / sizeof(rgb_buf[0]))
+#define LED_NUM (sizeof(led_gpio))
 
 #define _MAP_LED(x) _MAKE_MAPPER(x)
 #define _MAKE_MAPPER(x) MAP_LED_##x
@@ -132,13 +134,19 @@ static void rainbow_update()
     static uint32_t rotator = 0;
     rotator = (rotator + rainbow_speed) % COLOR_WHEEL_SIZE;
 
-    for (int i = 0; i < ARRAY_SIZE(rgb_buf); i++) {
+    for (int i = 0; i < RGB_NUM; i++) {
         uint32_t index = (rotator + RAINBOW_PITCH * i) % COLOR_WHEEL_SIZE;
         rgb_buf[i] = color_wheel[index];
     }
+
+    /* LED just follows rgb */
+    for (int i = 0; (i < LED_NUM) && (i < RGB_NUM); i++) {
+        int level = rgb_buf[i] & 0xff;
+        pwm_set_gpio_level(led_gpio[i], level * level);
+    }
 }
 
-void rgb_set_rainbow_speed(uint8_t speed)
+void light_set_rainbow_speed(uint8_t speed)
 {
     rainbow_speed = speed / 8;
 }
@@ -166,33 +174,33 @@ static void drive_led()
     }
     last = now;
 
-    for (int i = 0; i < ARRAY_SIZE(rgb_buf); i++) {
+    for (int i = 0; i < RGB_NUM; i++) {
         pio_sm_put_blocking(pio0, 0, rgb_buf[i] << 8u);
     }
 }
 
-void rgb_set_color(unsigned index, uint32_t color)
+void light_set_color(unsigned index, uint32_t color)
 {
-    if (index >= ARRAY_SIZE(rgb_buf)) {
+    if (index >= RGB_NUM) {
         return;
     }
     rgb_buf[index] = apply_level(color);
 }
 
-void rgb_set_color_all(uint32_t color)
+void light_set_color_all(uint32_t color)
 {
-    for (int i = 0; i < ARRAY_SIZE(rgb_buf); i++) {
+    for (int i = 0; i < RGB_NUM; i++) {
         rgb_buf[i] = apply_level(color);
     }
 }
 
-void rgb_set_brg(unsigned index, const uint8_t *brg_array, size_t num)
+void light_set_brg(unsigned index, const uint8_t *brg_array, size_t num)
 {
-    if (index >= ARRAY_SIZE(rgb_buf)) {
+    if (index >= RGB_NUM) {
         return;
     }
-    if (index + num > ARRAY_SIZE(rgb_buf)) {
-        num = ARRAY_SIZE(rgb_buf) - index;
+    if (index + num > RGB_NUM) {
+        num = RGB_NUM - index;
     }
     for (int i = 0; i < num; i++) {
         uint8_t b = brg_array[i * 3 + 0];
@@ -202,16 +210,28 @@ void rgb_set_brg(unsigned index, const uint8_t *brg_array, size_t num)
     }
 }
 
-void rgb_init()
+void light_init()
 {
     uint pio0_offset = pio_add_program(pio0, &ws2812_program);
     gpio_set_drive_strength(RGB_PIN, GPIO_DRIVE_STRENGTH_2MA);
     ws2812_program_init(pio0, 0, pio0_offset, RGB_PIN, 800000, false);
-    
+
+    for (int i = 0; i < LED_NUM; i++) {
+        gpio_init(led_gpio[i]);
+        gpio_set_dir(led_gpio[i], GPIO_OUT);
+        gpio_set_function(led_gpio[i], GPIO_FUNC_PWM);
+
+        int slice = pwm_gpio_to_slice_num(led_gpio[i]);
+
+        pwm_config cfg = pwm_get_default_config();
+        pwm_config_set_clkdiv(&cfg, 4.f);
+        pwm_init(slice, &cfg, true);
+    }
+
     generate_color_wheel();
 }
 
-void rgb_update()
+void light_update()
 {
     generate_color_wheel();
 
