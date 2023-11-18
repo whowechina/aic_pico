@@ -33,7 +33,10 @@ void fps_count(int core)
 static void handle_display()
 {
     printf("[Config]\n");
-    printf("    LED level: %d\n", aic_cfg->led.level);
+    printf("    Light: RGB-%s LED-%s\n",
+            aic_cfg->light.rgb ? "ON" : "OFF",
+            aic_cfg->light.led ? "ON" : "OFF");
+    printf("    Level: [%d ~ %d]\n", aic_cfg->light.min, aic_cfg->light.max);
 }
 
 static void handle_save()
@@ -79,21 +82,66 @@ static void handle_nfc()
     printf("\n");
 }
 
+static void handle_light(int argc, char *argv[])
+{
+    const char *usage = "Usage: light <rgb|led|both|off>\n";
+    if (argc != 1) {
+        printf("%s", usage);
+        return;
+    }
+
+    const char *commands[] = { "rgb", "led", "both", "off" };
+    int match = cli_match_prefix(commands, 4, argv[0]);
+    switch (match) {
+        case 0:
+            aic_cfg->light.rgb = true;
+            aic_cfg->light.led = false;
+            break;
+        case 1:
+            aic_cfg->light.rgb = false;
+            aic_cfg->light.led = true;
+            break;
+        case 2:
+            aic_cfg->light.rgb = true;
+            aic_cfg->light.led = true;
+            break;
+        case 3:
+            aic_cfg->light.rgb = false;
+            aic_cfg->light.led = false;
+            break;
+        default:
+            printf("%s", usage);
+            return;
+    }
+    config_changed();
+}
+
 static void handle_level(int argc, char *argv[])
 {
-    const char *usage = "Usage: level <0..255>\n";
-    if (argc != 1) {
+    const char *usage = "Usage: level <0..255> <0..255>\n";
+    if (argc != 2) {
         printf(usage);
         return;
     }
 
-    int level = cli_extract_non_neg_int(argv[0], 0);
-    if ((level < 0) || (level > 255)) {
+    int min = cli_extract_non_neg_int(argv[0], 0);
+    if ((min < 0) || (min > 255)) {
+        printf(usage);
+        return;
+    }
+    int max = cli_extract_non_neg_int(argv[1], 0);
+    if (max > 255) {
         printf(usage);
         return;
     }
 
-    aic_cfg->led.level = level;
+    if (max < min) {
+        max = min;
+    }
+
+    aic_cfg->light.min = min;
+    aic_cfg->light.max = max;
+
     config_changed();
     handle_display();
 }
@@ -104,5 +152,6 @@ void commands_init()
     cli_register("save", handle_save, "Save config to flash.");
     cli_register("factory", handle_factory_reset, "Reset everything to default.");
     cli_register("nfc", handle_nfc, "NFC debug.");
-    cli_register("level", handle_level, "Set LED level.");
+    cli_register("light", handle_light, "Turn on/off lights.");
+    cli_register("level", handle_level, "Set light level.");
 }

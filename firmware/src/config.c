@@ -12,13 +12,17 @@
 aic_cfg_t *aic_cfg;
 
 static aic_cfg_t default_cfg = {
-    .led = { .level = 127, }
+    .light = { .min = 0, .max = 128, .rgb = true, .led = true }
 };
 
 aic_runtime_t *aic_runtime;
 
 static void config_loaded()
 {
+    if (aic_cfg->light.min > aic_cfg->light.max) {
+        aic_cfg->light = default_cfg.light;
+        config_changed();
+    }
 }
 
 void config_changed()

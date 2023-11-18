@@ -48,7 +48,7 @@ void report_hid_cardio()
     uint64_t now = time_us_64();
 
     if (memcmp(hid_cardio.current, "\0\0\0\0\0\0\0\0\0", 9) != 0) {
-        light_set_rainbow_speed(255);
+        light_stimulate();
     }
 
     if ((memcmp(hid_cardio.current, hid_cardio.reported, 9) != 0) &&

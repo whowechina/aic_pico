@@ -85,15 +85,17 @@ uint32_t rgb32_from_hsv(uint8_t h, uint8_t s, uint8_t v)
     }
 }
 
+static uint8_t curr_level = 0;
+
 static inline uint32_t apply_level(uint32_t color)
 {
     unsigned r = (color >> 16) & 0xff;
     unsigned g = (color >> 8) & 0xff;
     unsigned b = color & 0xff;
 
-    r = r * aic_cfg->led.level / 255;
-    g = g * aic_cfg->led.level / 255;
-    b = b * aic_cfg->led.level / 255;
+    r = r * curr_level / 255;
+    g = g * curr_level / 255;
+    b = b * curr_level / 255;
 
     return r << 16 | g << 8 | b;
 }
@@ -106,21 +108,14 @@ static inline uint32_t apply_level(uint32_t color)
 static uint32_t color_wheel[COLOR_WHEEL_SIZE];
 static void generate_color_wheel()
 {
-    static uint8_t old_level = 0;
-    if (old_level == aic_cfg->led.level) {
-        return;
-    }
-    old_level = aic_cfg->led.level;
-
     for (int i = 0; i < COLOR_WHEEL_SIZE; i++) {
         color_wheel[i] = rgb32_from_hsv(i, 208, 255);
-        color_wheel[i] = apply_level(color_wheel[i]);
     }
 }
 
 #define RAINBOW_PITCH 37
 #define RAINBOW_MIN_SPEED 1
-static uint32_t rainbow_speed = RAINBOW_MIN_SPEED;
+static uint32_t curr_speed = RAINBOW_MIN_SPEED;
 
 static void rainbow_update()
 {
@@ -132,26 +127,27 @@ static void rainbow_update()
     last = now;
 
     static uint32_t rotator = 0;
-    rotator = (rotator + rainbow_speed) % COLOR_WHEEL_SIZE;
+    rotator = (rotator + curr_speed) % COLOR_WHEEL_SIZE;
 
     for (int i = 0; i < RGB_NUM; i++) {
         uint32_t index = (rotator + RAINBOW_PITCH * i) % COLOR_WHEEL_SIZE;
-        rgb_buf[i] = color_wheel[index];
+        rgb_buf[i] = apply_level(color_wheel[index]);
     }
 
-    /* LED just follows rgb */
     for (int i = 0; (i < LED_NUM) && (i < RGB_NUM); i++) {
-        int level = rgb_buf[i] & 0xff;
-        pwm_set_gpio_level(led_gpio[i], level * level);
+        uint32_t index = (rotator + RAINBOW_PITCH * 2 * i) % COLOR_WHEEL_SIZE;
+        int level = apply_level(color_wheel[index]) & 0xff;
+        pwm_set_gpio_level(led_gpio[i], aic_cfg->light.led ? level * level : 0);
     }
 }
 
-void light_set_rainbow_speed(uint8_t speed)
+void light_stimulate()
 {
-    rainbow_speed = speed / 8;
+    curr_speed = 48;
+    curr_level = aic_cfg->light.max;
 }
 
-static void rainbow_speed_down()
+static void rainbow_fade()
 {
     static uint64_t last = 0;
     uint64_t now = time_us_64();
@@ -160,8 +156,13 @@ static void rainbow_speed_down()
     }
     last = now;
 
-    if (rainbow_speed > RAINBOW_MIN_SPEED) {
-        rainbow_speed = rainbow_speed * 95 / 100;
+    if (curr_speed > RAINBOW_MIN_SPEED) {
+        curr_speed = curr_speed * 95 / 100;
+    }
+    if (curr_level > aic_cfg->light.min) {
+        curr_level -= (curr_level - aic_cfg->light.min) / 10 + 1;
+    } else if (curr_level < aic_cfg->light.min) {
+        curr_level += (aic_cfg->light.min - curr_level) / 10 + 1;
     }
 }
 
@@ -175,7 +176,8 @@ static void drive_led()
     last = now;
 
     for (int i = 0; i < RGB_NUM; i++) {
-        pio_sm_put_blocking(pio0, 0, rgb_buf[i] << 8u);
+        uint32_t color = aic_cfg->light.rgb ? rgb_buf[i] << 8u : 0;
+        pio_sm_put_blocking(pio0, 0, color);
     }
 }
 
@@ -227,15 +229,12 @@ void light_init()
         pwm_config_set_clkdiv(&cfg, 4.f);
         pwm_init(slice, &cfg, true);
     }
-
-    generate_color_wheel();
 }
 
 void light_update()
 {
     generate_color_wheel();
-
     rainbow_update();
-    rainbow_speed_down();
+    rainbow_fade();
     drive_led();
 }
