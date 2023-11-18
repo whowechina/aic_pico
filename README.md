@@ -5,6 +5,11 @@
 
 Features:
 * It's small, smallest as far as I know.
+* Many variants
+  * AIC Pico
+  * AIC Key PN532
+  * AIC Key PN5180 (see notes 1 below)
+  * AIC Pico Lib (see notes 2 below)
 * Easy to make.
 * Sega AIME I/O and Spicetools CardIO emulation.
 * Command line for configurations.
@@ -13,17 +18,12 @@ Features:
   * ISO/IEC 14443 Type A (BanaPassport, Mifare, Amiibo, some IC tags, some ID tags, etc.)
   * To be updated.
 * Emulates virtual AIC from any Mifare cards.
-* Variants
-  * AIC Pico
-  * AIC Key PN532
-  * AIC Key PN5180 (see notes 1 below)
-  * AIC Pico Lib (see notes 2 below)
 * All source files open.
 
 Notes:
 1. Be patient, I'm working on PN5180 firmware. It may take quite a while.
-2. So one can integrate "AIC Pico" into a Raspberry Pi Pico based controller. Will be ready when I finish AIC Key.  
-  <img src="doc/aic_pico_lib.jpg" width="40%">
+2. So one can integrate "AIC Pico" into a Raspberry Pi Pico based controller. Will be ready when I finish AIC Key. Example here:  
+  <img src="doc/aic_pico_lib.jpg" width="25%">
 
 Thanks to many respectful guys/companies who made their tools or materials free or open source (KiCad, OnShape, InkScape, Fritzing, Raspberry things), ChatGPT and GitHub Copilot helped a lot as well.
 
@@ -100,8 +100,11 @@ AIC Key is a variation of the AIC Pico - a keypad is integrated. Much more diffi
   * Option 1: 6x side-light WS2812B 1204 LEDs (D1 to D6) and a 10ohm 0603 resistor (R1), GREEN mark in the assemble image.
   * Option 2: 6x regular single-color 0603 LEDs (D7 to D12) and 6x 100ohm 0603 resistors (R2 to R7), PURPLE mark in the assemble image.
 
-* 12x ALPS SKRRAAE010 low-profile TACT switch.  
-  https://www.mouser.com/ProductDetail/Alps-Alpine/SKRRAAE010?qs=m0BA540hBPeKhAe3239t1w%3D%3D
+* For switches, you still have 2 option:
+  * Option 1: 12x ALPS SKRRAAE010 low-profile TACT switch.  
+    https://www.mouser.com/ProductDetail/Alps-Alpine/SKRRAAE010?qs=m0BA540hBPeKhAe3239t1w%3D%3D
+  * Option 2: 12x Panasonic EVQP1K05M 6mm square tactile switch.  
+    https://www3.panasonic.biz/ac/e/dl/catalog/index.jsp?series_cd=3473&part_no=EVQP1K05M
 
 * 1x Right angle 2.54mm pitch header, 4P for PN532, 13P for PN5180.  
   <img src="doc/right_angle_header.jpg" width="20%">
@@ -120,13 +123,18 @@ AIC Key is a variation of the AIC Pico - a keypad is integrated. Much more diffi
   Top part.
 * **aic_key_top_ams.3mf**  
   Same top part, but for multi-color printing.
+* **aic_key_top_tall.stl**  
+  Top part for panasonic switches.
+* **aic_key_top_tall_ams.3mf**  
+  Top part for panasonic switches, for multi-color printing.
 
 ### Assembly
 Again I'll let these images do the talk. Remember to upload the firmware onto Raspberry Pi Pico before assemble.
 
 #### General Part
-<img src="doc/key_assemble_1.jpg" width="38%">
-<img src="doc/key_assemble_2.jpg" width="40%">
+<img src="doc/key_assemble_1a.jpg" width="30%">
+<img src="doc/key_assemble_1b.jpg" width="30%">
+<img src="doc/key_assemble_2.jpg" width="30%">
 
 #### PN532 Version
 Remember set to I2C mode first.
