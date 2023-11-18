@@ -97,8 +97,8 @@ AIC Key is a variation of the AIC Pico - a keypad is integrated. Much more diffi
     <img src="doc/pn5180.jpg" width="50%">
 
 * For LEDs, you also have 2 options:
-  * Option 1: 6x side-light WS2812B 1204 LEDs (D1~D6) and a 10ohm 0603 resistor (R1), GREEN mark in the assemble image.
-  * Option 2: 6x regular single-color 0603 LEDs (D7~D12) and 6x 100ohm 0603 resistors (R2~R7), PURPLE mark in the assemble image.
+  * Option 1: 6x side-light WS2812B 1204 LEDs (D1 to D6) and a 10ohm 0603 resistor (R1), GREEN mark in the assemble image.
+  * Option 2: 6x regular single-color 0603 LEDs (D7 to D12) and 6x 100ohm 0603 resistors (R2 to R7), PURPLE mark in the assemble image.
 
 * 12x ALPS SKRRAAE010 low-profile TACT switch.  
   https://www.mouser.com/ProductDetail/Alps-Alpine/SKRRAAE010?qs=m0BA540hBPeKhAe3239t1w%3D%3D
@@ -109,6 +109,9 @@ AIC Key is a variation of the AIC Pico - a keypad is integrated. Much more diffi
 * 1x Stickers of numbers. You can find some customize sticker service, or you can find some existing stickers. I found this Bonito crystal 3D stickers super helpful for this project.  
   <img src="doc/bonito_stickers.png" width="50%">  
   <img src="doc/bonito_action.jpg" width="50%">
+
+* PCB, just visit JLCPCB (https://jlcpcb.com/) and place an order there. Leave everything default, 1.6mm thickness, whatever color you like. PCB gerber files are in "Production/PCB" folder. For PN532 version, use "aic_key_pn532_v*.zip", for PN5180 version, use "aic_key_pn5180_v*.zip".  
+  <img src="doc/pcbs.jpg" width="60%">
 
 ### 3D Prints
 * **aic_key_bottom.stl**  
