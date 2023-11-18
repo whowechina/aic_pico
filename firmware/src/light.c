@@ -25,6 +25,8 @@ static uint32_t rgb_buf[16];
 static uint8_t led_gpio[] = LED_DEF;
 #define RGB_NUM (sizeof(rgb_buf) / sizeof(rgb_buf[0]))
 #define LED_NUM (sizeof(led_gpio))
+static uint8_t led_buf[LED_NUM];
+
 
 #define _MAP_LED(x) _MAKE_MAPPER(x)
 #define _MAKE_MAPPER(x) MAP_LED_##x
@@ -134,10 +136,9 @@ static void rainbow_update()
         rgb_buf[i] = apply_level(color_wheel[index]);
     }
 
-    for (int i = 0; (i < LED_NUM) && (i < RGB_NUM); i++) {
+    for (int i = 0; i < LED_NUM; i++) {
         uint32_t index = (rotator + RAINBOW_PITCH * 2 * i) % COLOR_WHEEL_SIZE;
-        int level = apply_level(color_wheel[index]) & 0xff;
-        pwm_set_gpio_level(led_gpio[i], aic_cfg->light.led ? level * level : 0);
+        led_buf[i] = apply_level(color_wheel[index]) & 0xff;
     }
 }
 
@@ -178,6 +179,11 @@ static void drive_led()
     for (int i = 0; i < RGB_NUM; i++) {
         uint32_t color = aic_cfg->light.rgb ? rgb_buf[i] << 8u : 0;
         pio_sm_put_blocking(pio0, 0, color);
+    }
+
+    for (int i = 0; i < LED_NUM; i++) {
+        uint8_t level = aic_cfg->light.led ? led_buf[i] : 0;
+        pwm_set_gpio_level(led_gpio[i], level);
     }
 }
 

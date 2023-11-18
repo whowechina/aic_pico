@@ -106,9 +106,9 @@ static void core1_loop()
 {
     while (1) {
         if (mutex_try_enter(&core1_io_lock, NULL)) {
+            light_update();
             mutex_exit(&core1_io_lock);
         }
-        light_update();
         cli_fps_count(1);
         sleep_ms(1);
     }
