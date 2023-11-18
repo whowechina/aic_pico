@@ -71,11 +71,11 @@ For the top part, choose one that fits your need.
 ### Assembly
 I'll let these images do the talk.
 
-<img src="doc/wiring.png" width="80%">
-<img src="doc/assemble_1.jpg" width="80%">
-<img src="doc/assemble_2.jpg" width="80%">
-<img src="doc/assemble_3.jpg" width="80%">
-<img src="doc/assemble_4.jpg" width="80%">
+<img src="doc/pico_wiring.png" width="80%">
+<img src="doc/pico_assemble_1.jpg" width="80%">
+<img src="doc/pico_assemble_2.jpg" width="80%">
+<img src="doc/pico_assemble_3.jpg" width="80%">
+<img src="doc/pico_assemble_4.jpg" width="80%">
 
 #### Notes
 * The firmware supports up to 16 LEDs on the WS2812B LED strip. I personally used 3 as shown in main title image. But you can experiment with different LED numbers, as long as they fit within the housing.
