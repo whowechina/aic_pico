@@ -173,5 +173,5 @@ You may use some instant adhesive to fix stickers.
   * "update" reboot into firmware update mode.
 * Given my limited hobby time, the firmware may not be fully tested. Please report any anomalies.
 
-## CAD Source File
-I'll post when I finish all variants.
+## 3D Model Source File (Onshape)
+https://cad.onshape.com/documents/ca5497f91b2962105335e822/w/7b88022e98c02c60ad0c44a7/e/c3476efd13c08f807f3773fe?configuration=List_6ARRO0azcgmmHg%3D__&renderMode=1&rightPanel=configPanel&uiState=6558cabf9b380560ca5b554e
