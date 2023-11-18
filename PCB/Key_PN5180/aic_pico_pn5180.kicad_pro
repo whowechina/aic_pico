@@ -56,7 +56,10 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        "copper_edge_clearance|119620000|134653576|abc3d2cd-d9a1-4e43-92fc-b09afead24b8|cfd79474-2f2d-46ba-9fc9-27ca4b5140ff",
+        "copper_edge_clearance|151020000|134653577|35768b9f-de06-455c-ae38-8ee617c659ac|b4d83af9-7345-47b3-a120-f19772252710"
+      ],
       "meta": {
         "version": 2
       },
@@ -409,7 +412,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "aic_pico.kicad_pro",
+    "filename": "aic_pico_pn5180.kicad_pro",
     "version": 1
   },
   "net_settings": {
