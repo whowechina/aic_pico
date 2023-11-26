@@ -31,6 +31,8 @@
 #include "keypad.h"
 
 #include "pn532.h"
+#include "pn5180.h"
+
 #include "aime.h"
 
 static struct {
@@ -211,6 +213,11 @@ void init()
 
     pn532_init(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ);
     pn532_set_wait_loop(wait_loop);
+
+    pn5180_init(spi0, 16, 18, 19, 27, 17, 26);
+    pn5180_load_rf_config(0x0d, 0x8d);
+    pn5180_rf_on();
+
     aime_init(cdc_aime_putc);
 
     cli_init("aic_pico>", "\n     << AIC Pico >>\n"

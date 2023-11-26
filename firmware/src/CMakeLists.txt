@@ -5,7 +5,7 @@ function(make_firmware board board_def)
     pico_sdk_init()
     add_executable(${board}
         main.c save.c config.c commands.c light.c keypad.c
-        aime.c cli.c pn532.c
+        aime.c cli.c pn532.c pn5180.c
         usb_descriptors.c)
     target_compile_definitions(${board} PUBLIC ${board_def})
     pico_enable_stdio_usb(${board} 1)
@@ -21,7 +21,7 @@ function(make_firmware board board_def)
     
     target_link_libraries(${board} PRIVATE
         pico_multicore pico_stdlib hardware_pio hardware_pwm hardware_flash
-        hardware_adc hardware_i2c hardware_watchdog
+        hardware_adc hardware_i2c hardware_spi hardware_watchdog
         tinyusb_device tinyusb_board)
 
     pico_add_extra_outputs(${board})

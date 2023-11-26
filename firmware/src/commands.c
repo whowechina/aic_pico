@@ -12,6 +12,7 @@
 #include "cli.h"
 
 #include "pn532.h"
+#include "pn5180.h"
 
 static int fps[2];
 void fps_count(int core)
@@ -146,6 +147,134 @@ static void handle_level(int argc, char *argv[])
     handle_display();
 }
 
+static void handle_pnboot()
+{
+    pn5180_reset();
+}
+
+static void handle_pnver()
+{
+    uint8_t buf[6];
+    pn5180_read_eeprom(0x10, buf, sizeof(buf));
+
+    printf("Version: %02x %02x %02x %02x %02x %02x\n",
+            buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+    pn5180_print_rf_cfg();
+}
+
+static void handle_pnread(int argc, char *argv[])
+{
+    int reg = cli_extract_non_neg_int(argv[0], 0);
+    printf("%2d: %08lx\n", reg, pn5180_read_reg(reg));
+}
+
+static void handle_pnmifare()
+{
+    pn5180_load_rf_config(0x00, 0x80); // 1
+    pn5180_rf_on(); // 2
+
+    sleep_ms(2000);
+
+    pn5180_and_reg(PN5180_REG_CRC_TX_CONFIG, 0xfffffffe); // 3
+    pn5180_and_reg(PN5180_REG_CRC_RX_CONFIG, 0xfffffffe); // 4
+
+    pn5180_and_reg(PN5180_REG_IRQ_CLEAR, 0x000fffff); // 5
+    pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8); // 6
+    pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03); // 7
+
+    uint8_t buf[] = {0x26};
+    pn5180_send_data(buf, sizeof(buf), 7); // 8
+
+    for (int i = 0; i < 10; i++) {
+        printf("irq: %08lx rx: %08lx\n", pn5180_read_reg(PN5180_REG_IRQ_STATUS),
+                                       pn5180_read_reg(PN5180_REG_RX_STATUS));
+        sleep_ms(2);
+    }
+
+    uint8_t out[128] = {0};
+    pn5180_read_data(out, 2); // 10
+
+    printf("2: %02x %02x\n", out[0], out[1]);
+
+#if 0
+    uint8_t anti_collision[] = {0x93, 0x20};
+    pn5180_send_data(anti_collision, sizeof(anti_collision), 0);
+
+    pn5180_read_data(out + 2, 5);
+    printf("5: %02x %02x %02x %02x %02x\n", out[2], out[3], out[4], out[5], out[6]);
+
+    pn5180_or_reg(PN5180_REG_CRC_RX_CONFIG, 0x01);
+    pn5180_or_reg(PN5180_REG_CRC_TX_CONFIG, 0x01);
+
+    anti_collision[1] = 0x70;
+    pn5180_send_data(anti_collision, sizeof(anti_collision), 0);
+    pn5180_read_data(out + 7, 1); // sak
+    printf("1: %02x\n", out[7]);
+#endif
+    pn5180_rf_off();
+}
+
+static void handle_pnfeli()
+{
+    pn5180_load_rf_config(0x09, 0x89);
+    pn5180_rf_on();
+
+    sleep_ms(1000);
+
+    pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xffffffbf);
+
+    uint8_t cmd[] = {0x06, 0x00, 0xff, 0xff, 0x01, 0x00};
+
+	pn5180_send_data(cmd, 6, 0x00);
+
+    sleep_ms(100);
+
+    uint8_t out[32] = {0};
+    pn5180_read_data(out, 20);
+
+    pn5180_rf_off();
+
+    printf("feli:");
+    for (int i = 0; i < 20; i++) {
+        printf(" %02x", out[i]);
+    }
+    printf("\n");
+}
+
+
+static void handle_pninv()
+{
+    pn5180_load_rf_config(0x0d, 0x8d);
+    pn5180_rf_on();
+
+    sleep_ms(1000);
+
+    pn5180_and_reg(PN5180_REG_IRQ_CLEAR, 0x000fffff); // 5
+    pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8); // 6
+    pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03); // 7
+
+    uint8_t cmd[] = {0x06, 0x01, 0x00};
+    pn5180_send_data(cmd, 3, 0);
+
+    for (int i = 0; i < 10; i++) {
+        printf("irq: %08lx rx: %08lx\n", pn5180_read_reg(PN5180_REG_IRQ_STATUS),
+                                       pn5180_read_reg(PN5180_REG_RX_STATUS));
+        sleep_ms(2);
+    }
+
+    uint32_t rxstatus = pn5180_read_reg(PN5180_REG_RX_STATUS);
+    int len = rxstatus & 0x1ff;
+    uint8_t buf[len];
+    pn5180_read_data(buf, len);
+
+    printf("uid:");
+    for (int i = 0; i < len; i++) {
+        printf(" %02x", buf[i]);
+    }
+    printf("\n");
+    pn5180_rf_off();
+}
+
 void commands_init()
 {
     cli_register("display", handle_display, "Display all settings.");
@@ -154,4 +283,10 @@ void commands_init()
     cli_register("nfc", handle_nfc, "NFC debug.");
     cli_register("light", handle_light, "Turn on/off lights.");
     cli_register("level", handle_level, "Set light level.");
+    cli_register("pnboot", handle_pnboot, "PN5180 reboot");
+    cli_register("pnver", handle_pnver, "PN5180 version");
+    cli_register("pnread", handle_pnread, "PN5180 debug rf");
+    cli_register("pnmifare", handle_pnmifare, "PN5180 mifare");
+    cli_register("pnfeli", handle_pnfeli, "PN5180 felica");
+    cli_register("pninv", handle_pninv, "PN5180 15693");
 }
