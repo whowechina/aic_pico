@@ -187,11 +187,11 @@ void pn5180_rf_off()
 void pn5180_reset()
 {
     gpio_put(spi.rst, 0);
-    sleep_ms(10);
+    sleep_us(20);
     gpio_put(spi.rst, 1);
-    sleep_ms(10);
-    while (pn5180_read_reg(PN5180_REG_IRQ_STATUS) & (1 << 2)) {
-        printf("irq: %08lx\n", pn5180_read_reg(PN5180_REG_IRQ_STATUS));
+    sleep_ms(1);
+    while ((pn5180_read_reg(PN5180_REG_IRQ_STATUS) & (1 << 2)) == 0) {
+        sleep_ms(1);
     }
 
     pn5180_write_reg(PN5180_REG_IRQ_CLEAR, 0xffffffff); // clear all flags

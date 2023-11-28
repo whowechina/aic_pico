@@ -256,11 +256,14 @@ static void handle_pninv()
     uint8_t cmd[] = {0x06, 0x01, 0x00};
     pn5180_send_data(cmd, 3, 0);
 
+    sleep_ms(10);
+
     for (int i = 0; i < 10; i++) {
         printf("irq: %08lx rx: %08lx\n", pn5180_read_reg(PN5180_REG_IRQ_STATUS),
                                        pn5180_read_reg(PN5180_REG_RX_STATUS));
-        sleep_ms(2);
+        sleep_ms(1);
     }
+
 
     uint32_t rxstatus = pn5180_read_reg(PN5180_REG_RX_STATUS);
     int len = rxstatus & 0x1ff;
