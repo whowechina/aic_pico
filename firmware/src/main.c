@@ -215,8 +215,6 @@ void init()
     pn532_set_wait_loop(wait_loop);
 
     pn5180_init(spi0, 16, 18, 19, 27, 17, 26);
-    pn5180_load_rf_config(0x0d, 0x8d);
-    pn5180_rf_on();
 
     aime_init(cdc_aime_putc);
 

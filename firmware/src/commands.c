@@ -170,103 +170,123 @@ static void handle_pnread(int argc, char *argv[])
 
 static void handle_pnmifare()
 {
-    pn5180_load_rf_config(0x00, 0x80); // 1
-    pn5180_rf_on(); // 2
+    pn5180_reset();
+    pn5180_load_rf_config(0x00, 0x80);
+    pn5180_rf_on();
 
-    sleep_ms(2000);
+    pn5180_and_reg(PN5180_REG_CRC_TX_CONFIG, 0xfffffffe);
+    pn5180_and_reg(PN5180_REG_CRC_RX_CONFIG, 0xfffffffe);
 
-    pn5180_and_reg(PN5180_REG_CRC_TX_CONFIG, 0xfffffffe); // 3
-    pn5180_and_reg(PN5180_REG_CRC_RX_CONFIG, 0xfffffffe); // 4
+    pn5180_and_reg(PN5180_REG_IRQ_CLEAR, 0x000fffff);
+    pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8);
+    pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03);
 
-    pn5180_and_reg(PN5180_REG_IRQ_CLEAR, 0x000fffff); // 5
-    pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8); // 6
-    pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03); // 7
+    uint8_t cmd[7] = {0x26};
+    pn5180_send_data(cmd, 1, 7);
 
-    uint8_t buf[] = {0x26};
-    pn5180_send_data(buf, sizeof(buf), 7); // 8
+    uint8_t buf[32] = {0};
+    pn5180_read_data(buf, 2);
 
-    for (int i = 0; i < 10; i++) {
-        printf("irq: %08lx rx: %08lx\n", pn5180_read_reg(PN5180_REG_IRQ_STATUS),
-                                       pn5180_read_reg(PN5180_REG_RX_STATUS));
-        sleep_ms(2);
-    }
-
-    uint8_t out[128] = {0};
-    pn5180_read_data(out, 2); // 10
-
-    printf("2: %02x %02x\n", out[0], out[1]);
-
-#if 0
-    uint8_t anti_collision[] = {0x93, 0x20};
-    pn5180_send_data(anti_collision, sizeof(anti_collision), 0);
-
-    pn5180_read_data(out + 2, 5);
-    printf("5: %02x %02x %02x %02x %02x\n", out[2], out[3], out[4], out[5], out[6]);
+    cmd[0] = 0x93;
+    cmd[1] = 0x20;
+    pn5180_send_data(cmd, 2, 0);
+    pn5180_read_data(cmd + 2, 5);
 
     pn5180_or_reg(PN5180_REG_CRC_RX_CONFIG, 0x01);
     pn5180_or_reg(PN5180_REG_CRC_TX_CONFIG, 0x01);
 
-    anti_collision[1] = 0x70;
-    pn5180_send_data(anti_collision, sizeof(anti_collision), 0);
-    pn5180_read_data(out + 7, 1); // sak
-    printf("1: %02x\n", out[7]);
-#endif
+    cmd[0] = 0x93;
+    cmd[1] = 0x70;
+    pn5180_send_data(cmd, 7, 0);
+
+    pn5180_read_data(buf + 2, 1); // sak
+    printf("SAK: %02x\n", buf[2]);
+
+    if ((buf[2] & 0x04) == 0) {
+        printf("UID: %02x %02x %02x %02x\n", cmd[2], cmd[3], cmd[4], cmd[5]);
+    } else {
+        if (cmd[2] != 0x88) {
+            return;
+        }
+        printf("UID: %02x %02x %02x", cmd[3], cmd[4], cmd[5]);
+        pn5180_and_reg(PN5180_REG_CRC_TX_CONFIG, 0xfffffffe);
+        pn5180_and_reg(PN5180_REG_CRC_RX_CONFIG, 0xfffffffe);
+        cmd[0] = 0x95;
+        cmd[1] = 0x20;
+        pn5180_send_data(cmd, 2, 0);
+        pn5180_read_data(cmd + 2, 5);
+        printf(" %02x %02x %02x %02x\n", cmd[2], cmd[3], cmd[4], cmd[5]);
+    
+        pn5180_or_reg(PN5180_REG_CRC_RX_CONFIG, 0x01);
+        pn5180_or_reg(PN5180_REG_CRC_TX_CONFIG, 0x01);
+    
+        cmd[0] = 0x95;
+        cmd[1] = 0x70;
+        pn5180_send_data(cmd, 7, 0);
+        pn5180_read_data(buf + 2, 1);
+   
+        printf("SAK: %02x\n", buf[2]);
+    }
     pn5180_rf_off();
 }
 
 static void handle_pnfeli()
 {
-    pn5180_load_rf_config(0x09, 0x89);
+    pn5180_reset();
+    pn5180_load_rf_config(0x08, 0x88);
     pn5180_rf_on();
 
-    sleep_ms(1000);
-
     pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xffffffbf);
+    pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03);
 
     uint8_t cmd[] = {0x06, 0x00, 0xff, 0xff, 0x01, 0x00};
 
 	pn5180_send_data(cmd, 6, 0x00);
 
-    sleep_ms(100);
+    sleep_ms(1);
 
-    uint8_t out[32] = {0};
+    uint8_t out[20] = {0};
     pn5180_read_data(out, 20);
 
-    pn5180_rf_off();
+    printf("FeliCa:");
 
-    printf("feli:");
-    for (int i = 0; i < 20; i++) {
-        printf(" %02x", out[i]);
+    if (out[1] == 0x01) {
+        for (int i = 0; i < 20; i++) {
+            printf(" %02x", out[i]);
+        }
     }
     printf("\n");
+    pn5180_rf_off();
 }
 
 
 static void handle_pninv()
 {
+    pn5180_reset();
     pn5180_load_rf_config(0x0d, 0x8d);
     pn5180_rf_on();
 
-    sleep_ms(1000);
+    pn5180_clear_irq(0x0fffff);
+    pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8);
+    pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03);
 
-    pn5180_and_reg(PN5180_REG_IRQ_CLEAR, 0x000fffff); // 5
-    pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8); // 6
-    pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03); // 7
-
-    uint8_t cmd[] = {0x06, 0x01, 0x00};
+    uint8_t cmd[] = {0x26, 0x01, 0x00};
     pn5180_send_data(cmd, 3, 0);
 
-    sleep_ms(10);
+    sleep_ms(1);
 
-    for (int i = 0; i < 10; i++) {
-        printf("irq: %08lx rx: %08lx\n", pn5180_read_reg(PN5180_REG_IRQ_STATUS),
-                                       pn5180_read_reg(PN5180_REG_RX_STATUS));
-        sleep_ms(1);
+    if ((pn5180_get_irq() & 0x4000) == 0) {
+        printf("No card\n");
+        return;
     }
 
+    while ((pn5180_get_irq() & 0x01) == 0) {
+        sleep_ms(10);
+    }
 
-    uint32_t rxstatus = pn5180_read_reg(PN5180_REG_RX_STATUS);
-    int len = rxstatus & 0x1ff;
+    uint32_t rx = pn5180_get_rx();
+    printf("RX: %08lx\n", rx);
+    int len = rx & 0x1ff;
     uint8_t buf[len];
     pn5180_read_data(buf, len);
 
@@ -275,7 +295,6 @@ static void handle_pninv()
         printf(" %02x", buf[i]);
     }
     printf("\n");
-    pn5180_rf_off();
 }
 
 void commands_init()

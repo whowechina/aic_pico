@@ -37,6 +37,10 @@ void pn5180_load_rf_config(uint8_t tx_cfg, uint8_t rx_cfg);
 void pn5180_rf_on();
 void pn5180_rf_off();
 
+uint32_t pn5180_get_irq();
+void pn5180_clear_irq(uint32_t mask);
+uint32_t pn5180_get_rx();
+
 void pn5180_reset();
 
 void pn5180_print_rf_cfg();

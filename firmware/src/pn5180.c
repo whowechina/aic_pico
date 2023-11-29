@@ -190,11 +190,26 @@ void pn5180_reset()
     sleep_us(20);
     gpio_put(spi.rst, 1);
     sleep_ms(1);
-    while ((pn5180_read_reg(PN5180_REG_IRQ_STATUS) & (1 << 2)) == 0) {
+    while ((pn5180_get_irq() & (1 << 2)) == 0) {
         sleep_ms(1);
     }
 
-    pn5180_write_reg(PN5180_REG_IRQ_CLEAR, 0xffffffff); // clear all flags
+    pn5180_clear_irq(0xffffffff); // clear all flags
+}
+
+uint32_t pn5180_get_irq()
+{
+    return pn5180_read_reg(PN5180_REG_IRQ_STATUS);
+}
+
+void pn5180_clear_irq(uint32_t mask)
+{
+    pn5180_write_reg(PN5180_REG_IRQ_CLEAR, mask);
+}
+
+uint32_t pn5180_get_rx()
+{
+    return pn5180_read_reg(PN5180_REG_RX_STATUS);
 }
 
 void pn5180_print_rf_cfg()
