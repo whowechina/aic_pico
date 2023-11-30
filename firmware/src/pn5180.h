@@ -43,6 +43,10 @@ uint32_t pn5180_get_rx();
 
 void pn5180_reset();
 
+bool pn5180_poll_mifare(uint8_t *uid, int *len);
+bool pn5180_poll_14443(uint8_t *uid, int *len);
+bool pn5180_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool from_cache);
+
 void pn5180_print_rf_cfg();
 
 #endif

@@ -125,7 +125,7 @@ static bool read_ack()
 
 int pn532_write_data(const uint8_t *data, uint8_t len)
 {
-    uint8_t frame[5 + len];
+    uint8_t frame[7 + len];
     frame[0] = PN532_PREAMBLE;
     frame[1] = PN532_STARTCODE1;
     frame[2] = PN532_STARTCODE2;

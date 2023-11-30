@@ -212,6 +212,136 @@ uint32_t pn5180_get_rx()
     return pn5180_read_reg(PN5180_REG_RX_STATUS);
 }
 
+static void tx_config(uint32_t cfg)
+{
+    pn5180_write_reg(PN5180_REG_CRC_TX_CONFIG, cfg);
+    pn5180_write_reg(PN5180_REG_CRC_RX_CONFIG, cfg);
+}
+
+static void anti_collision(uint8_t cmd, uint8_t uid[6])
+{
+    tx_config(0xfffffffe);
+    uint8_t buf[7] = { cmd, 0x20 };
+    pn5180_send_data(buf, 2, 0);
+    pn5180_read_data(buf + 2, 5); // uid
+    memmove(uid, buf + 2, 5);
+
+    tx_config(0x01);
+    buf[1] = 0x70;
+    pn5180_send_data(buf, 7, 0);
+    pn5180_read_data(uid + 5, 1); // sak
+}
+
+bool pn5180_poll_mifare(uint8_t *uid, int *len)
+{
+    pn5180_reset();
+    pn5180_load_rf_config(0x00, 0x80);
+    pn5180_rf_on();
+
+
+    pn5180_and_reg(PN5180_REG_IRQ_CLEAR, 0x000fffff);
+    pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8);
+    pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03);
+
+    uint8_t cmd[1] = {0x26};
+    pn5180_send_data(cmd, 1, 7);
+    uint8_t buf[32] = {0};
+    pn5180_read_data(buf, 2);
+
+    anti_collision(0x93, buf + 2);
+
+    bool result = false;
+    if ((buf[2] & 0x04) == 0) {
+        if (*len >= 4) {
+            *len = 4;
+            memmove(len, buf + 2, 4);
+            result = true;
+        }
+    } else if (buf[2] == 0x88) {
+        anti_collision(0x95, buf + 5);
+        memmove(uid, buf + 3, 7);
+        if (*len >= 7) {
+            *len = 7;
+            result = true;
+        }
+    }
+
+    pn5180_rf_off();
+
+    return result;
+}
+
+bool pn5180_poll_14443(uint8_t *uid, int *len)
+{
+    pn5180_reset();
+    pn5180_load_rf_config(0x0d, 0x8d);
+    pn5180_rf_on();
+
+    pn5180_clear_irq(0x0fffff);
+    pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8);
+    pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03);
+
+    uint8_t cmd[] = {0x26, 0x01, 0x00};
+    pn5180_send_data(cmd, 3, 0);
+
+    sleep_ms(1);
+
+    if ((pn5180_get_irq() & 0x4000) == 0) {
+        pn5180_rf_off();
+        return false;
+    }
+
+    while ((pn5180_get_irq() & 0x01) == 0) {
+        sleep_ms(1);
+    }
+
+    int idlen = pn5180_get_rx() & 0x1ff;
+
+    bool result = false;
+    if (idlen <= *len) {
+        *len = idlen;
+        pn5180_read_data(uid, idlen);
+        result = true;
+    }
+
+    pn5180_rf_off();
+    
+    return result;
+}
+
+bool pn5180_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool from_cache)
+{
+    pn5180_reset();
+    pn5180_load_rf_config(0x08, 0x88);
+    pn5180_rf_on();
+
+    pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xffffffbf);
+    pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03);
+
+    uint8_t cmd[] = {0x06, 0x00, 0xff, 0xff, 0x01, 0x00};
+
+	pn5180_send_data(cmd, 6, 0x00);
+
+    sleep_ms(1);
+
+    uint8_t out[20] = {0};
+    pn5180_read_data(out, 20);
+
+    bool result = false;
+    if (out[1] == 0x01) {
+        result = true;
+        memmove(uid, out + 2, 8);
+        memmove(pmm, out + 10, 8);
+        memmove(syscode, out + 18, 2);
+        result = true;
+    }
+
+    pn5180_rf_off();
+
+    return result;
+}
+
+
 void pn5180_print_rf_cfg()
 {
     printf("RF_CONTROL_TX_CLK: %08lx\n", pn5180_read_reg(0x21));
