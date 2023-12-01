@@ -64,17 +64,28 @@ void pn5180_init(spi_inst_t *port, uint8_t rx, uint8_t sck, uint8_t tx,
     spi.busy = busy;
 }
 
+static pn5180_wait_loop_t wait_loop = NULL;
+
 static inline void wait_not_busy()
 {
+    int count = 0;
     while (gpio_get(spi.busy)) {
         sleep_us(10);
+        count += 10;
+        if ((count > 1000) && wait_loop) {
+            wait_loop();
+            count = 0;
+        }
     }
 }
 
-static inline void wait_until_busy()
+static void sleep_ms_with_loop(uint32_t ms)
 {
-    while (!gpio_get(spi.busy)) {
-        sleep_us(10);
+    for (uint32_t i = 0; i < ms; i++) {
+        sleep_ms(1);
+        if (wait_loop) {
+            wait_loop();
+        }
     }
 }
 
@@ -82,16 +93,14 @@ static inline void begin_transmission()
 {
     wait_not_busy();
     gpio_put(spi.nss, 0);
-    sleep_ms(10);
+    sleep_ms_with_loop(2);
 }
 
 static inline void end_transmission()
 {
     gpio_put(spi.nss, 1);
-    sleep_ms(10);
+    sleep_ms_with_loop(3);
 }
-
-static pn5180_wait_loop_t wait_loop = NULL;
 
 void pn5180_set_wait_loop(pn5180_wait_loop_t loop)
 {
@@ -191,6 +200,9 @@ void pn5180_reset()
     gpio_put(spi.rst, 1);
     sleep_ms(1);
     while ((pn5180_get_irq() & (1 << 2)) == 0) {
+        if (wait_loop) {
+            wait_loop();
+        }
         sleep_ms(1);
     }
 
@@ -212,24 +224,31 @@ uint32_t pn5180_get_rx()
     return pn5180_read_reg(PN5180_REG_RX_STATUS);
 }
 
-static void tx_config(uint32_t cfg)
+static void rf_crc_off()
 {
-    pn5180_write_reg(PN5180_REG_CRC_TX_CONFIG, cfg);
-    pn5180_write_reg(PN5180_REG_CRC_RX_CONFIG, cfg);
+    pn5180_and_reg(PN5180_REG_CRC_TX_CONFIG, 0xfffffffe);
+    pn5180_and_reg(PN5180_REG_CRC_RX_CONFIG, 0xfffffffe);
 }
 
-static void anti_collision(uint8_t cmd, uint8_t uid[6])
+static void rf_crc_on()
 {
-    tx_config(0xfffffffe);
-    uint8_t buf[7] = { cmd, 0x20 };
-    pn5180_send_data(buf, 2, 0);
-    pn5180_read_data(buf + 2, 5); // uid
-    memmove(uid, buf + 2, 5);
+    pn5180_or_reg(PN5180_REG_CRC_TX_CONFIG, 0x01);
+    pn5180_or_reg(PN5180_REG_CRC_RX_CONFIG, 0x01);
+}
 
-    tx_config(0x01);
-    buf[1] = 0x70;
-    pn5180_send_data(buf, 7, 0);
-    pn5180_read_data(uid + 5, 1); // sak
+static void anti_collision(uint8_t code, uint8_t uid[5], uint8_t *sak)
+{
+    rf_crc_off();
+    uint8_t cmd[7] = { code, 0x20 };
+    pn5180_send_data(cmd, 2, 0);
+    pn5180_read_data(cmd + 2, 5); // uid
+    memmove(uid, cmd + 2, 5);
+
+    rf_crc_on();
+    cmd[0] = code;
+    cmd[1] = 0x70;
+    pn5180_send_data(cmd, 7, 0);
+    pn5180_read_data(sak, 1); // sak
 }
 
 bool pn5180_poll_mifare(uint8_t *uid, int *len)
@@ -238,6 +257,7 @@ bool pn5180_poll_mifare(uint8_t *uid, int *len)
     pn5180_load_rf_config(0x00, 0x80);
     pn5180_rf_on();
 
+    rf_crc_off();
 
     pn5180_and_reg(PN5180_REG_IRQ_CLEAR, 0x000fffff);
     pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8);
@@ -245,21 +265,24 @@ bool pn5180_poll_mifare(uint8_t *uid, int *len)
 
     uint8_t cmd[1] = {0x26};
     pn5180_send_data(cmd, 1, 7);
-    uint8_t buf[32] = {0};
+    uint8_t buf[5] = {0};
     pn5180_read_data(buf, 2);
 
-    anti_collision(0x93, buf + 2);
+    uint8_t sak;
+
+    anti_collision(0x93, buf, &sak);
 
     bool result = false;
-    if ((buf[2] & 0x04) == 0) {
+    if ((sak & 0x04) == 0) {
         if (*len >= 4) {
             *len = 4;
-            memmove(len, buf + 2, 4);
+            memmove(uid, buf, 4);
             result = true;
         }
-    } else if (buf[2] == 0x88) {
-        anti_collision(0x95, buf + 5);
-        memmove(uid, buf + 3, 7);
+    } else if (sak == 0x88) {
+        memmove(uid, buf + 1, 3);
+        anti_collision(0x95, buf + 5, &sak);
+        memmove(uid + 3, buf, 4);
         if (*len >= 7) {
             *len = 7;
             result = true;
@@ -268,44 +291,6 @@ bool pn5180_poll_mifare(uint8_t *uid, int *len)
 
     pn5180_rf_off();
 
-    return result;
-}
-
-bool pn5180_poll_14443(uint8_t *uid, int *len)
-{
-    pn5180_reset();
-    pn5180_load_rf_config(0x0d, 0x8d);
-    pn5180_rf_on();
-
-    pn5180_clear_irq(0x0fffff);
-    pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8);
-    pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03);
-
-    uint8_t cmd[] = {0x26, 0x01, 0x00};
-    pn5180_send_data(cmd, 3, 0);
-
-    sleep_ms(1);
-
-    if ((pn5180_get_irq() & 0x4000) == 0) {
-        pn5180_rf_off();
-        return false;
-    }
-
-    while ((pn5180_get_irq() & 0x01) == 0) {
-        sleep_ms(1);
-    }
-
-    int idlen = pn5180_get_rx() & 0x1ff;
-
-    bool result = false;
-    if (idlen <= *len) {
-        *len = idlen;
-        pn5180_read_data(uid, idlen);
-        result = true;
-    }
-
-    pn5180_rf_off();
-    
     return result;
 }
 
@@ -341,6 +326,46 @@ bool pn5180_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool
     return result;
 }
 
+bool pn5180_poll_vicinity(uint8_t *uid, int *len)
+{
+    pn5180_reset();
+    pn5180_load_rf_config(0x0d, 0x8d);
+    pn5180_rf_on();
+
+    pn5180_clear_irq(0x0fffff);
+    pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8);
+    pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03);
+
+    uint8_t cmd[] = {0x26, 0x01, 0x00};
+    pn5180_send_data(cmd, 3, 0);
+
+    sleep_ms(1);
+
+    if ((pn5180_get_irq() & 0x4000) == 0) {
+        pn5180_rf_off();
+        return false;
+    }
+
+    while ((pn5180_get_irq() & 0x01) == 0) {
+        if (wait_loop) {
+            wait_loop();
+        }
+        sleep_ms(1);
+    }
+
+    int idlen = pn5180_get_rx() & 0x1ff;
+
+    bool result = false;
+    if (idlen <= *len) {
+        *len = idlen;
+        pn5180_read_data(uid, idlen);
+        result = true;
+    }
+
+    pn5180_rf_off();
+    
+    return result;
+}
 
 void pn5180_print_rf_cfg()
 {

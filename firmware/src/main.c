@@ -116,14 +116,27 @@ static void core1_loop()
     }
 }
 
+static enum {
+    NFC_UNKNOWN,
+    NFC_PN532,
+    NFC_PN5180
+} nfc_module = NFC_PN5180;
+
 void detect_card()
 {
-    pn532_config_sam();
+    if (nfc_module == NFC_PN532) {
+        pn532_config_sam();
+    }
 
     uint8_t id[20] = { 0 };
 
     int len = sizeof(id);
-    bool mifare = pn532_poll_mifare(id, &len);
+    bool mifare = false;
+    if (nfc_module == NFC_PN532) {
+        mifare = pn532_poll_mifare(id, &len);
+    } else if (nfc_module == NFC_PN5180) {
+        mifare = pn5180_poll_mifare(id, &len);
+    }
     if (mifare) {
         hid_cardio.current[0] = REPORT_ID_EAMU;
         hid_cardio.current[1] = 0xe0;
@@ -137,9 +150,25 @@ void detect_card()
         return;
     }
 
-    bool felica = pn532_poll_felica(id, id + 8, id + 16, false);
+    bool felica = false;
+    if (nfc_module == NFC_PN532) {
+        felica = pn532_poll_felica(id, id + 8, id + 16, false);
+    } else if (nfc_module == NFC_PN5180) {
+        felica = pn5180_poll_felica(id, id + 8, id + 16, false);
+    }
     if (felica) {
         hid_cardio.current[0] = REPORT_ID_FELICA;
+        memcpy(hid_cardio.current + 1, id, 8);
+        return;
+    }
+
+    bool vicinity = false;
+    if (nfc_module == NFC_PN5180) {
+        vicinity = pn5180_poll_vicinity(id, &len);
+    }
+
+    if (vicinity) {
+        hid_cardio.current[0] = REPORT_ID_EAMU;
         memcpy(hid_cardio.current + 1, id, 8);
         return;
     }
@@ -215,6 +244,7 @@ void init()
     pn532_set_wait_loop(wait_loop);
 
     pn5180_init(spi0, 16, 18, 19, 27, 17, 26);
+    pn5180_set_wait_loop(wait_loop);
 
     aime_init(cdc_aime_putc);
 
