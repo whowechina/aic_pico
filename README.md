@@ -6,23 +6,23 @@
 Features:
 * It's small, smallest as far as I know.
 * Many variants
-  * AIC Pico
+  * AIC Pico (PN532)
+  * AIC Pico (PN5180, no housing)
   * AIC Key PN532
-  * AIC Key PN5180 (see notes 1 below)
-  * AIC Pico Lib (see notes 2 below)
+  * AIC Key PN5180
+  * AIC Pico Lib (see notes 1 below)
 * Easy to make.
 * Sega AIME I/O and Spicetools CardIO emulation.
 * Command line for configurations.
 * Supported card:
   * Felica (Amusement IC)
   * ISO/IEC 14443 Type A (BanaPassport, Mifare, Amiibo, some IC tags, some ID tags, etc.)
-  * To be updated.
+  * ISO/IEC 15693 (Old E-Amusement cards), only with PN5180
 * Emulates virtual AIC from any Mifare cards.
 * All source files open.
 
 Notes:
-1. Be patient, I'm working on PN5180 firmware. It may take quite a while.
-2. So one can integrate "AIC Pico" into a Raspberry Pi Pico based controller. Will be ready when I finish AIC Key. Example here:  
+1. So one can integrate "AIC Pico" into a Raspberry Pi Pico based controller. Will be ready when I finish AIC Key. Example here:  
   <img src="doc/aic_pico_lib.jpg" width="25%">
 
 Thanks to many respectful guys/companies who made their tools or materials free or open source (KiCad, OnShape, InkScape, Fritzing, Raspberry things), ChatGPT and GitHub Copilot helped a lot as well.
@@ -160,10 +160,12 @@ You may use some instant adhesive to fix stickers.
 
 ## Firmware
 * UF2 file is in `Production\Firmware` folder.
-* For the new build, hold the BOOTSEL button while connect the USB to a PC, there will be a disk named "RPI-RP2" showed up. Drag the UF2 firmware binary file into it. That's it.
-* It has a command line to do configuration. You can use this Web Serial Terminal to connect to the main USB serial port of the board. (Note: "?" is for help)  
+* There're several ways to boot into firmware update mode:
+  * For the new build, hold the BOOTSEL button while connect the USB to a PC, there will be a disk named "RPI-RP2" showed up. Drag the UF2 firmware binary file into it. That's it.
+  * If there's already a working firmware, you can use "update" command in command line to update the firmware in the future, so you don't need to open the housing.
+  * If there's already a working firmware later than 2023-12-02, you can also press "00" key and "·" key (or directly ground the GPIO10 and the GPIO11) at the same time when plug in the USB cable, it will boot into firmware update mode.
+* You can use this Web Serial Terminal to connect to the main USB serial port of the board which is the command line interface. (Note: "?" is for help)  
   https://googlechromelabs.github.io/serial-terminal/
-* You can use "update" command in command line to update the firmware in the future, so you don't need to open the housing.
 * Spicetools cardio (Card I/O) HID is supported;
 * SEGA AIME protocol is supported on a second serial port.
 * Some command line commands:
