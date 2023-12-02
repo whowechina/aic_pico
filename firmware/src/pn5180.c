@@ -37,7 +37,7 @@ static struct {
     uint8_t busy;
 } spi;
 
-void pn5180_init(spi_inst_t *port, uint8_t rx, uint8_t sck, uint8_t tx,
+bool pn5180_init(spi_inst_t *port, uint8_t rx, uint8_t sck, uint8_t tx,
                  uint8_t rst, uint8_t nss, uint8_t busy)
 {
     spi_init(port, 2000 * 1000);
@@ -62,6 +62,10 @@ void pn5180_init(spi_inst_t *port, uint8_t rx, uint8_t sck, uint8_t tx,
     spi.rst = rst;
     spi.nss = nss;
     spi.busy = busy;
+
+    uint8_t buf[4];
+    pn5180_read_eeprom(0x10, buf, sizeof(buf));
+    return (buf[0] >= 3) && (buf[0] <= 10) && (buf[2] >=3) && (buf[2] <= 10);
 }
 
 static pn5180_wait_loop_t wait_loop = NULL;

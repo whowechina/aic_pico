@@ -237,11 +237,13 @@ void init()
     save_init(0xca340a1c, &core1_io_lock);
 
 
-    pn532_init(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ);
-    pn532_set_wait_loop(wait_loop);
-
-    pn5180_init(spi0, 16, 18, 19, 27, 17, 26);
-    pn5180_set_wait_loop(wait_loop);
+    if (pn532_init(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ)) {
+        nfc_module = NFC_PN532;
+        pn532_set_wait_loop(wait_loop);
+    } else if (pn5180_init(spi0, 16, 18, 19, 27, 17, 26)) {
+        nfc_module = NFC_PN5180;
+        pn5180_set_wait_loop(wait_loop);
+    }
 
     aime_init(cdc_aime_putc);
 

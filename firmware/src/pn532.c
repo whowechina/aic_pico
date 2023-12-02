@@ -26,7 +26,7 @@
 
 static i2c_inst_t *i2c_port = i2c0;
 
-void pn532_init(i2c_inst_t *i2c, uint8_t scl, uint8_t sda, uint32_t freq)
+bool pn532_init(i2c_inst_t *i2c, uint8_t scl, uint8_t sda, uint32_t freq)
 {
     i2c_init(i2c_port, freq);
     gpio_set_function(scl, GPIO_FUNC_I2C);
@@ -34,6 +34,9 @@ void pn532_init(i2c_inst_t *i2c, uint8_t scl, uint8_t sda, uint32_t freq)
     gpio_pull_up(scl);
     gpio_pull_up(sda);
     i2c_port = i2c;
+
+    uint32_t ver = pn532_firmware_ver();
+    return (ver > 0) && (ver < 0x7fffffff);
 }
 
 static pn532_wait_loop_t wait_loop = NULL;
@@ -261,7 +264,7 @@ uint32_t pn532_firmware_ver()
     }
 
     uint8_t ver[4];
-    int result = pn532_read_response(0x4a, ver, sizeof(ver));
+    int result = pn532_read_response(0x02, ver, sizeof(ver));
     if (result < 4) {
         return 0;
     }
