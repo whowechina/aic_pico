@@ -255,7 +255,7 @@ static void anti_collision(uint8_t code, uint8_t uid[5], uint8_t *sak)
     pn5180_read_data(sak, 1); // sak
 }
 
-bool pn5180_poll_mifare(uint8_t *uid, int *len)
+bool pn5180_poll_mifare(uint8_t uid[7], int *len)
 {
     pn5180_reset();
     pn5180_load_rf_config(0x00, 0x80);
@@ -278,19 +278,15 @@ bool pn5180_poll_mifare(uint8_t *uid, int *len)
 
     bool result = false;
     if ((sak & 0x04) == 0) {
-        if (*len >= 4) {
-            *len = 4;
-            memmove(uid, buf, 4);
-            result = true;
-        }
+        memmove(uid, buf, 4);
+        *len = 4;
+        result = true;
     } else if (sak == 0x88) {
         memmove(uid, buf + 1, 3);
         anti_collision(0x95, buf + 5, &sak);
         memmove(uid + 3, buf, 4);
-        if (*len >= 7) {
-            *len = 7;
-            result = true;
-        }
+        *len = 7;
+        result = true;
     }
 
     pn5180_rf_off();
@@ -330,7 +326,7 @@ bool pn5180_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool
     return result;
 }
 
-bool pn5180_poll_vicinity(uint8_t *uid, int *len)
+bool pn5180_poll_vicinity(uint8_t uid[8])
 {
     pn5180_reset();
     pn5180_load_rf_config(0x0d, 0x8d);
@@ -357,12 +353,13 @@ bool pn5180_poll_vicinity(uint8_t *uid, int *len)
         sleep_ms(1);
     }
 
-    int idlen = pn5180_get_rx() & 0x1ff;
+    int len = pn5180_get_rx() & 0x1ff;
 
     bool result = false;
-    if (idlen <= *len) {
-        *len = idlen;
-        pn5180_read_data(uid, idlen);
+    if (len == 10) {
+        uint8_t id[10];
+        pn5180_read_data(id, len);
+        memmove(uid, id + 2, 8);
         result = true;
     }
 

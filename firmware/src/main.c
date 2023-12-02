@@ -164,7 +164,7 @@ void detect_card()
 
     bool vicinity = false;
     if (nfc_module == NFC_PN5180) {
-        vicinity = pn5180_poll_vicinity(id, &len);
+        vicinity = pn5180_poll_vicinity(id);
     }
 
     if (vicinity) {
