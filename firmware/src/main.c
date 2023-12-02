@@ -227,9 +227,6 @@ static void core0_loop()
 
 void init()
 {
-    sleep_ms(50);
-    set_sys_clock_khz(150000, true);
-    board_init();
     tusb_init();
     stdio_init_all();
     light_init();
@@ -254,8 +251,42 @@ void init()
     commands_init();
 }
 
+/* if certain key pressed when booting, enter update mode */
+static void update_check()
+{
+    const uint8_t pins[] = { 10, 11 }; // keypad 00 and *
+    bool all_pressed = true;
+    for (int i = 0; i < sizeof(pins); i++) {
+        uint8_t gpio = pins[i];
+        gpio_init(gpio);
+        gpio_set_function(gpio, GPIO_FUNC_SIO);
+        gpio_set_dir(gpio, GPIO_IN);
+        gpio_pull_up(gpio);
+        sleep_ms(1);
+        if (gpio_get(gpio)) {
+            all_pressed = false;
+            break;
+        }
+    }
+
+    if (all_pressed) {
+        sleep_ms(100);
+        reset_usb_boot(0, 2);
+        return;
+    }
+}
+
+static void sys_init()
+{
+    sleep_ms(50);
+    set_sys_clock_khz(150000, true);
+    board_init();
+}
+
 int main(void)
 {
+    sys_init();
+    update_check();
     init();
     multicore_launch_core1(core1_loop);
     core0_loop();
