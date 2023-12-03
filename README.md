@@ -15,24 +15,23 @@ Features:
 * Sega AIME I/O and Spicetools CardIO emulation.
 * Command line for configurations.
 * Supported card:
-  * Felica (Amusement IC)
+  * FeliCa (Amusement IC)
   * ISO/IEC 14443 Type A (BanaPassport, Mifare, Amiibo, some IC tags, some ID tags, etc.)
-  * ISO/IEC 15693 (Old E-Amusement cards), only with PN5180
+  * ISO/IEC 15693 (Old E-Amusement cards), only with PN5180 (see notes 2 below)
 * Emulates virtual AIC from any Mifare cards.
 * All source files open.
 
 Notes:
-1. So one can integrate "AIC Pico" into a Raspberry Pi Pico based controller. Will be ready when I finish AIC Key. Example here:  
+1. So one can integrate "AIC Pico" into a Raspberry Pi Pico based controller. Will be ready later.  
   <img src="doc/aic_pico_lib.jpg" width="25%">
+2. PN532 supports only 14443A (Mifare) and FeliCa cards, while PN5180 also supports 15693 cards (old e-Amusement cards).
 
+## Thanks
 Thanks to many respectful guys/companies who made their tools or materials free or open source (KiCad, OnShape, InkScape, Fritzing, Raspberry things), ChatGPT and GitHub Copilot helped a lot as well.
 
-And thanks to community developers that inspired me and helped me: CrazyRedMachine (https://github.com/CrazyRedMachine) for the Spicetools Card IO part, Sucareto's AIME Reader (https://github.com/Sucareto/Arduino-Aime-Reader) for the AIME protocol part.
+And thanks to community developers and projects that helped me a lot: CrazyRedMachine (https://github.com/CrazyRedMachine) for the Spicetools Card IO part, Sucareto's AIME Reader (https://github.com/Sucareto/Arduino-Aime-Reader) for the AIME protocol part, .NET nanoFramework (https://github.com/nanoframework) for the PN5180 part.
 
-## Notes
-Check out my other cool projects, they're all great, I promise.
-https://github.com/whowechina/
-
+## Warning
 This project:  
 * Heavily depends on 3D printing, a Bambu AMS system helps a lot.
 * Requires skills to solder tiny components and wires.
@@ -40,10 +39,13 @@ This project:
 ## **Disclaimer** ##
 I made this project in my personal time with no financial benefit or sponsorship. I will continue to improve the project. I have done my best to ensure that everything is accurate and functional, there's always a chance that mistakes may occur. I cannot be held responsible for any loss of your time or money that may result from using this open source project. Thank you for your understanding.
 
+Check out my other cool projects, they're all great, I promise.
+https://github.com/whowechina/
+
 ## About the License
 It's CC-NC. So DIY for yourself and for your friend, don't make money from it.
 
-## BUILDING "AIC Pico"
+## Building "AIC Pico (PN532)"
 Seriously, this is the easiest one among all my Pico series projects.
 ### Components
 * 1x Rasberry Pi Pico or Pico W (clones work too).  
@@ -68,13 +70,15 @@ For the top part, choose one that fits your need.
 * **aic_pico_top_tall_ams.3mf**  
   Taller top part, for multi-color printing.
 
+### Wiring
+<img src="doc/pico_pn532_wiring.png" width="70%">
+
 ### Assembly
 I'll let these images do the talk.
 
-<img src="doc/pico_wiring.png" width="80%">
 <img src="doc/pico_assemble_1.jpg" width="40%">
-<img src="doc/pico_assemble_2.jpg" width="40%">
-<img src="doc/pico_assemble_3.jpg" width="40%">
+<img src="doc/pico_assemble_2.jpg" width="34%">
+<img src="doc/pico_assemble_3.jpg" width="37%">
 <img src="doc/pico_assemble_4.jpg" width="40%">
 
 #### Notes
@@ -83,14 +87,22 @@ I'll let these images do the talk.
 * The mode switch on PN532 must be in "I2C" mode, picture below shows the correct settings.  
   <img src="doc/pn532_i2c.jpg" width="40%">
 
-## BUILDING "AIC Key"
+## Building "AIC Key (PN5180)"
+If you opt for the PN5180 NFC module, note that the housing design is up to you. Ensure it fits your design or you can use it without a case. Be prepared to solder more wires compared to the PN532 version.
+
+### Wiring
+<img src="doc/pico_pn5180_wiring.png" width="70%">
+
+Note: WS2812B LED Strip wiring is the same as the PN532 version.
+
+## Building "AIC Key"
 AIC Key is a variation of the AIC Pico - a keypad is integrated. Much more difficult to build than the "AIC Pico" as it has many tiny components to solder.
 
 ### Components
 * 1x Rasberry Pi Pico or Pico W (clones work too).  
   https://www.raspberrypi.com/products/raspberry-pi-pico
 
-* For NFC modules, you have 2 options:
+* For NFC modules, choose one of the following options:
   * 1x PN532 Module (the red square board version, cheap clones work too).  
     https://www.elechouse.com/product/pn532-nfc-rfid-module-v4/
   * 1x PN5180 Module (the blue rectangle version, cheap clones work too). PN5180 supports ISO/IEC 15693 (old e-amusement cards).  
