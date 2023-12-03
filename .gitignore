@@ -1,0 +1,4 @@
+Production/PCB/*/*
+firmware/*.uf2
+**/*-backups/*.zip
+.vscode
