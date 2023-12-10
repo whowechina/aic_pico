@@ -87,7 +87,7 @@ I'll let these images do the talk.
 * The mode switch on PN532 must be in "I2C" mode, picture below shows the correct settings.  
   <img src="doc/pn532_i2c.jpg" width="40%">
 
-## Building "AIC Key (PN5180)"
+## Building "AIC Pico (PN5180)"
 If you opt for the PN5180 NFC module, note that the housing design is up to you. Ensure it fits your design or you can use it without a case. Be prepared to solder more wires compared to the PN532 version.
 
 ### Wiring
