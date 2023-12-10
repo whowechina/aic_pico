@@ -1,4 +1,4 @@
-22382062067145069
+22383765546854021
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -92359,6 +92359,13 @@ WS2812B-1615
 4
 aic_pico
 WS2812B-2835
+
+
+0
+4
+4
+aic_pico
+WS2812C-2020
 
 
 0
