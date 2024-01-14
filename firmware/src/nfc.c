@@ -126,3 +126,43 @@ nfc_card_t nfc_detect_card()
 
     return card;
 }
+
+bool nfc_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t *key)
+{
+    if (nfc_module == NFC_MODULE_PN532) {
+        return pn532_mifare_auth(uid, block_id, key_id, key);
+    } else if (nfc_module == NFC_MODULE_PN5180) {
+        return false;//pn5180_mifare_auth(uid, block_id, key_id, key);
+    }
+    return false;
+}
+
+bool nfc_mifare_read(uint8_t block_id, uint8_t block_data[16])
+{
+    if (nfc_module == NFC_MODULE_PN532) {
+        return pn532_mifare_read(block_id, block_data);
+    } else if (nfc_module == NFC_MODULE_PN5180) {
+        return false; // pn5180_mifare_read(block_id, block_data);
+    }
+    return false;
+}
+
+bool nfc_felica_read_wo_encrypt(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16])
+{
+    if (nfc_module == NFC_MODULE_PN532) {
+        return pn532_felica_read_wo_encrypt(svc_code, block_id, block_data);
+    } else if (nfc_module == NFC_MODULE_PN5180) {
+        return false; //pn5180_felica_read_wo_encrypt(svc_code, block_id, block_data);
+    }
+    return false;
+}
+
+bool nfc_felica_write_wo_encrypt(uint16_t svc_code, uint16_t block_id, const uint8_t block_data[16])
+{
+    if (nfc_module == NFC_MODULE_PN532) {
+        return pn532_felica_write_wo_encrypt(svc_code, block_id, block_data);
+    } else if (nfc_module == NFC_MODULE_PN5180) {
+        return false; //pn5180_felica_write_wo_encrypt(svc_code, block_id, block_data);
+    }
+    return false;
+}
