@@ -281,12 +281,14 @@ bool pn5180_poll_mifare(uint8_t uid[7], int *len)
         memmove(uid, buf, 4);
         *len = 4;
         result = true;
-    } else if (sak == 0x88) {
+    } else if (buf[0] == 0x88) {
         memmove(uid, buf + 1, 3);
-        anti_collision(0x95, buf + 5, &sak);
-        memmove(uid + 3, buf, 4);
-        *len = 7;
-        result = true;
+        anti_collision(0x95, buf, &sak);
+        if (sak != 0xff) {
+            memmove(uid + 3, buf, 4);
+            *len = 7;
+            result = true;
+        }
     }
 
     pn5180_rf_off();

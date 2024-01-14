@@ -306,7 +306,7 @@ bool pn532_set_rf_field(uint8_t auto_rf, uint8_t on_off)
 
 static uint8_t readbuf[255];
 
-bool pn532_poll_mifare(uint8_t *uid, int *len)
+bool pn532_poll_mifare(uint8_t uid[7], int *len)
 {
     uint8_t param[] = {0x01, 0x00};
     int ret = pn532_write_command(0x4a, param, sizeof(param));
@@ -319,46 +319,13 @@ bool pn532_poll_mifare(uint8_t *uid, int *len)
         return false;
     }
 
-    if (result != readbuf[5] + 6) {
+    int idlen = readbuf[5];
+    if ((idlen > 8) || (result != idlen + 6)) {
         return false;
     }
 
-    if (*len < readbuf[5]) {
-        return false;
-    }
-
-    memcpy(uid, readbuf + 6, readbuf[5]);
-    *len = readbuf[5];
-
-    return true;
-}
-
-bool pn532_poll_14443b(uint8_t *uid, int *len)
-{
-    uint8_t param[] = {0x01, 0x03, 0x00};
-    int ret = pn532_write_command(0x4a, param, sizeof(param));
-    if (ret < 0) {
-        return false;
-    }
-
-    int result = pn532_read_response(0x4a, readbuf, sizeof(readbuf));
-    if (result < 1 || readbuf[0] != 1) {
-        printf("result: %d\n", result);
-        return false;
-    }
-
-    if (result != readbuf[5] + 6) {
-        printf("result: %d %d\n", result, readbuf[5]);
-        return false;
-    }
-
-    if (*len < readbuf[5]) {
-        printf("result: %d %d\n", result, readbuf[5]);
-        return false;
-    }
-
-    memcpy(uid, readbuf + 6, readbuf[5]);
-    *len = readbuf[5];
+    memcpy(uid, readbuf + 6, idlen);
+    *len = idlen;
 
     return true;
 }

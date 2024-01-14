@@ -30,8 +30,7 @@
 #include "light.h"
 #include "keypad.h"
 
-#include "pn532.h"
-#include "pn5180.h"
+#include "nfc.h"
 
 #include "aime.h"
 
@@ -59,14 +58,6 @@ void report_hid_cardio()
         tud_hid_n_report(0x00, hid_cardio.current[0], hid_cardio.current + 1, 8);
         memcpy(hid_cardio.reported, hid_cardio.current, 9);
         hid_cardio.report_time = now;
-
-        if (memcmp(hid_cardio.current, "\0\0\0\0\0\0\0\0\0", 9) != 0) {
-            printf("Card:");
-            for (int i = 0; i < 9; i++) {
-                printf(" %02x", hid_cardio.current[i]);
-            }
-            printf("\n");
-        }
     }
 }
 
@@ -116,64 +107,47 @@ static void core1_loop()
     }
 }
 
-static enum {
-    NFC_UNKNOWN,
-    NFC_PN532,
-    NFC_PN5180
-} nfc_module = NFC_PN5180;
-
 void detect_card()
 {
-    if (nfc_module == NFC_PN532) {
-        pn532_config_sam();
+    static nfc_card_t old_card = { 0 };
+
+    nfc_card_t card = nfc_detect_card();
+    switch (card.card_type) {
+        case NFC_CARD_MIFARE:
+            hid_cardio.current[0] = REPORT_ID_EAMU;
+            hid_cardio.current[1] = 0xe0;
+            hid_cardio.current[2] = 0x04;
+            if (card.len == 4) {
+                memcpy(hid_cardio.current + 3, card.uid, 4);
+                memcpy(hid_cardio.current + 7, card.uid, 2);
+            } else if (card.len == 7) {
+                memcpy(hid_cardio.current + 3, card.uid + 1, 6);
+            }
+            break;
+        case NFC_CARD_FELICA:
+            hid_cardio.current[0] = REPORT_ID_FELICA;
+            memcpy(hid_cardio.current + 1, card.uid, 8);
+            break;
+        case NFC_CARD_VICINITY:
+            hid_cardio.current[0] = REPORT_ID_EAMU;
+            memcpy(hid_cardio.current + 1, card.uid, 8);
+            break;
+        default:
+            memset(hid_cardio.current, 0, 9);
+    }
+    if (memcmp(&old_card, &card, sizeof(card)) == 0) {
+        return;
     }
 
-    uint8_t id[20] = { 0 };
-
-    int len = sizeof(id);
-    bool mifare = false;
-    if (nfc_module == NFC_PN532) {
-        mifare = pn532_poll_mifare(id, &len);
-    } else if (nfc_module == NFC_PN5180) {
-        mifare = pn5180_poll_mifare(id, &len);
-    }
-    if (mifare) {
-        hid_cardio.current[0] = REPORT_ID_EAMU;
-        hid_cardio.current[1] = 0xe0;
-        hid_cardio.current[2] = 0x04;
-        if (len == 4) {
-            memcpy(hid_cardio.current + 3, id, 4);
-            memcpy(hid_cardio.current + 7, id, 2);
-        } else if (len == 7) {
-            memcpy(hid_cardio.current + 3, id + 1, 6);
+    if (card.card_type != NFC_CARD_NULL) {
+        const char *card_type_str[3] = { "MIFARE", "FeliCa", "15693" };
+        printf("\n%s:", card_type_str[card.card_type - 1]);
+        for (int i = 0; i < card.len; i++) {
+            printf(" %02x", hid_cardio.current[i]);
         }
-        return;
     }
 
-    bool felica = false;
-    if (nfc_module == NFC_PN532) {
-        felica = pn532_poll_felica(id, id + 8, id + 16, false);
-    } else if (nfc_module == NFC_PN5180) {
-        felica = pn5180_poll_felica(id, id + 8, id + 16, false);
-    }
-    if (felica) {
-        hid_cardio.current[0] = REPORT_ID_FELICA;
-        memcpy(hid_cardio.current + 1, id, 8);
-        return;
-    }
-
-    bool vicinity = false;
-    if (nfc_module == NFC_PN5180) {
-        vicinity = pn5180_poll_vicinity(id);
-    }
-
-    if (vicinity) {
-        hid_cardio.current[0] = REPORT_ID_EAMU;
-        memcpy(hid_cardio.current + 1, id, 8);
-        return;
-    }
-
-    memset(hid_cardio.current, 0, 9);
+    old_card = card;
 }
 
 const int aime_intf = 1;
@@ -236,14 +210,7 @@ void init()
     mutex_init(&core1_io_lock);
     save_init(0xca340a1c, &core1_io_lock);
 
-
-    if (pn532_init(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ)) {
-        nfc_module = NFC_PN532;
-        pn532_set_wait_loop(wait_loop);
-    } else if (pn5180_init(spi0, 16, 18, 19, 27, 17, 26)) {
-        nfc_module = NFC_PN5180;
-        pn5180_set_wait_loop(wait_loop);
-    }
+    nfc_init(wait_loop);
 
     aime_init(cdc_aime_putc);
 

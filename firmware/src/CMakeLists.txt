@@ -5,7 +5,7 @@ function(make_firmware board board_def)
     pico_sdk_init()
     add_executable(${board}
         main.c save.c config.c commands.c light.c keypad.c
-        aime.c cli.c pn532.c pn5180.c
+        aime.c cli.c nfc.c pn532.c pn5180.c
         usb_descriptors.c)
     target_compile_definitions(${board} PUBLIC ${board_def})
     pico_enable_stdio_usb(${board} 1)
