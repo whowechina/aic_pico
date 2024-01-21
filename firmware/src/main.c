@@ -146,7 +146,7 @@ void detect_card()
         const char *card_type_str[3] = { "MIFARE", "FeliCa", "15693" };
         printf("\n%s:", card_type_str[card.card_type - 1]);
         for (int i = 0; i < card.len; i++) {
-            printf(" %02x", hid_cardio.current[i]);
+            printf(" %02x", hid_cardio.current[i + 1]);
         }
     }
 
