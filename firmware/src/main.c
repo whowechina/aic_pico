@@ -130,7 +130,10 @@ void detect_card()
             break;
         case NFC_CARD_VICINITY:
             hid_cardio.current[0] = REPORT_ID_EAMU;
-            memcpy(hid_cardio.current + 1, card.uid, 8);
+            // 15693 cards store uid in reverse byte order
+            for (int i = 0; i < 8; i++) {
+                hid_cardio.current[i + 1] = card.uid[7 - i];
+            }
             break;
         default:
             memset(hid_cardio.current, 0, 9);
