@@ -130,10 +130,7 @@ void detect_card()
             break;
         case NFC_CARD_VICINITY:
             hid_cardio.current[0] = REPORT_ID_EAMU;
-            // 15693 cards store uid in reverse byte order
-            for (int i = 0; i < 8; i++) {
-                hid_cardio.current[i + 1] = card.uid[7 - i];
-            }
+            memcpy(hid_cardio.current + 1, card.uid, 8);
             break;
         default:
             memset(hid_cardio.current, 0, 9);
@@ -142,9 +139,8 @@ void detect_card()
         return;
     }
 
-    if (card.card_type != NFC_CARD_NULL) {
-        const char *card_type_str[3] = { "MIFARE", "FeliCa", "15693" };
-        printf("\n%s:", card_type_str[card.card_type - 1]);
+    if (card.card_type != NFC_CARD_NONE) {
+        printf("\n%s:", nfc_card_name(card.card_type));
         for (int i = 0; i < card.len; i++) {
             printf(" %02x", hid_cardio.current[i + 1]);
         }

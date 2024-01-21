@@ -10,11 +10,13 @@
 #include "hardware/i2c.h"
 
 typedef enum {
-    NFC_CARD_NULL = 0,
+    NFC_CARD_NONE = 0,
     NFC_CARD_MIFARE,
     NFC_CARD_FELICA,
     NFC_CARD_VICINITY,
 } nfc_card_type;
+
+const char *nfc_card_name(nfc_card_type card_type);
 
 typedef void (*nfc_wait_loop_t)();
 typedef struct {
@@ -30,6 +32,8 @@ typedef struct {
 
 void nfc_init(nfc_wait_loop_t loop);
 nfc_card_t nfc_detect_card();
+
+const char *nfc_module_name();
 
 bool nfc_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t *key);
 bool nfc_mifare_read(uint8_t block_id, uint8_t block_data[16]);

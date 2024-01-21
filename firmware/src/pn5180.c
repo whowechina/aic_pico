@@ -361,7 +361,9 @@ bool pn5180_poll_vicinity(uint8_t uid[8])
     if (len == 10) {
         uint8_t id[10];
         pn5180_read_data(id, len);
-        memmove(uid, id + 2, 8);
+        for (int i = 0; i < 8; i++) {
+            uid[i] = id[9 - i]; // 15693 stores id in reversed byte order
+        }
         result = true;
     }
 

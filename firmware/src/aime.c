@@ -305,8 +305,8 @@ static void cmd_detect_card()
             if (virtual_aic.enabled) {
                 printf("\nVirtual FeliCa from 15693.");
                 virtual_aic.active = true;
-                memcpy(virtual_aic.idm, "\x01\x01", 2);
-                memcpy(virtual_aic.idm + 2, card.uid, 6);
+                memcpy(virtual_aic.idm, card.uid, 8);
+                virtual_aic.idm[0] = 0x01;
                 fake_felica_card();
             }
             break;

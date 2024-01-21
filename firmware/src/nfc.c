@@ -21,6 +21,32 @@ static enum {
     NFC_MODULE_UNKNOWN,
 } nfc_module = NFC_MODULE_UNKNOWN;
 
+static const char *nfc_module_names[] = {
+    "PN532",
+    "PN5180",
+    "Unknown",
+};
+
+const char *nfc_module_name()
+{
+    return nfc_module_names[nfc_module];
+}
+
+static const char *nfc_card_names[] = {
+    "None",
+    "MIFARE",
+    "FeliCa",
+    "15693"
+};
+
+const char *nfc_card_name(nfc_card_type card_type)
+{
+    if (card_type >= sizeof(nfc_card_names) / sizeof(nfc_card_names[0])) {
+        return "Unknown";
+    }
+    return nfc_card_names[card_type];
+}
+
 static bool null_poll_mifare(uint8_t uid[7], int *len)
 {
     return false;
@@ -121,7 +147,7 @@ nfc_card_t nfc_detect_card()
     if (!nfc_detect_mifare(&card) &&
         !nfc_detect_felica(&card) &&
         !nfc_detect_vicinity(&card)) {
-        card.card_type = NFC_CARD_NULL;
+        card.card_type = NFC_CARD_NONE;
     }
 
     return card;
