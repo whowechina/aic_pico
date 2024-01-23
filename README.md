@@ -189,11 +189,17 @@ You may use some instant adhesive to fix stickers.
 * Given my limited hobby time, the firmware may not be fully tested. Please report any anomalies.
 
 ## Card ID Logic
-To support all kinds of different NFC cards or tags, card IDs are transformed with the following rules (apply to both AIME and CardIO).
-* 15693 => Original 8-byte UID
-* MIFARE (4-byte UID) => 0xE0 + UID + first 2 bytes of the UID
+To support many different NFC cards and tags, card IDs are transformed following these rules.
+### AIME
+* 15693 => 0x01 + last 7 bytes of UID
+* MIFARE (4-byte UID) => 0x01 + 0x01 + UID + first 2 bytes of the UID
+* MIFARE (7-byte UID) => 0x01 + UID
+* FeliCa => Original IDm
+### CardIO
+* 15693 => original UID
+* MIFARE (4-byte UID) => 0xE0 + 0x04 + UID + first 2 bytes of the UID
 * MIFARE (7-byte UID) => 0xE0 + UID
-* FeliCa => Original 8-byte IDm
+* FeliCa => Original IDm
 
 ## 3D Model Source File (Onshape)
 https://cad.onshape.com/documents/ca5497f91b2962105335e822/w/7b88022e98c02c60ad0c44a7/e/c3476efd13c08f807f3773fe?configuration=List_6ARRO0azcgmmHg%3D__&renderMode=1&rightPanel=configPanel&uiState=6558cabf9b380560ca5b554e
