@@ -77,11 +77,11 @@ For the top part, choose one that fits your need.
 * **aic_pico_top.stl**  
   Regular top part.
 * **aic_pico_top_ams.3mf**  
-  Regular top part, for multi-color printing.
+  Regular top part, multi-color printing.
 * **aic_pico_top_tall.stl**  
   Taller top part, so a thicker LED strip can fit.
 * **aic_pico_top_tall_ams.3mf**  
-  Taller top part, for multi-color printing.
+  Taller top part, multi-color printing.
 
 ### Wiring
 <img src="doc/pico_pn532_wiring.png" width="70%">
@@ -144,15 +144,15 @@ AIC Key is a variation of the AIC Pico - a keypad is integrated. Much more diffi
 
 ### 3D Prints
 * **aic_key_bottom.stl**  
-  The bottom part.
-* **aic_key_top.stl**  
-  Top part.
-* **aic_key_top_ams.3mf**  
-  Same top part, but for multi-color printing.
-* **aic_key_top_tall.stl**  
-  Top part for panasonic switches.
-* **aic_key_top_tall_ams.3mf**  
-  Top part for panasonic switches, for multi-color printing.
+  Bottom part.
+* **aic_key_top_surface.stl**  
+  Top part for Alps surface switches.
+* **aic_key_top_surface_ams.3mf**  
+  Top part for Alps surface switches, multi-color printing.
+* **aic_key_top_tact.stl.stl**  
+  Top part for Panasonic tact switches.
+* **aic_key_top_tact_ams.3mf**  
+  Top part for Panasonic tact switches, multi-color printing.
 
 ### Assembly
 Again I'll let these images do the talk. Remember to upload the firmware onto Raspberry Pi Pico before assemble.
