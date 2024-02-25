@@ -21,7 +21,7 @@
 #include "board_defs.h"
 #include "config.h"
 
-static uint32_t rgb_buf[16];
+static uint32_t rgb_buf[64];
 static uint8_t led_gpio[] = LED_DEF;
 #define RGB_NUM (sizeof(rgb_buf) / sizeof(rgb_buf[0]))
 #define LED_NUM (sizeof(led_gpio))

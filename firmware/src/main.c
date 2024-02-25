@@ -103,7 +103,7 @@ static void core1_loop()
             mutex_exit(&core1_io_lock);
         }
         cli_fps_count(1);
-        sleep_ms(1);
+        sleep_us(500);
     }
 }
 
