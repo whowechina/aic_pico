@@ -1,5 +1,5 @@
 # AIC Pico 和 AIC Key
-**AIC 卡读取器，AIME & Cardio 模拟器**
+  **AIC 卡读取器，AIME & Cardio 模拟器**
 
 [Click here for the English version of this guide.](README.md)
 

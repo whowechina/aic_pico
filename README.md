@@ -1,7 +1,7 @@
 # AIC Pico and AIC Key
-**Amusement IC Card Reader, AIME & Cardio Emulator**
+  **Amusement IC Card Reader, AIME & Cardio Emulator**
 
-[看不懂英文的，点这里切换到中文版](README_CN.md)
+[点这里可以切换到中文版](README_CN.md)
 
 <img src="doc/main.jpg" width="80%">
 
