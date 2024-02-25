@@ -3,7 +3,9 @@
 
 <img src="doc/main.jpg" width="80%">
 
-Features:
+[看不懂英文的，这里是中文版指南](README_CN.md)
+
+**Features:**
 * It's small, smallest as far as I know.
 * Many variants
   * AIC Pico (PN532)
@@ -21,7 +23,7 @@ Features:
 * Emulates virtual AIC from any Mifare cards.
 * All source files open.
 
-Notes:
+**Notes:**
 1. So one can integrate "AIC Pico" into a Raspberry Pi Pico based controller. Will be ready later.  
   <img src="doc/aic_pico_lib.jpg" width="25%">
 2. PN532 supports only 14443A (Mifare) and FeliCa cards, while PN5180 also supports 15693 cards (old e-Amusement cards).
@@ -52,7 +54,7 @@ You can also check out my other cool projects.
 ## **Disclaimer** ##
 I made this project in my personal time with no financial benefit or sponsorship. I will continue to improve the project. I have done my best to ensure that everything is accurate and functional, there's always a chance that mistakes may occur. I cannot be held responsible for any loss of your time or money that may result from using this open source project. Thank you for your understanding.
 
-Check out my other cool projects, they're all great, I promise.
+Check out my other projects at my GitHub homepage.
 https://github.com/whowechina/
 
 ## About the License
