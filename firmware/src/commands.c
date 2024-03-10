@@ -39,6 +39,7 @@ static void handle_display()
             aic_cfg->light.rgb ? "ON" : "OFF",
             aic_cfg->light.led ? "ON" : "OFF");
     printf("    Level: [%d ~ %d]\n", aic_cfg->light.min, aic_cfg->light.max);
+    printf("    Virtual AIC: %s\n", aic_cfg->virtual_aic ? "ON" : "OFF");
 }
 
 static void handle_save()
@@ -61,6 +62,27 @@ static void handle_nfc()
         printf(" %02x", card.uid[i]);
     }
     printf("\n");
+}
+
+
+static void handle_virtual(int argc, char *argv[])
+{
+    const char *usage = "Usage: virtual <on|off>\n";
+    if (argc != 1) {
+        printf("%s", usage);
+        return;
+    }
+
+    const char *commands[] = { "on", "off" };
+    int match = cli_match_prefix(commands, 2, argv[0]);
+    if (match < 0) {
+        printf("%s", usage);
+        return;
+    }
+
+    aic_cfg->virtual_aic = (match == 0);
+
+    config_changed();
 }
 
 static void handle_light(int argc, char *argv[])
@@ -133,6 +155,7 @@ void commands_init()
     cli_register("save", handle_save, "Save config to flash.");
     cli_register("factory", handle_factory_reset, "Reset everything to default.");
     cli_register("nfc", handle_nfc, "NFC module.");
+    cli_register("virtual", handle_virtual, "Virtual AIC card.");
     cli_register("light", handle_light, "Turn on/off lights.");
     cli_register("level", handle_level, "Set light level.");
 }

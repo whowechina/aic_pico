@@ -31,7 +31,12 @@ typedef struct {
 } nfc_card_t;
 
 void nfc_init(nfc_wait_loop_t loop);
+void nfc_rf_field(bool on);
+
 nfc_card_t nfc_detect_card();
+void display_card(const nfc_card_t *card);
+
+nfc_card_t nfc_poll_felica();
 
 const char *nfc_module_name();
 

@@ -12,6 +12,9 @@ typedef void (*aime_putc_func)(uint8_t byte);
 void aime_init(aime_putc_func putc_func);
 bool aime_feed(int c);
 
+/* aime activity expires at this time */
+uint64_t aime_expire_time();
+
 uint32_t aime_led_color();
 
 // mode 0 or 1

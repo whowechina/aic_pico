@@ -12,11 +12,11 @@
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
 
+#include "config.h"
 #include "nfc.h"
 #include "aime.h"
 
-#define FRAME_TIMEOUT 200000
-
+#define AIME_EXPIRE_TIME 5000000ULL
 enum {
     CMD_GET_FW_VERSION = 0x30,
     CMD_GET_HW_VERSION = 0x32,
@@ -74,12 +74,11 @@ const char *led_info[] = { "15084\xFF\x10\x00\x12", "000-00000\xFF\x11\x40" };
 static int baudrate_mode = 0;
 
 static struct {
-    bool enabled; // feature enabled
     bool active; // currently active
     uint8_t idm[8];
     const uint8_t pmm[8];
     const uint8_t syscode[2];
-} virtual_aic = { true, false, "", "\x00\xf1\x00\x00\x00\x01\x43\x00", "\x88\xb4" };
+} virtual_aic = { false, "", "\x00\xf1\x00\x00\x00\x01\x43\x00", "\x88\xb4" };
 
 static void putc_trap(uint8_t byte)
 {
@@ -90,11 +89,6 @@ static aime_putc_func aime_putc = putc_trap;
 void aime_set_baudrate(int mode)
 {
     baudrate_mode = (mode == 0) ? 0 : 1;
-}
-
-void aime_set_virtual_aic(bool enable)
-{
-    virtual_aic.enabled = enable;
 }
 
 void aime_init(aime_putc_func putc_func)
@@ -207,7 +201,7 @@ static void cmd_key_set(uint8_t key[6])
 
 static void cmd_set_polling(bool enabled)
 {
-    //pn532_set_rf_field(0, enabled ? 1 : 0);
+    nfc_rf_field(enabled);
     send_simple_response(STATUS_OK);
 }
 
@@ -219,7 +213,6 @@ typedef struct __attribute__((packed)) {
         struct {
             uint8_t idm[8];
             uint8_t pmm[8];
-            uint8_t syscode[2];
         };
         uint8_t uid[6];
     };
@@ -230,11 +223,16 @@ static void handle_mifare_card(const uint8_t *uid, int len)
     card_info_t *card = (card_info_t *) response.payload;
 
     build_response(len > 4 ? 10 : 7);
+
     card->count = 1;
     card->type = 0x10;
     card->id_len = len;
-
     memcpy(card->uid, uid, len);
+
+    printf("\nMIFARE Card:");
+    for (int i = 0; i < len; i++) {
+        printf(" %02x", uid[i]);
+    }
 }
 
 static void handle_felica_card(const uint8_t idm[8], const uint8_t pmm[8])
@@ -273,10 +271,11 @@ static void handle_no_card()
 static void cmd_detect_card()
 {
     nfc_card_t card = nfc_detect_card();
+    display_card(&card);
 
     switch (card.card_type) {
         case NFC_CARD_MIFARE:
-            if (virtual_aic.enabled) {
+            if (aic_cfg->virtual_aic) {
                 printf("\nVirtual FeliCa from MIFARE.");
                 virtual_aic.active = true;
                 memcpy(virtual_aic.idm, "\x01\x01", 2);
@@ -292,7 +291,7 @@ static void cmd_detect_card()
             }
             break;
         case NFC_CARD_FELICA:
-            if (virtual_aic.enabled) {
+            if (aic_cfg->virtual_aic) {
                 printf("\nVirtual FeliCa from FeliCa.");
                 virtual_aic.active = true;
                 memcpy(virtual_aic.idm, card.uid, 8);
@@ -302,7 +301,7 @@ static void cmd_detect_card()
             }
             break;
         case NFC_CARD_VICINITY:
-            if (virtual_aic.enabled) {
+            if (aic_cfg->virtual_aic) {
                 printf("\nVirtual FeliCa from 15693.");
                 virtual_aic.active = true;
                 memcpy(virtual_aic.idm, card.uid, 8);
@@ -320,22 +319,19 @@ static void cmd_detect_card()
 
 static void cmd_card_select()
 {
-    printf("CARD SELECT %d\n", request.payload_len);
     send_simple_response(STATUS_OK);
 }
 
 static void cmd_mifare_auth(int type)
 {
-    printf("MIFARE AUTH\n");
-    nfc_mifare_auth(request.mifare.uid, request.mifare.block_id, type, mifare_keys[type]);
+    const uint8_t *key = mifare_keys[type];
+    nfc_mifare_auth(request.mifare.uid, request.mifare.block_id,
+                    type, key);
     send_simple_response(STATUS_OK);
 }
 
 static void cmd_mifare_read()
 {
-    printf("MIFARE READ %02x %02x %02x %02x %02x\n", request.mifare.block_id,
-            request.mifare.uid[0], request.mifare.uid[1], request.mifare.uid[2],
-           request.mifare.uid[3]);
     build_response(16);
     memset(response.payload, 0, 16);
     nfc_mifare_read(request.mifare.block_id, response.payload);
@@ -344,7 +340,6 @@ static void cmd_mifare_read()
 
 static void cmd_mifare_halt()
 {
-    printf("MIFARE HALT\n");
     send_simple_response(STATUS_OK);
 }
 
@@ -394,7 +389,7 @@ static int cmd_felica_read()
     uint8_t *req_data = request.felica.data;
 
     if (req_data[8] != 1) {
-        printf("Felica Encap READ Error: service_num != 1\n");
+        printf("\nFelica Encap READ Error: service_num != 1");
         return -1;
     }
 
@@ -416,10 +411,11 @@ static int cmd_felica_read()
 
     for (int i = 0; i < block_num; i++) {
         uint16_t block_id = (block[i * 2 + 1] << 8) | block[i * 2 + 2];
-        if (block_id == 0x8082) {
-            memcpy(read_resp->block_data[i], felica_resp->idm, 8);
-        }
-        if (!virtual_aic.active) {
+        if (virtual_aic.active) {
+            if (block_id == 0x8082) {
+                memcpy(read_resp->block_data[i], virtual_aic.idm, 8);
+            }
+        } else {
             nfc_felica_read_wo_encrypt(svc_code, block_id, read_resp->block_data[i]);
         }
     }
@@ -436,7 +432,7 @@ static int cmd_felica_write()
     uint8_t *req_data = request.felica.data;
 
     if (req_data[8] != 1) {
-        printf("Felica Encap Write Error: service_num != 1\n");
+        printf("\nFelica Encap Write Error: service_num != 1");
         return -1;
     }
 
@@ -466,24 +462,16 @@ static int cmd_felica_write()
 
 static void cmd_felica()
 {
-    nfc_card_t card = nfc_detect_card();
-    if (!virtual_aic.active) {
-        if (card.card_type != NFC_CARD_FELICA) {
-            send_simple_response(STATUS_FELICA_ERROR);
-            return;
-        }
+    nfc_card_t card = nfc_poll_felica();
+    if ((card.card_type != NFC_CARD_FELICA) && (!virtual_aic.active)) {
+        send_simple_response(STATUS_FELICA_ERROR);
+        return;
     }
 
-    uint8_t felica_code = request.felica.code;
-/*
-    printf("Felica (%02x):", felica_code);
-    for (int i = 0; i < request.payload_len; i++) {
-        printf(" %02x", request.payload[i]);
-    }
-    printf("\n");
-*/
+    uint8_t felica_op = request.felica.code;
+
     int datalen = -1;
-    switch (felica_code) {
+    switch (felica_op) {
         case CMD_FELICA_OP_GET_SYSTEM_CODE:
             datalen = cmd_felica_get_syscode(&card);
             break;
@@ -497,7 +485,7 @@ static void cmd_felica()
             datalen = cmd_felica_write();
             break;
         default:
-            printf("Unknown code %d\n", felica_code);
+            printf("\nUnknown code %d", felica_op);
             break;
     }
 
@@ -509,7 +497,7 @@ static void cmd_felica()
     felica_resp_t *felica_resp = (felica_resp_t *) response.payload;
     build_response(sizeof(*felica_resp) + datalen);
     felica_resp->len = response.payload_len;
-    felica_resp->code = felica_code + 1;
+    felica_resp->code = felica_op + 1;
     if (virtual_aic.active) {
         memcpy(felica_resp->idm, virtual_aic.idm, 8);
     } else {
@@ -601,15 +589,17 @@ static void aime_handle_frame()
             break;
 
         default:
-            printf("Unknown command: %02x [", request.cmd);
+            printf("\nUnknown command: %02x [", request.cmd);
             for (int i = 0; i < request.len; i++) {
                 printf(" %02x", request.raw[i]);
             }
-            printf("]\n");
+            printf("]");
             send_simple_response(STATUS_OK);
             break;
     }
 }
+
+static uint64_t expire_time;
 
 bool aime_feed(int c)
 {
@@ -640,6 +630,7 @@ bool aime_feed(int c)
         if (req_ctx.check_sum == c) {
             aime_handle_frame();
             req_ctx.active = false;
+            expire_time = time_us_64() + AIME_EXPIRE_TIME;
         }
         return true;
     }
@@ -649,6 +640,11 @@ bool aime_feed(int c)
     req_ctx.check_sum += c;
 
     return true;
+}
+
+uint64_t aime_expire_time()
+{
+    return expire_time;
 }
 
 uint32_t aime_led_color()

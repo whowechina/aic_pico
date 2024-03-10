@@ -62,14 +62,19 @@ static bool null_poll_vicinity(uint8_t uid[8])
     return false;
 }
 
+static void null_rf_field(bool on)
+{
+}
+
 struct {
     bool (*poll_mifare)(uint8_t uid[7], int *len);
     bool (*poll_felica)(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool from_cache);
     bool (*poll_vicinity)(uint8_t uid[8]);
+    void (*rf_field)(bool on);
 } api[3] = {
-    { pn532_poll_mifare, pn532_poll_felica, null_poll_vicinity,},
-    { pn5180_poll_mifare, pn5180_poll_felica, pn5180_poll_vicinity,},
-    { null_poll_mifare, null_poll_felica, null_poll_vicinity,},
+    { pn532_poll_mifare, pn532_poll_felica, null_poll_vicinity, pn532_rf_field},
+    { pn5180_poll_mifare, pn5180_poll_felica, pn5180_poll_vicinity, null_rf_field},
+    { null_poll_mifare, null_poll_felica, null_poll_vicinity, null_rf_field},
 };
 
 void nfc_init(nfc_wait_loop_t loop)
@@ -80,13 +85,6 @@ void nfc_init(nfc_wait_loop_t loop)
     } else if (pn5180_init(spi0, 16, 18, 19, 27, 17, 26)) {
         nfc_module = NFC_MODULE_PN5180;
         pn5180_set_wait_loop(loop);
-    }
-}
-
-static void nfc_config_sam()
-{
-    if (nfc_module == NFC_MODULE_PN532) {
-        pn532_config_sam();
     }
 }
 
@@ -138,11 +136,14 @@ static bool nfc_detect_vicinity(nfc_card_t *card)
     return true;
 }
 
+void nfc_rf_field(bool on)
+{
+    api[nfc_module].rf_field(on);
+}
+
 nfc_card_t nfc_detect_card()
 {
     nfc_card_t card = { 0 };
-
-    nfc_config_sam();
 
     if (!nfc_detect_mifare(&card) &&
         !nfc_detect_felica(&card) &&
@@ -151,6 +152,25 @@ nfc_card_t nfc_detect_card()
     }
 
     return card;
+}
+
+nfc_card_t nfc_poll_felica()
+{
+    nfc_card_t card = { 0 };
+    if (!nfc_detect_felica(&card)) {
+        card.card_type = NFC_CARD_NONE;
+    }
+    return card;
+}
+
+void display_card(const nfc_card_t *card)
+{
+    if (card->card_type != NFC_CARD_NONE) {
+        printf("\n%s:", nfc_card_name(card->card_type));
+        for (int i = 0; i < card->len; i++) {
+            printf(" %02X", card->uid[i]);
+        }
+    }
 }
 
 bool nfc_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t *key)

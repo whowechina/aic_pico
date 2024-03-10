@@ -107,46 +107,60 @@ static void core1_loop()
     }
 }
 
-void detect_card()
+static void update_cardio(nfc_card_t *card)
 {
-    static nfc_card_t old_card = { 0 };
-
-    nfc_card_t card = nfc_detect_card();
-    switch (card.card_type) {
+    switch (card->card_type) {
         case NFC_CARD_MIFARE:
             hid_cardio.current[0] = REPORT_ID_EAMU;
             hid_cardio.current[1] = 0xe0;
             hid_cardio.current[2] = 0x04;
-            if (card.len == 4) {
-                memcpy(hid_cardio.current + 3, card.uid, 4);
-                memcpy(hid_cardio.current + 7, card.uid, 2);
-            } else if (card.len == 7) {
-                memcpy(hid_cardio.current + 3, card.uid + 1, 6);
+            if (card->len == 4) {
+                memcpy(hid_cardio.current + 3, card->uid, 4);
+                memcpy(hid_cardio.current + 7, card->uid, 2);
+            } else if (card->len == 7) {
+                memcpy(hid_cardio.current + 3, card->uid + 1, 6);
             }
             break;
         case NFC_CARD_FELICA:
             hid_cardio.current[0] = REPORT_ID_FELICA;
-            memcpy(hid_cardio.current + 1, card.uid, 8);
+            memcpy(hid_cardio.current + 1, card->uid, 8);
             break;
         case NFC_CARD_VICINITY:
             hid_cardio.current[0] = REPORT_ID_EAMU;
-            memcpy(hid_cardio.current + 1, card.uid, 8);
+            memcpy(hid_cardio.current + 1, card->uid, 8);
             break;
         default:
             memset(hid_cardio.current, 0, 9);
+            return;
     }
-    if (memcmp(&old_card, &card, sizeof(card)) == 0) {
+
+    printf(" -> CardIO ");
+    for (int i = 1; i < 9; i++) {
+        printf("%02X", hid_cardio.current[i]);
+    }
+}
+
+void detect_card()
+{
+    if (time_us_64() < aime_expire_time()) {
         return;
     }
 
-    if (card.card_type != NFC_CARD_NONE) {
-        printf("\n%s:", nfc_card_name(card.card_type));
-        for (int i = 0; i < card.len; i++) {
-            printf(" %02x", hid_cardio.current[i + 1]);
-        }
+    nfc_rf_field(true);
+
+    static nfc_card_t old_card = { 0 };
+    nfc_card_t card = nfc_detect_card();
+
+    nfc_rf_field(false);
+
+    if (memcmp(&old_card, &card, sizeof(old_card)) == 0) {
+        return;
     }
 
     old_card = card;
+
+    display_card(&card);
+    update_cardio(&card);
 }
 
 const int aime_intf = 1;

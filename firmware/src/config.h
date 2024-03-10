@@ -16,6 +16,7 @@ typedef struct __attribute__((packed)) {
         bool rgb;
         bool led;
     } light;
+    bool virtual_aic;
     uint32_t reserved;
 } aic_cfg_t;
 

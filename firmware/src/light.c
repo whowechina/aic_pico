@@ -158,7 +158,7 @@ static void rainbow_fade()
     last = now;
 
     if (curr_speed > RAINBOW_MIN_SPEED) {
-        curr_speed = curr_speed * 95 / 100;
+        curr_speed = curr_speed * 90 / 100;
     }
     if (curr_level > aic_cfg->light.min) {
         curr_level -= (curr_level - aic_cfg->light.min) / 10 + 1;
