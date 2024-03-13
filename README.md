@@ -31,7 +31,7 @@
 ## Thanks
 Thanks to many respectful guys/companies who made their tools or materials free or open source (KiCad, OnShape, InkScape, Fritzing, Raspberry things), ChatGPT and GitHub Copilot helped a lot as well.
 
-And thanks to community developers and projects that helped me a lot: CrazyRedMachine (https://github.com/CrazyRedMachine) for the Spicetools Card IO part, Sucareto's AIME Reader (https://github.com/Sucareto/Arduino-Aime-Reader) for the AIME protocol part, .NET nanoFramework (https://github.com/nanoframework) for the PN5180 part.
+And thanks to community developers and projects that helped me a lot: CrazyRedMachine (https://github.com/CrazyRedMachine) for the Spicetools Card IO part, Sucareto's AIME Reader (https://github.com/Sucareto/Arduino-Aime-Reader) for the AIME protocol part, Bottersnike (https://gitea.tendokyu.moe/Bottersnike) for his sharing of AIME and FeliCa knowledge, .NET nanoFramework (https://github.com/nanoframework) for the PN5180 part.
 
 ## Warning
 This project:  

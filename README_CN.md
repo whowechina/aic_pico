@@ -34,7 +34,7 @@
 ## 感谢
 感谢许多尊敬的爱好者和公司将他们的工具或材料免费或开源（KiCad, OnShape, InkScape, Fritzing, Raspberry things），ChatGPT 和 GitHub Copilot 也提供了很大的帮助。
 
-同时感谢对我有很大帮助的社区开发者和项目：CrazyRedMachine (https://github.com/CrazyRedMachine) 提供了 Spicetools Card IO 部分，Sucareto 的 AIME Reader (https://github.com/Sucareto/Arduino-Aime-Reader) 提供了 AIME 协议部分，.NET nanoFramework (https://github.com/nanoframework) 提供了 PN5180 部分。
+同时感谢对我有很大帮助的社区开发者和项目：CrazyRedMachine (https://github.com/CrazyRedMachine) 提供了 Spicetools Card IO 部分，Sucareto 的 AIME Reader (https://github.com/Sucareto/Arduino-Aime-Reader) 提供了 AIME 协议部分，Bottersnike (https://gitea.tendokyu.moe/Bottersnike) 提供了 AIME 和 FeliCa 相关的知识帮助, .NET nanoFramework (https://github.com/nanoframework) 提供了 PN5180 部分。
 
 ## 友情警告
 这个项目：

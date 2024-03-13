@@ -20,12 +20,14 @@
 enum {
     CMD_GET_FW_VERSION = 0x30,
     CMD_GET_HW_VERSION = 0x32,
+
     // Card read
     CMD_START_POLLING = 0x40,
     CMD_STOP_POLLING = 0x41,
     CMD_CARD_DETECT = 0x42,
     CMD_CARD_SELECT = 0x43,
     CMD_CARD_HALT = 0x44,
+
     // MIFARE
     CMD_MIFARE_KEY_SET_A = 0x50,
     CMD_MIFARE_AUTHORIZE_A = 0x51,
@@ -33,42 +35,30 @@ enum {
     CMD_MIFARE_WRITE = 0x53,
     CMD_MIFARE_KEY_SET_B = 0x54,
     CMD_MIFARE_AUTHORIZE_B = 0x55,
+
     // Boot,update
     CMD_TO_UPDATER_MODE = 0x60,
     CMD_SEND_HEX_DATA = 0x61,
     CMD_TO_NORMAL_MODE = 0x62,
     CMD_SEND_BINDATA_INIT = 0x63,
     CMD_SEND_BINDATA_EXEC = 0x64,
+
     // FeliCa
     CMD_FELICA_PUSH = 0x70,
     CMD_FELICA_OP = 0x71,
-    CMD_FELICA_OP_POLL = 0x00,
-    CMD_FELICA_OP_READ = 0x06,
-    CMD_FELICA_OP_WRITE = 0x08,
-    CMD_FELICA_OP_GET_SYSTEM_CODE = 0x0C,
-    CMD_FELICA_OP_NDA_A4 = 0xA4,
+
     // LED board
-    CMD_EXT_BOARD_LED = 0x80,
     CMD_EXT_BOARD_LED_RGB = 0x81,
-    CMD_EXT_BOARD_LED_RGB_UNKNOWN = 0x82,
     CMD_EXT_BOARD_INFO = 0xf0,
-    CMD_EXT_FIRM_SUM = 0xf2,
-    CMD_EXT_SEND_HEX_DATA = 0xf3,
-    CMD_EXT_TO_BOOT_MODE = 0xf4,
     CMD_EXT_TO_NORMAL_MODE = 0xf5,
 };
 
 enum {
     STATUS_OK = 0,
-    STATUS_NFCRW_INIT_ERROR = 1,
-    STATUS_NFCRW_FIRMWARE_UP_TO_DATE = 3,
-    STATUS_NFCRW_ACCESS_ERROR = 4,
-    STATUS_CARD_DETECT_TIMEOUT = 5,
-    STATUS_CARD_DETECT_ERROR = 32,
-    STATUS_FELICA_ERROR = 33,
+    STATUS_INVALID_COMMAND = 3,
 };
 
-const char *fw_version[] = { "TN32MSEC003S F/W Ver1.2", "\x94" };
+const char *fw_version[] = { "TN32MSEC003S F/W Ver1.0", "\x94" };
 const char *hw_version[] = { "TN32MSEC003S H/W Ver3.0", "837-15396" };
 const char *led_info[] = { "15084\xFF\x10\x00\x12", "000-00000\xFF\x11\x40" };
 static int baudrate_mode = 0;
@@ -182,7 +172,7 @@ static void send_simple_response(uint8_t status)
 
 static void cmd_to_normal_mode()
 {
-    send_simple_response(STATUS_NFCRW_FIRMWARE_UP_TO_DATE);
+    send_simple_response(STATUS_INVALID_COMMAND);
 }
 
 static void cmd_fake_version(const char *version[])
@@ -343,176 +333,10 @@ static void cmd_mifare_halt()
     send_simple_response(STATUS_OK);
 }
 
-typedef struct __attribute__((packed)) {
-    uint8_t len;
-    uint8_t code;
-    uint8_t idm[8];
-    uint8_t data[0];
-} felica_resp_t;
-
-static int cmd_felica_poll(const nfc_card_t *card)
-{
-    typedef struct __attribute__((packed)) {
-        uint8_t pmm[8];
-        uint8_t syscode[2];
-    } felica_poll_resp_t;
-
-    felica_resp_t *felica_resp = (felica_resp_t *) response.payload;
-    felica_poll_resp_t *poll_resp = (felica_poll_resp_t *) felica_resp->data;
-    
-    if (virtual_aic.active) {
-        memcpy(poll_resp->pmm, virtual_aic.pmm, 8);
-        memcpy(poll_resp->syscode, virtual_aic.syscode, 2);
-    } else {
-        memcpy(poll_resp->pmm, card->pmm, 8);
-        memcpy(poll_resp->syscode, card->syscode, 2);
-    }
-
-    return sizeof(*poll_resp);
-}
-
-static int cmd_felica_get_syscode(const nfc_card_t *card)
-{
-    felica_resp_t *felica_resp = (felica_resp_t *) response.payload;
-    felica_resp->data[0] = 0x01;
-    if (virtual_aic.active) {
-        memcpy(felica_resp->data, virtual_aic.syscode, 2);
-    } else {
-        felica_resp->data[1] = card->syscode[0];
-        felica_resp->data[2] = card->syscode[1];
-    }
-    return 3;
-}
-
-static int cmd_felica_read()
-{
-    uint8_t *req_data = request.felica.data;
-
-    if (req_data[8] != 1) {
-        printf("\nFelica Encap READ Error: service_num != 1");
-        return -1;
-    }
-
-    uint16_t svc_code = req_data[9] | (req_data[10] << 8);
-
-    typedef struct __attribute__((packed)) {
-        uint8_t rw_status[2];
-        uint8_t block_num;
-        uint8_t block_data[0][16];
-    } encap_read_resp_t;
-
-    felica_resp_t *felica_resp = (felica_resp_t *) response.payload;
-    encap_read_resp_t *read_resp = (encap_read_resp_t *) felica_resp->data;
-
-    uint8_t *block = req_data + 11;
-    uint8_t block_num = block[0];
-
-    memset(read_resp->block_data, 0, block_num * 16);
-
-    for (int i = 0; i < block_num; i++) {
-        uint16_t block_id = (block[i * 2 + 1] << 8) | block[i * 2 + 2];
-        if (virtual_aic.active) {
-            if (block_id == 0x8082) {
-                memcpy(read_resp->block_data[i], virtual_aic.idm, 8);
-            }
-        } else {
-            nfc_felica_read_wo_encrypt(svc_code, block_id, read_resp->block_data[i]);
-        }
-    }
-
-    read_resp->rw_status[0] = 0x00;
-    read_resp->rw_status[1] = 0x00;
-    read_resp->block_num = block_num;
-
-    return sizeof(*read_resp) + block_num * 16;
-}
-
-static int cmd_felica_write()
-{
-    uint8_t *req_data = request.felica.data;
-
-    if (req_data[8] != 1) {
-        printf("\nFelica Encap Write Error: service_num != 1");
-        return -1;
-    }
-
-    /* No, we don't actually write */
-
-    felica_resp_t *felica_resp = (felica_resp_t *) response.payload;
-    uint8_t *rw_status = felica_resp->data;
-
-    rw_status[0] = 0x00;
-    rw_status[1] = 0x00;
-    return 2;
-
-}
-
-#if 0
-
-    case CMD_FELICA_OP_NDA_A4:
-        printf("\tNDA_A4\n");
-        build_response(11);
-        resp->payload[0] = 0x00;
-        break;
-    default:
-        printf("\tUnknown through: %02x\n", code);
-        build_response(0);
-        response.status = STATUS_OK;
-#endif
-
 static void cmd_felica()
 {
-    nfc_card_t card = nfc_poll_felica();
-    if ((card.card_type != NFC_CARD_FELICA) && (!virtual_aic.active)) {
-        send_simple_response(STATUS_FELICA_ERROR);
-        return;
-    }
-
-    uint8_t felica_op = request.felica.code;
-
-    int datalen = -1;
-    switch (felica_op) {
-        case CMD_FELICA_OP_GET_SYSTEM_CODE:
-            datalen = cmd_felica_get_syscode(&card);
-            break;
-        case CMD_FELICA_OP_POLL:
-            datalen = cmd_felica_poll(&card);
-            break;
-        case CMD_FELICA_OP_READ:
-            datalen = cmd_felica_read();
-            break;
-        case CMD_FELICA_OP_WRITE:
-            datalen = cmd_felica_write();
-            break;
-        default:
-            printf("\nUnknown code %d", felica_op);
-            break;
-    }
-
-    if (datalen < 0) {
-        send_simple_response(STATUS_FELICA_ERROR);
-        return;
-    }
-
-    felica_resp_t *felica_resp = (felica_resp_t *) response.payload;
-    build_response(sizeof(*felica_resp) + datalen);
-    felica_resp->len = response.payload_len;
-    felica_resp->code = felica_op + 1;
-    if (virtual_aic.active) {
-        memcpy(felica_resp->idm, virtual_aic.idm, 8);
-    } else {
-        memcpy(felica_resp->idm, card.idm, 8);
-    }
-
-    send_response();
-
-/*
-    printf("Felica Response:");
-    for (int i = 0; i < felica_resp->len - 10; i++) {
-        printf(" %02x", felica_resp->data[i]);
-    }
-    printf("\n");
-*/
+    send_simple_response(STATUS_INVALID_COMMAND);
+    return;
 }
 
 static uint32_t led_color;
@@ -552,6 +376,8 @@ static void aime_handle_frame()
         case CMD_CARD_DETECT:
             cmd_detect_card();
             break;
+
+        case CMD_FELICA_PUSH:
         case CMD_FELICA_OP:
             cmd_felica();
             break;
