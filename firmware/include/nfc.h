@@ -30,7 +30,9 @@ typedef struct {
     uint8_t syscode[2];
 } nfc_card_t;
 
-void nfc_init(nfc_wait_loop_t loop);
+void nfc_init(i2c_inst_t *i2c, uint8_t scl, uint8_t sda, uint32_t freq);
+void nfc_set_wait_loop(nfc_wait_loop_t loop);
+
 void nfc_rf_field(bool on);
 
 nfc_card_t nfc_detect_card();

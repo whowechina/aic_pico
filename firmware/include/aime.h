@@ -10,6 +10,7 @@
 typedef void (*aime_putc_func)(uint8_t byte);
 
 void aime_init(aime_putc_func putc_func);
+void aime_virtual_aic(bool enable);
 bool aime_feed(int c);
 
 /* aime activity expires at this time */

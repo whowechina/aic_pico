@@ -11,6 +11,7 @@
 #include "save.h"
 #include "cli.h"
 
+#include "aime.h"
 #include "nfc.h"
 
 static int fps[2];
@@ -82,6 +83,7 @@ static void handle_virtual(int argc, char *argv[])
 
     aic_cfg->virtual_aic = (match == 0);
 
+    aime_virtual_aic(aic_cfg->virtual_aic);
     config_changed();
 }
 

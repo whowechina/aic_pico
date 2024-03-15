@@ -7,6 +7,7 @@
 #ifndef PN5180_H
 #define PN5180_H
 
+#include <stdint.h>
 #include "hardware/spi.h"
 
 #define PN5180_REG_SYSTEM_CONFIG 0x00

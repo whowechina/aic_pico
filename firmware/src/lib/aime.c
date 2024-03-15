@@ -7,12 +7,12 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "bsp/board.h"
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
 
-#include "config.h"
 #include "nfc.h"
 #include "aime.h"
 
@@ -64,11 +64,13 @@ const char *led_info[] = { "15084\xFF\x10\x00\x12", "000-00000\xFF\x11\x40" };
 static int baudrate_mode = 0;
 
 static struct {
+    bool enabled;
     bool active; // currently active
     uint8_t idm[8];
     const uint8_t pmm[8];
     const uint8_t syscode[2];
-} virtual_aic = { false, "", "\x00\xf1\x00\x00\x00\x01\x43\x00", "\x88\xb4" };
+} virtual_aic = { false, false, 
+                  "", "\x00\xf1\x00\x00\x00\x01\x43\x00", "\x88\xb4" };
 
 static void putc_trap(uint8_t byte)
 {
@@ -84,6 +86,11 @@ void aime_set_baudrate(int mode)
 void aime_init(aime_putc_func putc_func)
 {
     aime_putc = putc_func;
+}
+
+void aime_virtual_aic(bool enable)
+{
+    virtual_aic.active = enable;
 }
 
 static uint8_t mifare_keys[2][6]; // 'KeyA' and 'KeyB'
@@ -265,7 +272,7 @@ static void cmd_detect_card()
 
     switch (card.card_type) {
         case NFC_CARD_MIFARE:
-            if (aic_cfg->virtual_aic) {
+            if (virtual_aic.enabled) {
                 printf("\nVirtual FeliCa from MIFARE.");
                 virtual_aic.active = true;
                 memcpy(virtual_aic.idm, "\x01\x01", 2);
@@ -281,7 +288,7 @@ static void cmd_detect_card()
             }
             break;
         case NFC_CARD_FELICA:
-            if (aic_cfg->virtual_aic) {
+            if (virtual_aic.enabled) {
                 printf("\nVirtual FeliCa from FeliCa.");
                 virtual_aic.active = true;
                 memcpy(virtual_aic.idm, card.uid, 8);
@@ -291,7 +298,7 @@ static void cmd_detect_card()
             }
             break;
         case NFC_CARD_VICINITY:
-            if (aic_cfg->virtual_aic) {
+            if (virtual_aic.enabled) {
                 printf("\nVirtual FeliCa from 15693.");
                 virtual_aic.active = true;
                 memcpy(virtual_aic.idm, card.uid, 8);

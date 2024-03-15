@@ -8,12 +8,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "board_defs.h"
+#include "hardware/i2c.h"
+#include "hardware/gpio.h"
 
 #include "nfc.h"
 #include "pn532.h"
 #include "pn5180.h"
-
 
 static enum {
     NFC_MODULE_PN532 = 0,
@@ -66,26 +66,41 @@ static void null_rf_field(bool on)
 {
 }
 
+static void null_set_wait_loop(nfc_wait_loop_t loop)
+{
+
+}
+
 struct {
     bool (*poll_mifare)(uint8_t uid[7], int *len);
     bool (*poll_felica)(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool from_cache);
     bool (*poll_vicinity)(uint8_t uid[8]);
     void (*rf_field)(bool on);
+    void (*set_wait_loop)(nfc_wait_loop_t loop);
 } api[3] = {
-    { pn532_poll_mifare, pn532_poll_felica, null_poll_vicinity, pn532_rf_field},
-    { pn5180_poll_mifare, pn5180_poll_felica, pn5180_poll_vicinity, null_rf_field},
-    { null_poll_mifare, null_poll_felica, null_poll_vicinity, null_rf_field},
+    { pn532_poll_mifare, pn532_poll_felica, null_poll_vicinity, pn532_rf_field, pn532_set_wait_loop},
+    { pn5180_poll_mifare, pn5180_poll_felica, pn5180_poll_vicinity, null_rf_field, pn5180_set_wait_loop},
+    { null_poll_mifare, null_poll_felica, null_poll_vicinity, null_rf_field, null_set_wait_loop},
 };
 
-void nfc_init(nfc_wait_loop_t loop)
+void nfc_init(i2c_inst_t *i2c, uint8_t scl, uint8_t sda, uint32_t freq)
 {
-    if (pn532_init(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ)) {
+    i2c_init(i2c, freq);
+    gpio_set_function(scl, GPIO_FUNC_I2C);
+    gpio_set_function(sda, GPIO_FUNC_I2C);
+    gpio_pull_up(scl);
+    gpio_pull_up(sda);
+
+    if (pn532_init(i2c)) {
         nfc_module = NFC_MODULE_PN532;
-        pn532_set_wait_loop(loop);
     } else if (pn5180_init(spi0, 16, 18, 19, 27, 17, 26)) {
         nfc_module = NFC_MODULE_PN5180;
-        pn5180_set_wait_loop(loop);
     }
+}
+
+void nfc_set_wait_loop(nfc_wait_loop_t loop)
+{
+    api[nfc_module].set_wait_loop(loop);
 }
 
 static bool nfc_detect_mifare(nfc_card_t *card)

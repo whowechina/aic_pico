@@ -223,9 +223,11 @@ void init()
     mutex_init(&core1_io_lock);
     save_init(0xca340a1c, &core1_io_lock);
 
-    nfc_init(wait_loop);
+    nfc_init(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ);
+    nfc_set_wait_loop(wait_loop);
 
     aime_init(cdc_aime_putc);
+    aime_virtual_aic(aic_cfg->virtual_aic);
 
     cli_init("aic_pico>", "\n     << AIC Pico >>\n"
                             " https://github.com/whowechina\n\n");

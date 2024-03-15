@@ -7,13 +7,14 @@
 #ifndef PN532_H
 #define PN532_H
 
+#include <stdint.h>
 #include "hardware/i2c.h"
 
 typedef void (*pn532_wait_loop_t)();
 
 void pn532_set_wait_loop(pn532_wait_loop_t loop);
 
-bool pn532_init(i2c_inst_t *i2c_port, uint8_t scl, uint8_t sda, uint32_t freq);
+bool pn532_init(i2c_inst_t *i2c_port);
 
 int pn532_write_command(uint8_t cmd, const uint8_t *param, uint8_t len);
 int pn532_read_response(uint8_t cmd, uint8_t *resp, uint8_t len);
