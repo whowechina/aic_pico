@@ -1,5 +1,5 @@
 /*
- * NFC Reader Interface
+ * NFC Operations
  * WHowe <github.com/whowechina>
  * 
  */
@@ -7,6 +7,8 @@
 #ifndef NFC_H
 #define NFC_H
 
+#include <stdint.h>
+#include <stdbool.h>
 #include "hardware/i2c.h"
 
 typedef enum {

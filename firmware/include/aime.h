@@ -1,10 +1,13 @@
 /*
- * AIME Reader
+ * AIME Protocol
  * WHowe <github.com/whowechina>
  */
 
 #ifndef AIME_H
 #define AIME_H
+
+#include <stdint.h>
+#include <stdbool.h>
 
 /* return true if accepts a byte, false if rejects */
 typedef void (*aime_putc_func)(uint8_t byte);
