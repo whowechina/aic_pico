@@ -58,7 +58,7 @@ static void handle_nfc()
 {
     printf("NFC module: %s\n", nfc_module_name());
     nfc_card_t card = nfc_detect_card();
-    printf("Card %s:", nfc_card_name(card.card_type));
+    printf("Card: %s", nfc_card_name(card.card_type));
     for (int i = 0; i < card.len; i++) {
         printf(" %02x", card.uid[i]);
     }

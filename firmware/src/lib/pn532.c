@@ -295,9 +295,9 @@ bool pn532_config_sam()
     return pn532_read_response(0x14, &resp, 1) == 0;
 }
 
-static bool pn532_set_rf_field(uint8_t auto_rf, uint8_t on_off)
+static bool pn532_set_rf_field(bool auto_rf, bool on_off)
 {
-    uint8_t param[] = { 1, auto_rf | on_off };
+    uint8_t param[] = { 1, (auto_rf ? 2 : 0) | (on_off ? 1 : 0) };
     pn532_write_command(0x32, param, 2);
 
     uint8_t resp;
@@ -306,7 +306,7 @@ static bool pn532_set_rf_field(uint8_t auto_rf, uint8_t on_off)
 
 void pn532_rf_field(bool on)
 {
-    pn532_set_rf_field(0x00, on ? 0x01 : 0x00);
+    pn532_set_rf_field(true, on);
     if (on) {
         pn532_config_sam();
     }
