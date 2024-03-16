@@ -35,16 +35,8 @@ static uint8_t gpio_rst;
 static uint8_t gpio_nss;
 static uint8_t gpio_busy;
 
-bool pn5180_init(spi_inst_t *port, uint8_t miso, uint8_t sck, uint8_t mosi,
-                 uint8_t rst, uint8_t nss, uint8_t busy)
+bool pn5180_init(spi_inst_t *port, uint8_t rst, uint8_t nss, uint8_t busy)
 {
-    spi_init(port, 2000 * 1000);
-    spi_set_format(port, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
-
-    gpio_set_function(miso, GPIO_FUNC_SPI);
-    gpio_set_function(sck, GPIO_FUNC_SPI);
-    gpio_set_function(mosi, GPIO_FUNC_SPI);
-
     gpio_init(nss);
     gpio_set_dir(nss, GPIO_OUT);
     gpio_pull_up(nss);

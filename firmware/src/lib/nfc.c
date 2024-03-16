@@ -74,9 +74,6 @@ struct {
 
 static struct {
     i2c_inst_t *port;
-    uint32_t freq;
-    uint8_t scl;
-    uint8_t sda;
 } i2c = {0};
 
 void nfc_attach_i2c(i2c_inst_t *port)
@@ -86,42 +83,48 @@ void nfc_attach_i2c(i2c_inst_t *port)
 
 void nfc_init_i2c(i2c_inst_t *port, uint8_t scl, uint8_t sda, uint32_t freq)
 {
-    i2c.port = port;
-    i2c.freq = freq;
-    i2c.scl = scl;
-    i2c.sda = sda;
+    i2c_init(port, freq);
+    gpio_set_function(scl, GPIO_FUNC_I2C);
+    gpio_set_function(sda, GPIO_FUNC_I2C);
+    gpio_pull_up(scl);
+    gpio_pull_up(sda);
+
+    nfc_attach_i2c(port);
 }
 
 static struct {
     spi_inst_t *port;
-    uint8_t miso;
-    uint8_t sck;
-    uint8_t mosi;
     uint8_t rst;
     uint8_t nss;
     uint8_t busy;
 } spi = {0};
 
-void nfc_init_spi(spi_inst_t *port, uint8_t miso, uint8_t sck, uint8_t mosi,
-                 uint8_t rst, uint8_t nss, uint8_t busy)
+void nfc_attach_spi(spi_inst_t *port, uint8_t rst, uint8_t nss, uint8_t busy)
 {
     spi.port = port;
-    spi.miso = miso;
-    spi.sck = sck;
-    spi.mosi = mosi;
     spi.rst = rst;
     spi.nss = nss;
     spi.busy = busy;
 }
 
+void nfc_init_spi(spi_inst_t *port, uint8_t miso, uint8_t sck, uint8_t mosi,
+                 uint8_t rst, uint8_t nss, uint8_t busy)
+{
+    spi_init(port, 2000 * 1000);
+    spi_set_format(port, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+
+    gpio_set_function(miso, GPIO_FUNC_SPI);
+    gpio_set_function(sck, GPIO_FUNC_SPI);
+    gpio_set_function(mosi, GPIO_FUNC_SPI);
+
+    nfc_attach_spi(port, rst, nss, busy);
+}
+
 void nfc_init()
 {
-    if (i2c.port &&
-        pn532_init(i2c.port, i2c.scl, i2c.sda, i2c.freq)) {
+    if (i2c.port && pn532_init(i2c.port)) {
         nfc_module = NFC_MODULE_PN532;
-    } else if (spi.port &&
-        pn5180_init(spi.port, spi.miso, spi.sck, spi.mosi,
-                    spi.rst, spi.nss, spi.busy)) {
+    } else if (spi.port && pn5180_init(spi.port, spi.rst, spi.nss, spi.busy)) {
         nfc_module = NFC_MODULE_PN5180;
     }
 }

@@ -23,8 +23,7 @@ typedef void (*pn5180_wait_loop_t)();
 
 void pn5180_set_wait_loop(pn5180_wait_loop_t loop);
 
-bool pn5180_init(spi_inst_t *port, uint8_t miso, uint8_t sck, uint8_t mosi,
-                 uint8_t rst, uint8_t nss, uint8_t busy);
+bool pn5180_init(spi_inst_t *port, uint8_t rst, uint8_t nss, uint8_t busy);
 
 void pn5180_write_reg(uint8_t reg, uint32_t v32);
 void pn5180_or_reg(uint8_t reg, uint32_t mask);
