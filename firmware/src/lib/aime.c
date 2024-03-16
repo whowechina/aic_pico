@@ -90,7 +90,7 @@ void aime_init(aime_putc_func putc_func)
 
 void aime_virtual_aic(bool enable)
 {
-    virtual_aic.active = enable;
+    virtual_aic.enabled = enable;
 }
 
 static uint8_t mifare_keys[2][6]; // 'KeyA' and 'KeyB'
