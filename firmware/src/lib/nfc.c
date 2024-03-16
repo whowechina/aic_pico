@@ -79,7 +79,12 @@ static struct {
     uint8_t sda;
 } i2c = {0};
 
-void nfc_set_i2c(i2c_inst_t *port, uint8_t scl, uint8_t sda, uint32_t freq)
+void nfc_attach_i2c(i2c_inst_t *port)
+{
+    i2c.port = port;
+}
+
+void nfc_init_i2c(i2c_inst_t *port, uint8_t scl, uint8_t sda, uint32_t freq)
 {
     i2c.port = port;
     i2c.freq = freq;
@@ -97,7 +102,7 @@ static struct {
     uint8_t busy;
 } spi = {0};
 
-void nfc_set_spi(spi_inst_t *port, uint8_t miso, uint8_t sck, uint8_t mosi,
+void nfc_init_spi(spi_inst_t *port, uint8_t miso, uint8_t sck, uint8_t mosi,
                  uint8_t rst, uint8_t nss, uint8_t busy)
 {
     spi.port = port;

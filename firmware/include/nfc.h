@@ -33,9 +33,10 @@ typedef struct {
     uint8_t syscode[2];
 } nfc_card_t;
 
-/* should set i2c and spi port before init */
-void nfc_set_i2c(i2c_inst_t *port, uint8_t scl, uint8_t sda, uint32_t freq);
-void nfc_set_spi(spi_inst_t *port, uint8_t miso, uint8_t sck, uint8_t mosi,
+/* should init or attach i2c and spi port before init */
+void nfc_attach_i2c(i2c_inst_t *port);
+void nfc_init_i2c(i2c_inst_t *port, uint8_t scl, uint8_t sda, uint32_t freq);
+void nfc_init_spi(spi_inst_t *port, uint8_t miso, uint8_t sck, uint8_t mosi,
                  uint8_t rst, uint8_t nss, uint8_t busy);
 
 void nfc_init();

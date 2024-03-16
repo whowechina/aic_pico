@@ -223,8 +223,8 @@ void init()
     mutex_init(&core1_io_lock);
     save_init(0xca340a1c, &core1_io_lock);
 
-    nfc_set_i2c(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ);
-    nfc_set_spi(SPI_PORT, SPI_MISO, SPI_SCK, SPI_MOSI, SPI_RST, SPI_NSS, SPI_BUSY);
+    nfc_init_i2c(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ);
+    nfc_init_spi(SPI_PORT, SPI_MISO, SPI_SCK, SPI_MOSI, SPI_RST, SPI_NSS, SPI_BUSY);
     nfc_init();
     nfc_set_wait_loop(wait_loop);
 
