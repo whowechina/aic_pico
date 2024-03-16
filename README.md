@@ -24,7 +24,7 @@
 * All source files open.
 
 **Notes:**
-1. So one can integrate "AIC Pico" into a Raspberry Pi Pico based controller. Will be ready later.  
+1. So one can integrate "AIC Pico" into other Raspberry Pi Pico based projects. See my Chu Pico project and see how it works.  
   <img src="doc/aic_pico_lib.jpg" width="25%">
 2. PN532 supports only 14443A (Mifare) and FeliCa cards, while PN5180 also supports 15693 cards (old e-Amusement cards).
 

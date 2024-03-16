@@ -27,7 +27,7 @@
 * 所有源文件开放。
 
 **注释：**
-1. 因此，可以将 "AIC Pico" 集成到基于 Raspberry Pi Pico 的控制器中。后续我会提供。  
+1. 这样就可以把 "AIC Pico" 集成到基于 Raspberry Pi Pico 的其他项目中。可以参考我的 Chu Pico 项目里的用法。  
   <img src="doc/aic_pico_lib.jpg" width="25%">
 2. PN532 只支持 14443A (Mifare) 和 FeliCa 卡，而 PN5180 还支持 15693 卡（旧的 e-Amusement 卡）。
 
