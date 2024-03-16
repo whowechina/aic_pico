@@ -30,23 +30,20 @@
 #define CMD_RF_ON 0x16
 #define CMD_RF_OFF 0x17
 
-static struct {
-    spi_inst_t *port;
-    uint8_t rst;
-    uint8_t nss;
-    uint8_t busy;
-} spi;
+static spi_inst_t *spi_port;
+static uint8_t gpio_rst;
+static uint8_t gpio_nss;
+static uint8_t gpio_busy;
 
-bool pn5180_init(spi_inst_t *port, uint8_t rx, uint8_t sck, uint8_t tx,
+bool pn5180_init(spi_inst_t *port, uint8_t miso, uint8_t sck, uint8_t mosi,
                  uint8_t rst, uint8_t nss, uint8_t busy)
 {
     spi_init(port, 2000 * 1000);
     spi_set_format(port, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
-    gpio_set_function(rx, GPIO_FUNC_SPI);
+    gpio_set_function(miso, GPIO_FUNC_SPI);
     gpio_set_function(sck, GPIO_FUNC_SPI);
-    gpio_set_function(tx, GPIO_FUNC_SPI);
-    //gpio_set_function(nss, GPIO_FUNC_SPI);
+    gpio_set_function(mosi, GPIO_FUNC_SPI);
 
     gpio_init(nss);
     gpio_set_dir(nss, GPIO_OUT);
@@ -58,10 +55,10 @@ bool pn5180_init(spi_inst_t *port, uint8_t rx, uint8_t sck, uint8_t tx,
     gpio_pull_up(rst);
     gpio_put(rst, 1);
 
-    spi.port = port;
-    spi.rst = rst;
-    spi.nss = nss;
-    spi.busy = busy;
+    spi_port = port;
+    gpio_rst = rst;
+    gpio_nss = nss;
+    gpio_busy = busy;
 
     uint8_t buf[2];
     pn5180_read_eeprom(0x12, buf, sizeof(buf));
@@ -73,7 +70,7 @@ static pn5180_wait_loop_t wait_loop = NULL;
 static inline void wait_not_busy()
 {
     int count = 0;
-    while (gpio_get(spi.busy)) {
+    while (gpio_get(gpio_busy)) {
         sleep_us(10);
         count += 10;
         if ((count > 1000) && wait_loop) {
@@ -96,13 +93,13 @@ static void sleep_ms_with_loop(uint32_t ms)
 static inline void begin_transmission()
 {
     wait_not_busy();
-    gpio_put(spi.nss, 0);
+    gpio_put(gpio_nss, 0);
     sleep_ms_with_loop(2);
 }
 
 static inline void end_transmission()
 {
-    gpio_put(spi.nss, 1);
+    gpio_put(gpio_nss, 1);
     sleep_ms_with_loop(3);
 }
 
@@ -114,7 +111,7 @@ void pn5180_set_wait_loop(pn5180_wait_loop_t loop)
 static bool read_write(const uint8_t *data, uint8_t len, uint8_t *buf, uint8_t buf_len)
 {
     begin_transmission();
-    spi_write_blocking(spi.port, data, len);
+    spi_write_blocking(spi_port, data, len);
     end_transmission();
 
     if (!buf || (buf_len == 0)) {
@@ -122,7 +119,7 @@ static bool read_write(const uint8_t *data, uint8_t len, uint8_t *buf, uint8_t b
     }
 
     begin_transmission();
-    spi_read_blocking(spi.port, 0, buf, buf_len);
+    spi_read_blocking(spi_port, 0, buf, buf_len);
     end_transmission();
 
     return true;
@@ -199,9 +196,9 @@ void pn5180_rf_off()
 
 void pn5180_reset()
 {
-    gpio_put(spi.rst, 0);
+    gpio_put(gpio_rst, 0);
     sleep_us(20);
-    gpio_put(spi.rst, 1);
+    gpio_put(gpio_rst, 1);
     sleep_ms(1);
     while ((pn5180_get_irq() & (1 << 2)) == 0) {
         if (wait_loop) {

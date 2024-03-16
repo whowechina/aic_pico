@@ -26,8 +26,14 @@
 
 static i2c_inst_t *i2c_port = i2c0;
 
-bool pn532_init(i2c_inst_t *i2c)
+bool pn532_init(i2c_inst_t *i2c, uint8_t scl, uint8_t sda, uint32_t freq)
 {
+    i2c_init(i2c, freq);
+    gpio_set_function(scl, GPIO_FUNC_I2C);
+    gpio_set_function(sda, GPIO_FUNC_I2C);
+    gpio_pull_up(scl);
+    gpio_pull_up(sda);
+
     i2c_port = i2c;
 
     uint32_t ver = pn532_firmware_ver();

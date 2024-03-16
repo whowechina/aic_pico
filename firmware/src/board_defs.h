@@ -10,6 +10,14 @@
 #define I2C_SDA 20
 #define I2C_FREQ 433*1000
 
+#define SPI_PORT spi0
+#define SPI_MISO 16
+#define SPI_SCK 18
+#define SPI_MOSI 19
+#define SPI_RST 27
+#define SPI_NSS 17
+#define SPI_BUSY 26
+
 #define RGB_PIN 12
 #define RGB_ORDER GRB // or RGB
 #define LED_DEF { 25, 22, 13, 15 }
