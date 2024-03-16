@@ -7,6 +7,10 @@ link_libraries(pico_multicore pico_stdlib hardware_i2c hardware_spi
                tinyusb_device tinyusb_board)
                                    
 function(make_firmware board board_def)
+    if(NOT CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+        return()
+    endif()
+
     add_executable(${board}
                    main.c save.c config.c commands.c light.c keypad.c
                    cli.c usb_descriptors.c)
