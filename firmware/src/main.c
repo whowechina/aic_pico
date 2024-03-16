@@ -146,11 +146,10 @@ void detect_card()
         return;
     }
 
-    nfc_rf_field(true);
-
     static nfc_card_t old_card = { 0 };
-    nfc_card_t card = nfc_detect_card();
 
+    nfc_rf_field(true);
+    nfc_card_t card = nfc_detect_card();
     nfc_rf_field(false);
 
     if (memcmp(&old_card, &card, sizeof(old_card)) == 0) {

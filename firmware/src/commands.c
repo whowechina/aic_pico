@@ -40,6 +40,7 @@ static void handle_display()
             aic_cfg->light.rgb ? "ON" : "OFF",
             aic_cfg->light.led ? "ON" : "OFF");
     printf("    Level: [%d ~ %d]\n", aic_cfg->light.min, aic_cfg->light.max);
+    printf("[AIME]\n");
     printf("    Virtual AIC: %s\n", aic_cfg->virtual_aic ? "ON" : "OFF");
 }
 
@@ -57,7 +58,11 @@ static void handle_factory_reset()
 static void handle_nfc()
 {
     printf("NFC module: %s\n", nfc_module_name());
+
+    nfc_rf_field(true);
     nfc_card_t card = nfc_detect_card();
+    nfc_rf_field(false);
+
     printf("Card: %s", nfc_card_name(card.card_type));
     for (int i = 0; i < card.len; i++) {
         printf(" %02x", card.uid[i]);

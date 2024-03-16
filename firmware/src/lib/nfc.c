@@ -53,7 +53,7 @@ struct {
     bool (*poll_felica)(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool from_cache);
     bool (*poll_vicinity)(uint8_t uid[8]);
     void (*rf_field)(bool on);
-    bool (*mifare_auth)(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t *key);
+    bool (*mifare_auth)(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t key[6]);
     bool (*mifare_read)(uint8_t block_id, uint8_t block_data[16]);
     void (*set_wait_loop)(nfc_wait_loop_t loop);
 } api[3] = {
@@ -65,8 +65,8 @@ struct {
     },
     {
         pn5180_poll_mifare, pn5180_poll_felica, pn5180_poll_vicinity,
-        func_null,
-        func_null, func_null,
+        pn5180_rf_field,
+        pn5180_mifare_auth, pn5180_mifare_read,
         pn5180_set_wait_loop
     },
     { 0 },

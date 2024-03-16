@@ -34,8 +34,8 @@ void pn5180_read_data(uint8_t *data, uint8_t len);
 void pn5180_read_eeprom(uint8_t addr, uint8_t *buf, uint8_t len);
 
 void pn5180_load_rf_config(uint8_t tx_cfg, uint8_t rx_cfg);
-void pn5180_rf_on();
-void pn5180_rf_off();
+void pn5180_rf_field(bool on);
+
 
 uint32_t pn5180_get_irq();
 void pn5180_clear_irq(uint32_t mask);
@@ -47,6 +47,7 @@ bool pn5180_poll_mifare(uint8_t uid[7], int *len);
 bool pn5180_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool from_cache);
 bool pn5180_poll_vicinity(uint8_t uid[8]);
 
-void pn5180_print_rf_cfg();
+bool pn5180_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t key[6]);
+bool pn5180_mifare_read(uint8_t block_id, uint8_t block_data[16]);
 
 #endif

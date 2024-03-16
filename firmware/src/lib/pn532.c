@@ -371,7 +371,7 @@ bool pn532_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool 
     return true;
 }
 
-bool pn532_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t *key)
+bool pn532_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t key[6])
 {
     uint8_t param[] = {
         1, key_id ? 0x61 : 0x60, block_id,

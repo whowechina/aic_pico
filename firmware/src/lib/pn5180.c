@@ -26,9 +26,11 @@
 #define CMD_READ_EEPROM 0x07
 #define CMD_SEND_DATA 0x09
 #define CMD_READ_DATA 0x0a
+#define CMD_MIFARE_AUTHENTICATE 0x0c
 #define CMD_LOAD_RF_CONFIG 0x11
 #define CMD_RF_ON 0x16
 #define CMD_RF_OFF 0x17
+#define CMD_MIFARE_READ 0x30
 
 static spi_inst_t *spi_port;
 static uint8_t gpio_rst;
@@ -174,16 +176,10 @@ void pn5180_load_rf_config(uint8_t tx_cfg, uint8_t rx_cfg)
     read_write(buf, sizeof(buf), NULL, 0);
 }
 
-void pn5180_rf_on()
+void pn5180_rf_field(bool on)
 {
-    uint8_t buf[] = { CMD_RF_ON, 0 };
-    read_write(buf, sizeof(buf), NULL, 0);
-}
-
-void pn5180_rf_off()
-{
-    uint8_t buf[] = { CMD_RF_OFF, 0 };
-    read_write(buf, sizeof(buf), NULL, 0);
+    uint8_t buf[] = { on ? CMD_RF_ON : CMD_RF_OFF, 0 };
+    read_write(buf, sizeof(buf), NULL, 0);   
 }
 
 void pn5180_reset()
@@ -248,7 +244,7 @@ bool pn5180_poll_mifare(uint8_t uid[7], int *len)
 {
     pn5180_reset();
     pn5180_load_rf_config(0x00, 0x80);
-    pn5180_rf_on();
+    pn5180_rf_field(true);
 
     rf_crc_off();
 
@@ -280,8 +276,6 @@ bool pn5180_poll_mifare(uint8_t uid[7], int *len)
         }
     }
 
-    pn5180_rf_off();
-
     return result;
 }
 
@@ -289,7 +283,7 @@ bool pn5180_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool
 {
     pn5180_reset();
     pn5180_load_rf_config(0x08, 0x88);
-    pn5180_rf_on();
+    pn5180_rf_field(true);
 
     pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xffffffbf);
     pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03);
@@ -312,8 +306,6 @@ bool pn5180_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool
         result = true;
     }
 
-    pn5180_rf_off();
-
     return result;
 }
 
@@ -321,7 +313,7 @@ bool pn5180_poll_vicinity(uint8_t uid[8])
 {
     pn5180_reset();
     pn5180_load_rf_config(0x0d, 0x8d);
-    pn5180_rf_on();
+    pn5180_rf_field(true);
 
     pn5180_clear_irq(0x0fffff);
     pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8);
@@ -333,7 +325,7 @@ bool pn5180_poll_vicinity(uint8_t uid[8])
     sleep_ms(1);
 
     if ((pn5180_get_irq() & 0x4000) == 0) {
-        pn5180_rf_off();
+        pn5180_rf_field(false);
         return false;
     }
 
@@ -356,17 +348,42 @@ bool pn5180_poll_vicinity(uint8_t uid[8])
         result = true;
     }
 
-    pn5180_rf_off();
-    
     return result;
 }
 
-void pn5180_print_rf_cfg()
+bool pn5180_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t key[6])
 {
-    printf("RF_CONTROL_TX_CLK: %08lx\n", pn5180_read_reg(0x21));
-    printf("TX_DATA_MOD:       %08lx\n", pn5180_read_reg(0x16));
-    printf("TX_UNDERSHOOT_CFG: %08lx\n", pn5180_read_reg(0x14));
-    printf("TX_OVERSHOOT_CFG:  %08lx\n", pn5180_read_reg(0x15));
-    printf("RF_CONTROL_TX:     %08lx\n", pn5180_read_reg(0x20));
-    printf("ANT_CONTROL:       %08lx\n", pn5180_read_reg(0x29));
+    uint8_t cmd[] = {
+        CMD_MIFARE_AUTHENTICATE,
+        key[0], key[1], key[2], key[3], key[4], key[5],
+        key_id ? 0x61 : 0x60, block_id,
+        uid[0], uid[1], uid[2], uid[3]
+    };
+
+    uint8_t response = 0;
+    read_write(cmd, sizeof(cmd), &response, 1);
+
+    if ((response == 1) || (response == 2)) {
+        printf("\nMifare auth failed: %d", response);
+        return false;
+    }
+
+    return true;
+}
+
+bool pn5180_mifare_read(uint8_t block_id, uint8_t block_data[16])
+{
+    uint8_t cmd[] = { CMD_MIFARE_READ, block_id };
+    pn5180_send_data(cmd, sizeof(cmd), 0);
+
+    sleep_ms_with_loop(5);
+
+    uint16_t len = pn5180_get_rx() & 0x1ff;
+    if (len != 16) {
+        printf("\nMifare read error (block %d): %d", block_id, len);
+        return false;
+    }
+
+    pn5180_read_data(block_data, 16);
+    return true;
 }
