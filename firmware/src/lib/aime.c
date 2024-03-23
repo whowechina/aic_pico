@@ -58,10 +58,10 @@ enum {
     STATUS_INVALID_COMMAND = 3,
 };
 
-const char *fw_version[] = { "TN32MSEC003S F/W Ver1.0", "\x94" };
+const char *fw_version[] = { "TN32MSEC003S F/W Ver1.2", "\x94" };
 const char *hw_version[] = { "TN32MSEC003S H/W Ver3.0", "837-15396" };
 const char *led_info[] = { "15084\xFF\x10\x00\x12", "000-00000\xFF\x11\x40" };
-static int baudrate_mode = 0;
+static int ver_mode = 1;
 
 static struct {
     bool enabled;
@@ -78,9 +78,14 @@ static void putc_trap(uint8_t byte)
 
 static aime_putc_func aime_putc = putc_trap;
 
-void aime_set_baudrate(int mode)
+void aime_set_mode(int mode)
 {
-    baudrate_mode = (mode == 0) ? 0 : 1;
+    ver_mode = (mode == 0) ? 0 : 1;
+}
+
+const char *aime_get_mode_string()
+{
+    return hw_version[ver_mode];
 }
 
 void aime_init(aime_putc_func putc_func)
@@ -156,6 +161,11 @@ static void send_response()
     uint8_t sync = 0xe0;
     aime_putc(sync);
 
+    printf(" -> %02x(%d)", response.status, response.status);
+    if (response.payload_len > 0) {
+        printf(" [%d]", response.payload_len);
+    }
+
     for (int i = 0; i < response.len; i++) {
         uint8_t c = response.raw[i];
         checksum += c;
@@ -184,9 +194,9 @@ static void cmd_to_normal_mode()
 
 static void cmd_fake_version(const char *version[])
 {
-    int len = strlen(version[baudrate_mode]);
+    int len = strlen(version[ver_mode]);
     build_response(len);
-    memcpy(response.payload, version[baudrate_mode], len);
+    memcpy(response.payload, version[ver_mode], len);
     send_response();
 }
 
@@ -359,18 +369,23 @@ static void aime_handle_frame()
 {
     switch (request.cmd) {
         case CMD_TO_NORMAL_MODE:
+            printf("\nAIME: cmd_to_normal");
             cmd_to_normal_mode();
             break;
         case CMD_GET_FW_VERSION:
+            printf("\nAIME: fw_version");
             cmd_fake_version(fw_version);
             break;
         case CMD_GET_HW_VERSION:
+            printf("\nAIME: hw_version");
             cmd_fake_version(hw_version);
             break;
         case CMD_MIFARE_KEY_SET_A:
+            printf("\nAIME: key A");
             cmd_key_set(mifare_keys[0]);
             break;
         case CMD_MIFARE_KEY_SET_B:
+            printf("\nAIME: key B");
             cmd_key_set(mifare_keys[1]);
             break;
 
@@ -386,38 +401,47 @@ static void aime_handle_frame()
 
         case CMD_FELICA_PUSH:
         case CMD_FELICA_OP:
+            printf("\nAIME: felica op");
             cmd_felica();
             break;
 
         case CMD_CARD_SELECT:
+            printf("\nAIME: card select");
             cmd_card_select();
             break;
         
         case CMD_MIFARE_AUTHORIZE_A:
+            printf("\nAIME: auth A");
             cmd_mifare_auth(0);
             break;
 
         case CMD_MIFARE_AUTHORIZE_B:
+            printf("\nAIME: auth B");
             cmd_mifare_auth(1);
             break;
         
         case CMD_MIFARE_READ:
+            printf("\nAIME: mifare read");
             cmd_mifare_read();
             break;
 
         case CMD_CARD_HALT:
+            printf("\nAIME: mifare halt");
             cmd_mifare_halt();
             break;
 
         case CMD_EXT_BOARD_INFO:
+            printf("\nAIME: led info");
             cmd_fake_version(led_info);
             break;
         case CMD_EXT_BOARD_LED_RGB:
+            printf("\nAIME: led rgb");
             cmd_led_rgb();
             break;
 
         case CMD_SEND_HEX_DATA:
         case CMD_EXT_TO_NORMAL_MODE:
+            printf("\nAIME: hex data or ex to normal: %d", request.cmd);
             send_simple_response(STATUS_OK);
             break;
 

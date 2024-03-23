@@ -42,6 +42,7 @@ static void handle_display()
     printf("    Level: [%d ~ %d]\n", aic_cfg->light.min, aic_cfg->light.max);
     printf("[AIME]\n");
     printf("    Virtual AIC: %s\n", aic_cfg->virtual_aic ? "ON" : "OFF");
+    printf("    Mode: %d (%s)\n", aic_cfg->aime_mode, aime_get_mode_string());
 }
 
 static void handle_save()
@@ -70,7 +71,6 @@ static void handle_nfc()
     printf("\n");
 }
 
-
 static void handle_virtual(int argc, char *argv[])
 {
     const char *usage = "Usage: virtual <on|off>\n";
@@ -89,6 +89,27 @@ static void handle_virtual(int argc, char *argv[])
     aic_cfg->virtual_aic = (match == 0);
 
     aime_virtual_aic(aic_cfg->virtual_aic);
+    config_changed();
+}
+
+static void handle_mode(int argc, char *argv[])
+{
+    const char *usage = "Usage: mode <0:1>\n";
+    if (argc != 1) {
+        printf("%s", usage);
+        return;
+    }
+
+    const char *commands[] = { "0", "1" };
+    int match = cli_match_prefix(commands, 2, argv[0]);
+    if (match < 0) {
+        printf("%s", usage);
+        return;
+    }
+
+    aic_cfg->aime_mode = match;
+
+    aime_set_mode(match);
     config_changed();
 }
 
@@ -163,6 +184,7 @@ void commands_init()
     cli_register("factory", handle_factory_reset, "Reset everything to default.");
     cli_register("nfc", handle_nfc, "NFC module.");
     cli_register("virtual", handle_virtual, "Virtual AIC card.");
+    cli_register("mode", handle_mode, "AIME version mode.");
     cli_register("light", handle_light, "Turn on/off lights.");
     cli_register("level", handle_level, "Set light level.");
 }

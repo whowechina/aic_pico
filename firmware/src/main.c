@@ -229,6 +229,7 @@ void init()
 
     aime_init(cdc_aime_putc);
     aime_virtual_aic(aic_cfg->virtual_aic);
+    aime_set_mode(aic_cfg->aime_mode);
 
     cli_init("aic_pico>", "\n     << AIC Pico >>\n"
                             " https://github.com/whowechina\n\n");
