@@ -6,7 +6,7 @@
 
   (paper "User" 270.002 229.997)
   (title_block
-    (title "Teeny Controller for IIDX")
+    (title "AIC Pico with PN5180")
   )
 
   (layers
