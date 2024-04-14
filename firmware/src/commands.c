@@ -42,7 +42,13 @@ static void handle_display()
     printf("    Level: [%d ~ %d]\n", aic_cfg->light.min, aic_cfg->light.max);
     printf("[AIME]\n");
     printf("    Virtual AIC: %s\n", aic_cfg->virtual_aic ? "ON" : "OFF");
-    printf("    Mode: %d (%s)\n", aic_cfg->aime_mode, aime_get_mode_string());
+
+    printf("    Mode: %s\n", aic_cfg->mode == 0 ? "aime0" :
+                             aic_cfg->mode == 1 ? "aime1" :
+                            aic_cfg->mode == 0x10 ? "bana" : "not set");
+    if ((aic_cfg->mode & 0xf0) == 0) {
+        printf("    Pattern: %s\n", aime_get_mode_string());
+    }
 }
 
 static void handle_save()
@@ -94,22 +100,36 @@ static void handle_virtual(int argc, char *argv[])
 
 static void handle_mode(int argc, char *argv[])
 {
-    const char *usage = "Usage: mode <0:1>\n";
+    const char *usage = "Usage: mode <aime0:aime1:bana>\n"
+                        "    aime0: Sega Aime 0\n"
+                        "    aime1: Sega Aime 1\n"
+                        "    bana: Bandai Namco\n";
     if (argc != 1) {
         printf("%s", usage);
         return;
     }
 
-    const char *commands[] = { "0", "1" };
-    int match = cli_match_prefix(commands, 2, argv[0]);
-    if (match < 0) {
-        printf("%s", usage);
-        return;
+    const char *commands[] = { "aime0", "aime1", "bana" };
+    int match = cli_match_prefix(commands, 3, argv[0]);
+    switch (match) {
+        case 0:
+            aic_cfg->mode = 0x00;
+            break;
+        case 1:
+            aic_cfg->mode = 0x01;
+            break;
+        case 2:
+            aic_cfg->mode = 0x10;
+            break;
+        default:
+            printf("%s", usage);
+            return;
     }
 
-    aic_cfg->aime_mode = match;
+    if ((aic_cfg->mode & 0xf0) == 0) {
+        aime_set_mode(aic_cfg->mode);
+    }
 
-    aime_set_mode(match);
     config_changed();
 }
 

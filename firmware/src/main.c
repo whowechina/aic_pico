@@ -175,7 +175,11 @@ static void aime_run()
         uint8_t buf[32];
         int count = tud_cdc_n_read(aime_intf, buf, sizeof(buf));
         for (int i = 0; i < count; i++) {
-            aime_feed(buf[i]);
+            if ((aic_cfg->mode & 0xf0) == 0) {
+                aime_feed(buf[i]);
+            } else {
+                //bana_feed(buf[i]);
+            }
         }
     }
 }
@@ -229,7 +233,12 @@ void init()
 
     aime_init(cdc_aime_putc);
     aime_virtual_aic(aic_cfg->virtual_aic);
-    aime_set_mode(aic_cfg->aime_mode);
+
+    if ((aic_cfg->mode & 0x0f) == 0) {
+        aime_set_mode(aic_cfg->mode);
+    }
+
+    //bana_init();
 
     cli_init("aic_pico>", "\n     << AIC Pico >>\n"
                             " https://github.com/whowechina\n\n");

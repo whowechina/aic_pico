@@ -14,7 +14,7 @@ aic_cfg_t *aic_cfg;
 static aic_cfg_t default_cfg = {
     .light = { .min = 24, .max = 128, .rgb = true, .led = true },
     .virtual_aic = true,
-    .aime_mode = 1,
+    .mode = 0,
 };
 
 aic_runtime_t *aic_runtime;

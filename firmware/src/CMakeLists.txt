@@ -29,5 +29,5 @@ function(make_firmware board board_def)
                        COMMAND cp ${board}.uf2 ${CMAKE_CURRENT_LIST_DIR}/..)
 endfunction()
 
-add_library(aic lib/aime.c lib/pn532.c lib/pn5180.c lib/nfc.c)
+add_library(aic lib/aime.c lib/bana.c lib/pn532.c lib/pn5180.c lib/nfc.c)
 make_firmware(aic_pico BOARD_AIC_PICO)
