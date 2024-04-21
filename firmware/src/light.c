@@ -237,10 +237,18 @@ void light_init()
     }
 }
 
+static bool rainbow = true;
+void light_set_rainbow(bool enable)
+{
+    rainbow = enable;
+}
+
 void light_update()
 {
-    generate_color_wheel();
-    rainbow_update();
-    rainbow_fade();
+    if (rainbow) {
+        generate_color_wheel();
+        rainbow_update();
+        rainbow_fade();
+    }
     drive_led();
 }

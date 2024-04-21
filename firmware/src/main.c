@@ -33,6 +33,7 @@
 #include "nfc.h"
 
 #include "aime.h"
+#include "bana.h"
 
 static struct {
     uint8_t current[9];
@@ -94,12 +95,27 @@ void report_usb_hid()
     report_hid_key();
 }
 
+static void light_effect()
+{
+    uint64_t now = time_us_64();
+    if (now < aime_expire_time()) {
+        light_set_rainbow(false);
+        light_set_color_all(aime_led_color());
+    } else if (now < bana_expire_time()) {
+        light_set_rainbow(false);
+        light_set_color_all(bana_led_color());
+    } else {
+        light_set_rainbow(true);
+    }
+    light_update();
+}
+
 static mutex_t core1_io_lock;
 static void core1_loop()
 {
     while (1) {
         if (mutex_try_enter(&core1_io_lock, NULL)) {
-            light_update();
+            light_effect();
             mutex_exit(&core1_io_lock);
         }
         cli_fps_count(1);
@@ -142,7 +158,8 @@ static void update_cardio(nfc_card_t *card)
 
 void detect_card()
 {
-    if (time_us_64() < aime_expire_time()) {
+    if ((time_us_64() < aime_expire_time()) ||
+        (time_us_64() < bana_expire_time())) {
         return;
     }
 
@@ -174,13 +191,21 @@ static void aime_run()
     if (tud_cdc_n_available(aime_intf)) {
         uint8_t buf[32];
         int count = tud_cdc_n_read(aime_intf, buf, sizeof(buf));
+        if (count <= 0) {
+            return;
+        }
+        
+        printf("\n> ");
         for (int i = 0; i < count; i++) {
+            printf("|%02x", buf[i]);
             if ((aic_cfg->mode & 0xf0) == 0) {
                 aime_feed(buf[i]);
             } else {
-                //bana_feed(buf[i]);
+                bana_feed(buf[i]);
             }
         }
+
+        light_set_color_all(aime_led_color());
     }
 }
 
@@ -238,7 +263,7 @@ void init()
         aime_set_mode(aic_cfg->mode);
     }
 
-    //bana_init();
+    bana_init(cdc_aime_putc);
 
     cli_init("aic_pico>", "\n     << AIC Pico >>\n"
                             " https://github.com/whowechina\n\n");

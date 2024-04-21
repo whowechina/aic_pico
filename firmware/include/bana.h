@@ -19,4 +19,6 @@ bool bana_feed(int c);
 /* bana activity expires at this time */
 uint64_t bana_expire_time();
 
+uint32_t bana_led_color();
+
 #endif

@@ -365,7 +365,7 @@ static void cmd_led_rgb()
     send_response();
 }
 
-static void aime_handle_frame()
+static void handle_frame()
 {
     switch (request.cmd) {
         case CMD_TO_NORMAL_MODE:
@@ -485,7 +485,7 @@ bool aime_feed(int c)
 
     if (req_ctx.len != 0 && req_ctx.len == request.len) {
         if (req_ctx.check_sum == c) {
-            aime_handle_frame();
+            handle_frame();
             req_ctx.active = false;
             expire_time = time_us_64() + AIME_EXPIRE_TIME;
         }
