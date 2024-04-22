@@ -16,7 +16,11 @@
 #include "nfc.h"
 #include "aime.h"
 
-#define AIME_EXPIRE_TIME 5000000ULL
+static bool debug = false;
+#define DEBUG(...) if (debug) printf(__VA_ARGS__)
+
+#define AIME_EXPIRE_TIME 10000000ULL
+
 enum {
     CMD_GET_FW_VERSION = 0x30,
     CMD_GET_HW_VERSION = 0x32,
@@ -93,6 +97,11 @@ void aime_init(aime_putc_func putc_func)
     aime_putc = putc_func;
 }
 
+void aime_debug(bool enable)
+{
+    debug = enable;
+}
+
 void aime_virtual_aic(bool enable)
 {
     virtual_aic.enabled = enable;
@@ -161,9 +170,9 @@ static void send_response()
     uint8_t sync = 0xe0;
     aime_putc(sync);
 
-    printf(" -> %02x(%d)", response.status, response.status);
+    DEBUG(" -> %02x(%d)", response.status, response.status);
     if (response.payload_len > 0) {
-        printf(" [%d]", response.payload_len);
+        DEBUG(" [%d]", response.payload_len);
     }
 
     for (int i = 0; i < response.len; i++) {
@@ -278,7 +287,9 @@ static void handle_no_card()
 static void cmd_detect_card()
 {
     nfc_card_t card = nfc_detect_card();
-    display_card(&card);
+    if (debug) {
+        display_card(&card);
+    }
 
     switch (card.card_type) {
         case NFC_CARD_MIFARE:
@@ -369,23 +380,23 @@ static void handle_frame()
 {
     switch (request.cmd) {
         case CMD_TO_NORMAL_MODE:
-            printf("\nAIME: cmd_to_normal");
+            DEBUG("\nAIME: cmd_to_normal");
             cmd_to_normal_mode();
             break;
         case CMD_GET_FW_VERSION:
-            printf("\nAIME: fw_version");
+            DEBUG("\nAIME: fw_version");
             cmd_fake_version(fw_version);
             break;
         case CMD_GET_HW_VERSION:
-            printf("\nAIME: hw_version");
+            DEBUG("\nAIME: hw_version");
             cmd_fake_version(hw_version);
             break;
         case CMD_MIFARE_KEY_SET_A:
-            printf("\nAIME: key A");
+            DEBUG("\nAIME: key A");
             cmd_key_set(mifare_keys[0]);
             break;
         case CMD_MIFARE_KEY_SET_B:
-            printf("\nAIME: key B");
+            DEBUG("\nAIME: key B");
             cmd_key_set(mifare_keys[1]);
             break;
 
@@ -401,56 +412,56 @@ static void handle_frame()
 
         case CMD_FELICA_PUSH:
         case CMD_FELICA_OP:
-            printf("\nAIME: felica op");
+            DEBUG("\nAIME: felica op");
             cmd_felica();
             break;
 
         case CMD_CARD_SELECT:
-            printf("\nAIME: card select");
+            DEBUG("\nAIME: card select");
             cmd_card_select();
             break;
         
         case CMD_MIFARE_AUTHORIZE_A:
-            printf("\nAIME: auth A");
+            DEBUG("\nAIME: auth A");
             cmd_mifare_auth(0);
             break;
 
         case CMD_MIFARE_AUTHORIZE_B:
-            printf("\nAIME: auth B");
+            DEBUG("\nAIME: auth B");
             cmd_mifare_auth(1);
             break;
         
         case CMD_MIFARE_READ:
-            printf("\nAIME: mifare read");
+            DEBUG("\nAIME: mifare read");
             cmd_mifare_read();
             break;
 
         case CMD_CARD_HALT:
-            printf("\nAIME: mifare halt");
+            DEBUG("\nAIME: mifare halt");
             cmd_mifare_halt();
             break;
 
         case CMD_EXT_BOARD_INFO:
-            printf("\nAIME: led info");
+            DEBUG("\nAIME: led info");
             cmd_fake_version(led_info);
             break;
         case CMD_EXT_BOARD_LED_RGB:
-            printf("\nAIME: led rgb");
+            DEBUG("\nAIME: led rgb");
             cmd_led_rgb();
             break;
 
         case CMD_SEND_HEX_DATA:
         case CMD_EXT_TO_NORMAL_MODE:
-            printf("\nAIME: hex data or ex to normal: %d", request.cmd);
+            DEBUG("\nAIME: hex data or ex to normal: %d", request.cmd);
             send_simple_response(STATUS_OK);
             break;
 
         default:
-            printf("\nUnknown command: %02x [", request.cmd);
+            DEBUG("\nUnknown command: %02x [", request.cmd);
             for (int i = 0; i < request.len; i++) {
-                printf(" %02x", request.raw[i]);
+                DEBUG(" %02x", request.raw[i]);
             }
-            printf("]");
+            DEBUG("]");
             send_simple_response(STATUS_OK);
             break;
     }
@@ -499,9 +510,9 @@ bool aime_feed(int c)
     return true;
 }
 
-uint64_t aime_expire_time()
+bool aime_is_active()
 {
-    return expire_time;
+    return time_us_64() < expire_time;
 }
 
 uint32_t aime_led_color()

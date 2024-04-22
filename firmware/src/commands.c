@@ -12,6 +12,7 @@
 #include "cli.h"
 
 #include "aime.h"
+#include "bana.h"
 #include "nfc.h"
 
 static int fps[2];
@@ -197,6 +198,15 @@ static void handle_level(int argc, char *argv[])
     handle_display();
 }
 
+static void handle_debug()
+{
+    static bool debug = true;
+    printf("Debug: %s\n", debug ? "ON" : "OFF");
+    aime_debug(debug);
+    bana_debug(debug);
+    debug = !debug;
+}
+
 void commands_init()
 {
     cli_register("display", handle_display, "Display all settings.");
@@ -207,4 +217,5 @@ void commands_init()
     cli_register("mode", handle_mode, "AIME version mode.");
     cli_register("light", handle_light, "Turn on/off lights.");
     cli_register("level", handle_level, "Set light level.");
+    cli_register("debug", handle_debug, "Toggle debug.");
 }

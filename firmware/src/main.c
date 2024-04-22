@@ -98,10 +98,10 @@ void report_usb_hid()
 static void light_effect()
 {
     uint64_t now = time_us_64();
-    if (now < aime_expire_time()) {
+    if (aime_is_active()) {
         light_set_rainbow(false);
         light_set_color_all(aime_led_color());
-    } else if (now < bana_expire_time()) {
+    } else if (now < bana_is_active()) {
         light_set_rainbow(false);
         light_set_color_all(bana_led_color());
     } else {
@@ -156,10 +156,9 @@ static void update_cardio(nfc_card_t *card)
     }
 }
 
-void detect_card()
+static void cardio_run()
 {
-    if ((time_us_64() < aime_expire_time()) ||
-        (time_us_64() < bana_expire_time())) {
+    if (aime_is_active() || bana_is_active()) {
         return;
     }
 
@@ -180,32 +179,45 @@ void detect_card()
 }
 
 const int aime_intf = 1;
+static struct {
+    uint8_t buf[64];
+    int pos;
+} aime;
+
 static void cdc_aime_putc(uint8_t byte)
 {
     tud_cdc_n_write(aime_intf, &byte, 1);
     tud_cdc_n_write_flush(aime_intf);
 }
 
-static void aime_run()
+static void aime_poll_data()
 {
     if (tud_cdc_n_available(aime_intf)) {
-        uint8_t buf[32];
-        int count = tud_cdc_n_read(aime_intf, buf, sizeof(buf));
-        if (count <= 0) {
-            return;
+        int count = tud_cdc_n_read(aime_intf, aime.buf + aime.pos,
+                                   sizeof(aime.buf) - aime.pos);
+        if (count > 0) {
+            aime.pos += count;
         }
-        
-        printf("\n> ");
+    }
+}
+
+static void aime_run()
+{
+    aime_poll_data();
+
+    if (aime.pos > 0) {
+        uint8_t buf[64];
+        memcpy(buf, aime.buf, aime.pos);
+        int count = aime.pos;
+        aime.pos = 0;
+
         for (int i = 0; i < count; i++) {
-            printf("|%02x", buf[i]);
             if ((aic_cfg->mode & 0xf0) == 0) {
                 aime_feed(buf[i]);
             } else {
                 bana_feed(buf[i]);
             }
         }
-
-        light_set_color_all(aime_led_color());
     }
 }
 
@@ -216,6 +228,7 @@ void wait_loop()
 
     tud_task();
     cli_run();
+    aime_poll_data();
 
     cli_fps_count(0);
 }
@@ -227,14 +240,13 @@ static void core0_loop()
 
         cli_run();
         aime_run();
+        cardio_run();
+
+        keypad_update();
+        report_usb_hid();
     
         save_loop();
         cli_fps_count(0);
-
-        keypad_update();
-        detect_card();
-    
-        report_usb_hid();
     
         sleep_ms(1);
     }

@@ -13,12 +13,14 @@
 typedef void (*bana_putc_func)(uint8_t byte);
 
 void bana_init(bana_putc_func putc_func);
+void bana_debug(bool enable);
 
 bool bana_feed(int c);
 
-/* bana activity expires at this time */
-uint64_t bana_expire_time();
+/* if bana is currently active */
+bool bana_is_active();
 
 uint32_t bana_led_color();
+
 
 #endif

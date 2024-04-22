@@ -16,7 +16,10 @@
 #include "nfc.h"
 #include "bana.h"
 
-#define BANA_EXPIRE_TIME 5000000ULL
+static bool debug = false;
+#define DEBUG(...) if (debug) printf(__VA_ARGS__)
+
+#define BANA_EXPIRE_TIME 10000000ULL
 
 static void putc_trap(uint8_t byte)
 {
@@ -36,13 +39,18 @@ void bana_init(bana_putc_func putc_func)
     bana_putc = putc_func;
 }
 
+void bana_debug(bool enable)
+{
+    debug = enable;
+}
+
 typedef union __attribute__((packed)) {
     struct {
         struct {
             uint8_t padding[3];
             uint8_t len;
             uint8_t len_check;
-        } hdr;
+        } hdr; 
         uint8_t dir;
         uint8_t cmd;
         uint8_t data[0];
@@ -88,10 +96,11 @@ static void send_response()
     int total_len = 7 + response.hdr.len;
     bana_puts((const char *)response.raw, total_len);
 
-    printf("\nResp: %d %d\n", response.hdr.len, response.cmd);
+    DEBUG("\n\033[33mResp: %2d %2x >>", response.hdr.len, response.cmd);
     for (int i = 0; i < total_len; i++) {
-        printf(">%02x", response.raw[i]);
+        DEBUG(" %02x", response.raw[i]);
     }
+    DEBUG("\033[0m");
 }
 
 static void send_simple_response(uint8_t code)
@@ -111,18 +120,14 @@ static uint32_t led_color = 0;
 
 static void handle_frame()
 {
-    printf("\nBana: %d %02x", request.hdr.len, request.cmd);
-    if (request.hdr.len == 0) {
-        send_ack();
-        return;
-    }
+    DEBUG("\nBana >>");
 
-    if (request.hdr.len + 7 != req_ctx.frame_len) {
-        return;
+    for (int i = 3; i < request.hdr.len; i++) {
+        DEBUG(" %02x", request.data[i]);
     }
 
     if (request.hdr.len != 0) {
-        printf("Req: %d %02x", request.hdr.len, request.cmd);
+        send_ack();
         send_simple_response(request.cmd + 1);
     }
 }
@@ -158,9 +163,9 @@ bool bana_feed(int c)
     return true;
 }
 
-uint64_t bana_expire_time()
+bool bana_is_active()
 {
-    return expire_time;
+    return time_us_64() < expire_time;
 }
 
 uint32_t bana_led_color()
