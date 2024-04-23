@@ -49,6 +49,8 @@ void nfc_set_wait_loop(nfc_wait_loop_t loop);
 void nfc_rf_field(bool on);
 
 nfc_card_t nfc_detect_card();
+nfc_card_t nfc_detect_card_ex(bool mifare, bool felica, bool vicinity);
+
 void display_card(const nfc_card_t *card);
 
 const char *nfc_module_name();

@@ -199,12 +199,27 @@ nfc_card_t nfc_detect_card()
 {
     nfc_card_t card = { 0 };
 
-    if (!nfc_detect_mifare(&card) &&
-        !nfc_detect_felica(&card) &&
-        !nfc_detect_vicinity(&card)) {
-        card.card_type = NFC_CARD_NONE;
+    if (nfc_detect_mifare(&card) ||
+        nfc_detect_felica(&card) ||
+        nfc_detect_vicinity(&card)) {
+        return card;
     }
 
+    card.card_type = NFC_CARD_NONE;
+    return card;
+}
+
+nfc_card_t nfc_detect_card_ex(bool mifare, bool felica, bool vicinity)
+{
+    nfc_card_t card = { 0 };
+
+    if ((mifare && nfc_detect_mifare(&card))
+        || (felica && nfc_detect_felica(&card))
+        || (vicinity && nfc_detect_vicinity(&card))) {
+        return card;
+    }
+
+    card.card_type = NFC_CARD_NONE;
     return card;
 }
 
