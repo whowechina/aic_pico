@@ -443,7 +443,7 @@ int pn532_felica_command(uint8_t cmd, const uint8_t *param, uint8_t param_len, u
 }
 
 
-bool pn532_felica_read_wo_encrypt(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16])
+bool pn532_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16])
 {
     uint8_t param[] = { 1, svc_code & 0xff, svc_code >> 8,
                         1, block_id >> 8, block_id & 0xff };
@@ -451,11 +451,7 @@ bool pn532_felica_read_wo_encrypt(uint16_t svc_code, uint16_t block_id, uint8_t 
     int result = pn532_felica_command(0x06, param, sizeof(param), readbuf);
 
     if (result != 12 + 16 || readbuf[9] != 0 || readbuf[10] != 0) {
-        //printf("\nPN532 Felica READ read failed %d %02x %02x",
-        //       result, readbuf[9], readbuf[10]);
-        for (int i = 0; i < result; i++) {
-            printf(" %02x", readbuf[i]);
-        }
+        printf("\nPN532 Felica read failed [%04x:%04x]", svc_code, block_id);
         memset(block_data, 0, 16);
         return true; // we fake the result when it fails
     }
@@ -466,7 +462,7 @@ bool pn532_felica_read_wo_encrypt(uint16_t svc_code, uint16_t block_id, uint8_t 
     return true;
 }
 
-bool pn532_felica_write_wo_encrypt(uint16_t svc_code, uint16_t block_id, const uint8_t block_data[16])
+bool pn532_felica_write(uint16_t svc_code, uint16_t block_id, const uint8_t block_data[16])
 {
     uint8_t param[22] = { 1, svc_code & 0xff, svc_code >> 8,
                         1, block_id >> 8, block_id & 0xff };

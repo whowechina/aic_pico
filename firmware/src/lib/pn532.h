@@ -32,7 +32,7 @@ bool pn532_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool 
 bool pn532_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t key[6]);
 bool pn532_mifare_read(uint8_t block_id, uint8_t block_data[16]);
 
-bool pn532_felica_read_wo_encrypt(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16]);
-bool pn532_felica_write_wo_encrypt(uint16_t svc_code, uint16_t block_id, const uint8_t block_data[16]);
+bool pn532_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16]);
+bool pn532_felica_write(uint16_t svc_code, uint16_t block_id, const uint8_t block_data[16]);
 
 #endif

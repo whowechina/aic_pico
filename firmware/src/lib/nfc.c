@@ -55,18 +55,21 @@ struct {
     void (*rf_field)(bool on);
     bool (*mifare_auth)(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t key[6]);
     bool (*mifare_read)(uint8_t block_id, uint8_t block_data[16]);
+    bool (*felica_read)(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16]);
     void (*set_wait_loop)(nfc_wait_loop_t loop);
 } api[3] = {
     {
         pn532_poll_mifare, pn532_poll_felica, func_null,
         pn532_rf_field,
         pn532_mifare_auth, pn532_mifare_read,
+        pn532_felica_read,
         pn532_set_wait_loop
     },
     {
         pn5180_poll_mifare, pn5180_poll_felica, pn5180_poll_vicinity,
         pn5180_rf_field,
         pn5180_mifare_auth, pn5180_mifare_read,
+        NULL,
         pn5180_set_wait_loop
     },
     { 0 },
@@ -247,4 +250,12 @@ bool nfc_mifare_read(uint8_t block_id, uint8_t block_data[16])
         return false;
     }
     return api[nfc_module].mifare_read(block_id, block_data);
+}
+
+bool nfc_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16])
+{
+    if (!api[nfc_module].felica_read) {
+        return false;
+    }
+    return api[nfc_module].felica_read(svc_code, block_id, block_data);
 }

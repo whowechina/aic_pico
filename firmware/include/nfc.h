@@ -58,4 +58,6 @@ const char *nfc_module_name();
 bool nfc_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t *key);
 bool nfc_mifare_read(uint8_t block_id, uint8_t block_data[16]);
 
+bool nfc_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16]);
+
 #endif
