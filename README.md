@@ -1,5 +1,5 @@
 # AIC Pico and AIC Key
-  **Amusement IC Card Reader, AIME & Cardio Emulator**
+  **AIME Reader & Bandai Namco Reader & Cardio Emulator**
 
 [点这里可以切换到中文版](README_CN.md)
 
@@ -14,7 +14,7 @@
   * AIC Key PN5180
   * AIC Pico Lib (see notes 1 below)
 * Easy to make.
-* Sega AIME I/O and Spicetools CardIO emulation.
+* Sega AIME I/O, Bandai Namco I/O and Spicetools CardIO emulation.
 * Command line for configurations.
 * Supported card:
   * FeliCa (Amusement IC)
@@ -31,7 +31,14 @@
 ## Thanks
 Thanks to many respectful guys/companies who made their tools or materials free or open source (KiCad, OnShape, InkScape, Fritzing, Raspberry things), ChatGPT and GitHub Copilot helped a lot as well.
 
-And thanks to community developers and projects that helped me a lot: CrazyRedMachine (https://github.com/CrazyRedMachine) for the Spicetools Card IO part, Sucareto's AIME Reader (https://github.com/Sucareto/Arduino-Aime-Reader) for the AIME protocol part, Bottersnike (https://gitea.tendokyu.moe/Bottersnike) for his sharing of AIME and FeliCa knowledge, .NET nanoFramework (https://github.com/nanoframework) for the PN5180 part.
+And thanks to community developers and projects that helped me a lot:
+* CrazyRedMachine (https://github.com/CrazyRedMachine) for the Spicetools Card IO part;
+* Sucareto's AIME Reader (https://github.com/Sucareto/Arduino-Aime-Reader) for the AIME protocol part;
+* Bottersnike (https://gitea.tendokyu.moe/Bottersnike, https://sega.bsnk.me/) for AIME and FeliCa knowledge;
+* .NET nanoFramework (https://github.com/nanoframework) for the PN5180 part;
+* Gyt4 (https://github.com/gyt4/) for Bandai Namco card reader I/O；
+* Bananatools (https://gitea.tendokyu.moe/Hay1tsme/bananatools) for Bandai Namco card reader I/O；
+* chujohiroto (https://github.com/chujohiroto/Raspberry-RCS620S/blob/master/rcs620s.py), as indirect reference for the Bandai Namco card reader I/O；
 
 ## Warning
 This project:  
@@ -214,6 +221,9 @@ To support many different NFC cards and tags, card IDs are transformed following
 * 15693 => original UID
 * MIFARE (4-byte UID) => 0xE0 + 0x04 + UID + first 2 bytes of the UID
 * MIFARE (7-byte UID) => 0xE0 + UID
+* FeliCa => Original IDm
+### Bandai Namco
+* MIFARE (4-byte UID) => UID
 * FeliCa => Original IDm
 
 ## 3D Model Source File (Onshape)

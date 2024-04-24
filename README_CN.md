@@ -1,5 +1,5 @@
 # AIC Pico 和 AIC Key
-  **AIC 卡读取器，AIME & Cardio 模拟器**
+  **AIME 读卡器 & Bandai Namco 读卡器 & Cardio 模拟器**
 
 [Click here for the English version of this guide.](README.md)
 
@@ -17,7 +17,7 @@
   * AIC Key PN5180
   * AIC Pico Lib (参见下面的注释 1)
 * 易于制作。
-* Sega AIME I/O 和 Spicetools CardIO 模拟。
+* Sega AIME I/O, Bandai Namco I/O 和 Spicetools CardIO 模拟。
 * 用于参数配置的命令行。
 * 支持的卡：
   * FeliCa (Amusement IC)
@@ -34,7 +34,14 @@
 ## 感谢
 感谢许多尊敬的爱好者和公司将他们的工具或材料免费或开源（KiCad, OnShape, InkScape, Fritzing, Raspberry things），ChatGPT 和 GitHub Copilot 也提供了很大的帮助。
 
-同时感谢对我有很大帮助的社区开发者和项目：CrazyRedMachine (https://github.com/CrazyRedMachine) 提供了 Spicetools Card IO 部分，Sucareto 的 AIME Reader (https://github.com/Sucareto/Arduino-Aime-Reader) 提供了 AIME 协议部分，Bottersnike (https://gitea.tendokyu.moe/Bottersnike) 提供了 AIME 和 FeliCa 相关的知识帮助, .NET nanoFramework (https://github.com/nanoframework) 提供了 PN5180 部分。
+同时感谢对我有很大帮助的社区开发者和项目：
+* CrazyRedMachine (https://github.com/CrazyRedMachine) 提供了 Spicetools Card IO 部分；
+* Sucareto 的 AIME Reader (https://github.com/Sucareto/Arduino-Aime-Reader) 提供了 AIME 协议部分；
+* Bottersnike (https://gitea.tendokyu.moe/Bottersnike, https://sega.bsnk.me/) 提供了 AIME 和 FeliCa 相关的知识；
+* .NET nanoFramework (https://github.com/nanoframework) 提供了 PN5180 部分；
+* Gyt4 (https://github.com/gyt4/) 提供了 Bandai Namco 读卡器相关信息；
+* Bananatools (https://gitea.tendokyu.moe/Hay1tsme/bananatools) 提供了 Bandai Namco 读卡器交互信息；
+* chujohiroto (https://github.com/chujohiroto/Raspberry-RCS620S/blob/master/rcs620s.py) RCS620 用作间接参考；
 
 ## 友情警告
 这个项目：
@@ -217,6 +224,9 @@ AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico"
 * 15693 => 原始 UID
 * MIFARE (4-byte UID) => 0xE0 + 0x04 + UID + UID 的前 2 个字节
 * MIFARE (7-byte UID) => 0xE0 + UID
+* FeliCa => 原始 IDm
+### Bandai Namco
+* MIFARE (4-byte UID) => UID
 * FeliCa => 原始 IDm
 
 ## 3D 模型源文件 (Onshape)
