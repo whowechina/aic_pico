@@ -385,7 +385,10 @@ bool pn532_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, c
     }
     int result = pn532_read_response(0x40, readbuf, sizeof(readbuf));
     if (readbuf[0] != 0) {
-        printf("\nPN532 Mifare AUTH failed %d %02x", result, readbuf[0]);
+        printf("\nPN532 Mifare AUTH failed %d %02x key[%2x:%d]: ", result, readbuf[0], param[1], param[2]);
+        for (int i = 0; i < 6; i++) {
+            printf("%02x", key[i]);
+        }
         return false;
     }
     return true;
