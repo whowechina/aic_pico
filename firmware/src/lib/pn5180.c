@@ -369,9 +369,8 @@ bool pn5180_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, 
     uint8_t response = 0;
     read_write(cmd, sizeof(cmd), &response, 1);
 
-    printf("\nAuth: block: %d, result:%d", block_id, response);
     if ((response == 1) || (response == 2)) {
-        printf("\nMifare auth failed: %d", response);
+        printf("\nMifare auth failed: %d, [%d:%d]", response, cmd[7], block_id);
         return false;
     }
 
@@ -424,7 +423,6 @@ bool pn5180_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data
         return false;
     }
 
-    printf(" OK >> ");
     memcpy(block_data, out.data, 16);
     return true;
 }

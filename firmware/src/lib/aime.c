@@ -171,11 +171,6 @@ static void send_response()
     uint8_t sync = 0xe0;
     aime_putc(sync);
 
-    DEBUG(" -> %02x(%d)", response.status, response.status);
-    if (response.payload_len > 0) {
-        DEBUG(" [%d]", response.payload_len);
-    }
-
     for (int i = 0; i < response.len; i++) {
         uint8_t c = response.raw[i];
         checksum += c;
@@ -188,6 +183,12 @@ static void send_response()
     }
 
     aime_putc(checksum);
+
+    DEBUG("\n\033[33mResp %2d:%02x >>", response.payload_len, response.cmd);
+    for (int i = 0; i < response.payload_len; i++) {
+        DEBUG(" %02x", response.payload[i]);
+    }
+    DEBUG("\033[0m");
 }
 
 static void send_simple_response(uint8_t status)
@@ -379,6 +380,12 @@ static void cmd_led_rgb()
 
 static void handle_frame()
 {
+    DEBUG("\n\033[32mAime %d:%02x >>", request.payload_len, request.cmd);
+    for (int i = 0; i < request.payload_len; i++) {
+        DEBUG(" %02x", request.payload[i]);
+    }
+    DEBUG("\033[0m");
+
     switch (request.cmd) {
         case CMD_TO_NORMAL_MODE:
             DEBUG("\nAIME: cmd_to_normal");
