@@ -279,10 +279,12 @@ bool pn5180_poll_mifare(uint8_t uid[7], int *len)
     return result;
 }
 
+static uint8_t idm_cache[8] = {0};
+
 bool pn5180_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool from_cache)
 {
     pn5180_reset();
-    pn5180_load_rf_config(0x08, 0x88);
+    pn5180_load_rf_config(0x09, 0x89);
     pn5180_rf_field(true);
 
     pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xffffffbf);
@@ -290,23 +292,27 @@ bool pn5180_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool
 
     uint8_t cmd[] = {0x06, 0x00, 0xff, 0xff, 0x01, 0x00};
 
-	pn5180_send_data(cmd, 6, 0x00);
-
+	pn5180_send_data(cmd, sizeof(cmd), 0x00);
     sleep_ms(1);
 
-    uint8_t out[20] = {0};
-    pn5180_read_data(out, 20);
+    struct __attribute__((packed)) {
+        uint8_t len;
+        uint8_t cmd;
+        uint8_t idm[8];
+        uint8_t pmm[8];
+        uint8_t syscode[2];
+    } out = { 0 };
+    pn5180_read_data((uint8_t *)&out, sizeof(out));
 
-    bool result = false;
-    if (out[1] == 0x01) {
-        result = true;
-        memmove(uid, out + 2, 8);
-        memmove(pmm, out + 10, 8);
-        memmove(syscode, out + 18, 2);
-        result = true;
+    if ((out.len != sizeof(out)) || (out.cmd != 0x01)) {
+        return false;
     }
 
-    return result;
+    memcpy(uid, out.idm, 8);
+    memcpy(pmm, out.pmm, 8);
+    memcpy(syscode, out.syscode, 2);
+    memcpy(idm_cache, uid, 8);
+    return true;
 }
 
 bool pn5180_poll_vicinity(uint8_t uid[8])
@@ -363,6 +369,7 @@ bool pn5180_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, 
     uint8_t response = 0;
     read_write(cmd, sizeof(cmd), &response, 1);
 
+    printf("\nAuth: block: %d, result:%d", block_id, response);
     if ((response == 1) || (response == 2)) {
         printf("\nMifare auth failed: %d", response);
         return false;
@@ -387,3 +394,38 @@ bool pn5180_mifare_read(uint8_t block_id, uint8_t block_data[16])
     pn5180_read_data(block_data, 16);
     return true;
 }
+
+bool pn5180_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16])
+{
+    uint8_t cmd[] = {0x10, 0x06, 
+                    idm_cache[0], idm_cache[1],
+                    idm_cache[2], idm_cache[3],
+                    idm_cache[4], idm_cache[5],
+                    idm_cache[6], idm_cache[7],
+                    0x01, svc_code & 0xff, svc_code >> 8,
+                    0x01, block_id >> 8, block_id & 0xff};
+
+	pn5180_send_data(cmd, sizeof(cmd), 0x00);
+    sleep_ms(1);
+
+    struct __attribute__((packed)) {
+        uint8_t len;
+        uint8_t cmd;
+        uint8_t idm[8];
+        uint16_t status;
+        uint8_t block_num;
+        uint8_t data[16];
+    } out = { 0 };
+    pn5180_read_data((uint8_t *)&out, sizeof(out));
+
+    if ((out.len != sizeof(out)) || (out.cmd != 0x07) || (out.status != 0x00)) {
+        printf("\nPN532 Felica read failed [%04x:%04x]", svc_code, block_id);
+        memset(block_data, 0, 16);
+        return false;
+    }
+
+    printf(" OK >> ");
+    memcpy(block_data, out.data, 16);
+    return true;
+}
+

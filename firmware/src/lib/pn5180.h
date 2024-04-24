@@ -50,4 +50,6 @@ bool pn5180_poll_vicinity(uint8_t uid[8]);
 bool pn5180_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t key[6]);
 bool pn5180_mifare_read(uint8_t block_id, uint8_t block_data[16]);
 
+bool pn5180_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16]);
+
 #endif

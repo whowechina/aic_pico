@@ -69,7 +69,7 @@ struct {
         pn5180_poll_mifare, pn5180_poll_felica, pn5180_poll_vicinity,
         pn5180_rf_field,
         pn5180_mifare_auth, pn5180_mifare_read,
-        NULL,
+        pn5180_felica_read,
         pn5180_set_wait_loop
     },
     { 0 },
