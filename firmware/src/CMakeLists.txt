@@ -16,7 +16,6 @@ function(make_firmware board board_def)
                    cli.c usb_descriptors.c)
     target_compile_definitions(${board} PUBLIC ${board_def})
     pico_enable_stdio_usb(${board} 1)
-    pico_enable_stdio_uart(${board} 0)
 
     pico_generate_pio_header(${board} ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio)
     
