@@ -234,6 +234,8 @@ void light_init()
         pwm_config_set_clkdiv(&cfg, 4.f);
         pwm_init(slice, &cfg, true);
     }
+
+    curr_level = aic_cfg->light.min;
 }
 
 static bool rainbow = true;

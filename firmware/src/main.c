@@ -256,12 +256,13 @@ void init()
 {
     tusb_init();
     stdio_init_all();
-    light_init();
-    keypad_init();
 
     config_init();
     mutex_init(&core1_io_lock);
     save_init(0xca340a1c, &core1_io_lock);
+
+    light_init();
+    keypad_init();
 
     nfc_init_i2c(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ);
     nfc_init_spi(SPI_PORT, SPI_MISO, SPI_SCK, SPI_MOSI, SPI_RST, SPI_NSS, SPI_BUSY);
