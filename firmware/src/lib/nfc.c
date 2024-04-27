@@ -125,10 +125,16 @@ void nfc_init_spi(spi_inst_t *port, uint8_t miso, uint8_t sck, uint8_t mosi,
 
 void nfc_init()
 {
-    if (i2c.port && pn532_init(i2c.port)) {
-        nfc_module = NFC_MODULE_PN532;
-    } else if (spi.port && pn5180_init(spi.port, spi.rst, spi.nss, spi.busy)) {
-        nfc_module = NFC_MODULE_PN5180;
+    for (int retry = 0; retry < 3; retry++) {
+        if (i2c.port && pn532_init(i2c.port)) {
+            nfc_module = NFC_MODULE_PN532;
+        } else if (spi.port && pn5180_init(spi.port, spi.rst, spi.nss, spi.busy)) {
+            nfc_module = NFC_MODULE_PN5180;
+        }
+        if (nfc_module != NFC_MODULE_UNKNOWN) {
+            break;
+        }
+        sleep_ms(200);
     }
 }
 
