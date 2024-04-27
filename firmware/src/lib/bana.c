@@ -115,7 +115,7 @@ static void send_response()
     int total_len = 7 + response.hdr.len;
     bana_puts((const char *)response.raw, total_len);
 
-    DEBUG("\n\033[33mResp %2d:%02x >>", response.hdr.len - 2, response.cmd);
+    DEBUG("\n\033[33m%6ld<< %02x", time_us_32() / 1000, response.cmd);
     for (int i = 0; i < response.hdr.len - 2; i++) {
         DEBUG(" %02x", response.data[i]);
     }
@@ -198,8 +198,6 @@ static void handle_no_card()
 
 static void cmd_poll_card()
 {
-    send_ack();
-
     nfc_card_t card = nfc_detect_card_ex(true, true, false);
     if (debug) {
         display_card(&card);
@@ -227,7 +225,7 @@ static void cmd_mifare_auth(uint8_t key_id)
         uint8_t key[6];
         uint8_t uid[4];
     } auth_t;
-    
+
     auth_t *auth = (auth_t *)request.data;
 
     if (nfc_mifare_auth(auth->uid, auth->block, key_id, auth->key)) {
@@ -276,6 +274,23 @@ static void cmd_mifare()
     }
 }
 
+static void cmd_select()
+{
+    send_response_data("\x00", 1);
+    nfc_select();
+}
+
+static void cmd_deselect()
+{
+    nfc_deselect();
+    send_response_data("\x01\x00", 2);
+}
+
+static void cmd_release()
+{
+    send_response_data("\x01\x00", 2);
+}
+
 /* https://github.com/chujohiroto/Raspberry-RCS620S/blob/master/rcs620s.py */
 static void cmd_felica_read(void *read_req)
 {
@@ -298,7 +313,6 @@ static void cmd_felica_read(void *read_req)
         uint8_t block[4][16];
     } resp;
 
-    send_ack();
     int block_num = read->block_num;
     DEBUG("\nFelica read: ");
 
@@ -343,12 +357,6 @@ static uint32_t led_color = 0;
 
 static void handle_frame()
 {
-    DEBUG("\n\033[32mBana %d:%02x >>", request.hdr.len - 2, request.cmd);
-    for (int i = 0; i < request.hdr.len - 2; i++) {
-        DEBUG(" %02x", request.data[i]);
-    }
-    DEBUG("\033[0m");
-
     switch (request.cmd) {
         case 0x18:
         case 0x12:
@@ -381,16 +389,16 @@ static void handle_frame()
             cmd_mifare();
             break;
         case 0x44:
-            send_response_data("\x01\x00", 2);
+            cmd_deselect();
             break;
         case 0xa0:
             cmd_felica();
             break;
         case 0x52:
-            send_response_data("\x01\x00", 2);
+            cmd_release();
             break;
         case 0x54:
-            send_response_data("\x00", 1);
+            cmd_select();
             break;
         default:
             printf("\nUnknown cmd: %02x\n", request.cmd);

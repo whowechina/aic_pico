@@ -57,20 +57,26 @@ struct {
     bool (*mifare_read)(uint8_t block_id, uint8_t block_data[16]);
     bool (*felica_read)(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16]);
     void (*set_wait_loop)(nfc_wait_loop_t loop);
+    void (*select)();
+    void (*deselect)();
 } api[3] = {
     {
         pn532_poll_mifare, pn532_poll_felica, func_null,
         pn532_rf_field,
         pn532_mifare_auth, pn532_mifare_read,
         pn532_felica_read,
-        pn532_set_wait_loop
+        pn532_set_wait_loop,
+        pn532_select,
+        NULL,
     },
     {
         pn5180_poll_mifare, pn5180_poll_felica, pn5180_poll_vicinity,
         pn5180_rf_field,
         pn5180_mifare_auth, pn5180_mifare_read,
         pn5180_felica_read,
-        pn5180_set_wait_loop
+        pn5180_set_wait_loop,
+        pn5180_select,
+        pn5180_deselect,
     },
     { 0 },
 };
@@ -113,7 +119,7 @@ void nfc_attach_spi(spi_inst_t *port, uint8_t rst, uint8_t nss, uint8_t busy)
 void nfc_init_spi(spi_inst_t *port, uint8_t miso, uint8_t sck, uint8_t mosi,
                  uint8_t rst, uint8_t nss, uint8_t busy)
 {
-    spi_init(port, 2000 * 1000);
+    spi_init(port, 8000 * 1000);
     spi_set_format(port, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
     gpio_set_function(miso, GPIO_FUNC_SPI);
@@ -264,4 +270,18 @@ bool nfc_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16
         return false;
     }
     return api[nfc_module].felica_read(svc_code, block_id, block_data);
+}
+
+void nfc_select()
+{
+    if (api[nfc_module].select) {
+        api[nfc_module].select();
+    }
+}
+
+void nfc_deselect()
+{
+    if (api[nfc_module].deselect) {
+        api[nfc_module].deselect();
+    }
 }

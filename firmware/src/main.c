@@ -35,6 +35,8 @@
 #include "aime.h"
 #include "bana.h"
 
+#define DEBUG(...) { if (0) printf(__VA_ARGS__); }
+
 static struct {
     uint8_t current[9];
     uint8_t reported[9];
@@ -196,6 +198,12 @@ static void aime_poll_data()
         int count = tud_cdc_n_read(aime_intf, aime.buf + aime.pos,
                                    sizeof(aime.buf) - aime.pos);
         if (count > 0) {
+            uint32_t now = time_us_32();
+            DEBUG("\n\033[32m%6ld>>", now / 1000);
+            for (int i = 6; i < count; i++) {
+                DEBUG(" %02X", aime.buf[aime.pos + i]);
+            }
+            DEBUG("\033[0m");
             aime.pos += count;
         }
     }

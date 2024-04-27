@@ -13,6 +13,8 @@
 
 #include "pn532.h"
 
+#define DEBUG(...) { if (0) printf(__VA_ARGS__); }
+
 #define IO_TIMEOUT_US 1000
 #define PN532_I2C_ADDRESS 0x24
 
@@ -75,14 +77,6 @@ static int read_frame(uint8_t *frame, uint8_t len)
     uint8_t buf[len + 1];
     int ret = pn532_read(buf, len + 1);
 
-#ifdef DEBUG
-    printf("I2C data read: %d -", ret);
-    for (int i = 0; i < len + 1; i++) {
-        printf(" %02x", buf[i]);
-    }
-    printf("\n");
-#endif
-
     if (ret == len + 1) {
         memcpy(frame, buf + 1, len);
         return len;
@@ -92,14 +86,6 @@ static int read_frame(uint8_t *frame, uint8_t len)
 
 static int write_frame(const uint8_t *frame, uint8_t len)
 {
-    #ifdef DEBUG
-        printf("I2C frame write: %d -", len);
-        for (int i = 0; i < len; i++) {
-            printf(" %02x", frame[i]);
-        }
-        printf("\n");
-    #endif
-
     return pn532_write(frame, len);
 }
 
@@ -351,7 +337,6 @@ bool pn532_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool 
     uint8_t param[] = { 1, 1, 0, 0xff, 0xff, 1, 0};
     int ret = pn532_write_command(0x4a, param, sizeof(param));
     if (ret < 0) {
-        printf("%d\n", __LINE__);
         return false;
     }
 
@@ -378,19 +363,21 @@ bool pn532_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, c
         key[0], key[1], key[2], key[3], key[4], key[5],
         uid[0], uid[1], uid[2], uid[3]
     };
+
     int ret = pn532_write_command(0x40, param, sizeof(param));
     if (ret < 0) {
-        printf("\nPN532 failed mifare auth command");
+        DEBUG("\nPN532 failed mifare auth command");
         return false;
     }
     int result = pn532_read_response(0x40, readbuf, sizeof(readbuf));
     if (readbuf[0] != 0) {
-        printf("\nPN532 Mifare AUTH failed %d %02x key[%2x:%d]: ", result, readbuf[0], param[1], param[2]);
+        DEBUG("\nPN532 Mifare AUTH failed %d %02x key[%2x:%d]: ", result, readbuf[0], param[1], param[2]);
         for (int i = 0; i < 6; i++) {
-            printf("%02x", key[i]);
+            DEBUG("%02x", key[i]);
         }
         return false;
     }
+
     return true;
 }
 
@@ -400,14 +387,14 @@ bool pn532_mifare_read(uint8_t block_id, uint8_t block_data[16])
 
     int ret = pn532_write_command(0x40, param, sizeof(param));
     if (ret < 0) {
-        printf("\nPN532 failed mifare read command");
+        DEBUG("\nPN532 failed mifare read command");
         return false;
     }
 
     int result = pn532_read_response(0x40, readbuf, sizeof(readbuf));
 
     if (readbuf[0] != 0 || result != 17) {
-        printf("\nPN532 Mifare READ failed %d %02x", result, readbuf[0]);
+        DEBUG("\nPN532 Mifare READ failed %d %02x", result, readbuf[0]);
         return false;
     }
 
@@ -429,7 +416,7 @@ int pn532_felica_command(uint8_t cmd, const uint8_t *param, uint8_t param_len, u
 
     int ret = pn532_write_command(0x40, cmd_buf, sizeof(cmd_buf));
     if (ret < 0) {
-        printf("\nFailed send felica command");
+        DEBUG("\nFailed send felica command");
         return -1;
     }
 
@@ -454,7 +441,7 @@ bool pn532_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[
     int result = pn532_felica_command(0x06, param, sizeof(param), readbuf);
 
     if (result != 12 + 16 || readbuf[9] != 0 || readbuf[10] != 0) {
-        printf("\nPN532 Felica read failed [%04x:%04x]", svc_code, block_id);
+        DEBUG("\nPN532 Felica read failed [%04x:%04x]", svc_code, block_id);
         memset(block_data, 0, 16);
         return true; // we fake the result when it fails
     }
@@ -473,13 +460,20 @@ bool pn532_felica_write(uint16_t svc_code, uint16_t block_id, const uint8_t bloc
     int result = pn532_felica_command(0x08, param, sizeof(param), readbuf);
 
     if (result < 0) {
-        printf("\nPN532 Felica WRITE failed %d", result);
+        DEBUG("\nPN532 Felica WRITE failed %d", result);
         return false;
     }
 
-    printf("\nPN532 Felica WRITE success ");
+    DEBUG("\nPN532 Felica WRITE success ");
     for (int i = 0; i < result; i++) {
         printf(" %02x", readbuf[i]);
     }
     return false;
+}
+
+void pn532_select()
+{
+    uint8_t ignore_buf[7];
+    int ignore_len;
+    pn532_poll_mifare(ignore_buf, &ignore_len);
 }

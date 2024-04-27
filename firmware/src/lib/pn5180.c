@@ -15,6 +15,8 @@
 
 #include "pn5180.h"
 
+#define DEBUG(...) { if (0) printf(__VA_ARGS__); }
+
 #define IO_TIMEOUT_US 1000
 #define PN5180_I2C_ADDRESS 0x24
 
@@ -240,43 +242,53 @@ static void anti_collision(uint8_t code, uint8_t uid[5], uint8_t *sak)
     pn5180_read_data(sak, 1); // sak
 }
 
-bool pn5180_poll_mifare(uint8_t uid[7], int *len)
+static struct {
+    uint8_t buf[5];
+    uint8_t sak;
+    uint8_t uid[7];
+    uint8_t len;
+} mi_poll;
+
+static void poll_mifare_1()
 {
     pn5180_reset();
     pn5180_load_rf_config(0x00, 0x80);
     pn5180_rf_field(true);
-
     rf_crc_off();
 
     pn5180_and_reg(PN5180_REG_IRQ_CLEAR, 0x000fffff);
     pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8);
     pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03);
-
     uint8_t cmd[1] = {0x26};
     pn5180_send_data(cmd, 1, 7);
-    uint8_t buf[5] = {0};
-    pn5180_read_data(buf, 2);
+    pn5180_read_data(mi_poll.buf, 2);
+}
 
-    uint8_t sak;
-
-    anti_collision(0x93, buf, &sak);
-
-    bool result = false;
-    if ((sak & 0x04) == 0) {
-        memmove(uid, buf, 4);
-        *len = 4;
-        result = true;
-    } else if (buf[0] == 0x88) {
-        memmove(uid, buf + 1, 3);
-        anti_collision(0x95, buf, &sak);
-        if (sak != 0xff) {
-            memmove(uid + 3, buf, 4);
-            *len = 7;
-            result = true;
+static void poll_mifare_2()
+{
+    anti_collision(0x93, mi_poll.buf, &mi_poll.sak);
+    mi_poll.len = 0;
+    if ((mi_poll.sak & 0x04) == 0) {
+        memmove(mi_poll.uid, mi_poll.buf, 4);
+        mi_poll.len = 4;
+    } else if (mi_poll.buf[0] == 0x88) {
+        memmove(mi_poll.uid, mi_poll.buf + 1, 3);
+        anti_collision(0x95, mi_poll.buf, &mi_poll.sak);
+        if (mi_poll.sak != 0xff) {
+            memmove(mi_poll.uid + 3, mi_poll.buf, 4);
+            mi_poll.len = 7;
         }
     }
+}
 
-    return result;
+bool pn5180_poll_mifare(uint8_t uid[7], int *len)
+{
+    poll_mifare_1();
+    poll_mifare_2();
+    
+    memcpy(uid, mi_poll.uid, mi_poll.len);
+    *len = mi_poll.len;
+    return *len > 0;
 }
 
 static uint8_t idm_cache[8] = {0};
@@ -359,6 +371,29 @@ bool pn5180_poll_vicinity(uint8_t uid[8])
 
 bool pn5180_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t key[6])
 {
+    static struct {
+        uint32_t time;
+        uint32_t uid;
+        uint8_t key_id;
+        uint8_t block_id;
+        bool result;
+    } cache = { 0 };
+
+    uint32_t now = time_us_32();
+    if ((now < cache.time + 1000000) &&
+        (cache.uid == *(uint32_t *)uid) &&
+        (cache.key_id == key_id) &&
+        (cache .block_id == block_id)) {
+        cache.time = now;
+        return cache.result;
+    }
+
+    cache.time = now;
+    cache.uid = *(uint32_t *)uid;
+    cache.key_id = key_id;
+    cache.block_id = block_id;
+    cache.result = false;
+
     uint8_t cmd[] = {
         CMD_MIFARE_AUTHENTICATE,
         key[0], key[1], key[2], key[3], key[4], key[5],
@@ -370,15 +405,34 @@ bool pn5180_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, 
     read_write(cmd, sizeof(cmd), &response, 1);
 
     if ((response == 1) || (response == 2)) {
-        printf("\nMifare auth failed: %d, [%d:%d]", response, cmd[7], block_id);
+        DEBUG("\nPN5180 Mifare auth failed: %d, [%02x:%d]", response, cmd[7], block_id);
         return false;
     }
 
+    uint8_t ignored[16];
+    if (!pn5180_mifare_read(block_id & 0xfc, ignored)) {
+        DEBUG("\nPN5180 Mifare auth check bad");
+        return false;
+    }
+
+    cache.result = true;
     return true;
 }
 
 bool pn5180_mifare_read(uint8_t block_id, uint8_t block_data[16])
 {
+    static struct {
+        uint32_t time;
+        uint8_t data[16];
+    } cache = { 0 };
+
+    uint32_t now = time_us_32();
+    if ((now < cache.time + 1000000) && (block_id == 0)) {
+        memcpy(block_data, cache.data, 16);
+        cache.time = now;
+        return true;
+    }
+
     uint8_t cmd[] = { CMD_MIFARE_READ, block_id };
     pn5180_send_data(cmd, sizeof(cmd), 0);
 
@@ -386,11 +440,17 @@ bool pn5180_mifare_read(uint8_t block_id, uint8_t block_data[16])
 
     uint16_t len = pn5180_get_rx() & 0x1ff;
     if (len != 16) {
-        printf("\nMifare read error (block %d): %d", block_id, len);
+        DEBUG("\nPN5180 Mifare read error (block %d): %d", block_id, len);
         return false;
     }
 
     pn5180_read_data(block_data, 16);
+
+    if (block_id == 0) {
+        memcpy(cache.data, block_data, 16);
+        cache.time = time_us_32();
+    }
+
     return true;
 }
 
@@ -418,7 +478,7 @@ bool pn5180_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data
     pn5180_read_data((uint8_t *)&out, sizeof(out));
 
     if ((out.len != sizeof(out)) || (out.cmd != 0x07) || (out.status != 0x00)) {
-        printf("\nPN532 Felica read failed [%04x:%04x]", svc_code, block_id);
+        DEBUG("\nPN5180 Felica read failed [%04x:%04x]", svc_code, block_id);
         memset(block_data, 0, 16);
         return false;
     }
@@ -427,3 +487,14 @@ bool pn5180_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data
     return true;
 }
 
+/* Not real select, just a time distribution of a poll */
+void pn5180_select()
+{
+    poll_mifare_1();
+}
+
+/* Not real deselect, just a time distribution of a poll */
+void pn5180_deselect()
+{
+    poll_mifare_2();
+}
