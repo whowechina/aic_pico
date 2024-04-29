@@ -104,7 +104,7 @@ void pn5180_set_wait_loop(pn5180_wait_loop_t loop)
     wait_loop = loop;
 }
 
-static bool read_write(const uint8_t *data, uint8_t len, uint8_t *buf, uint8_t buf_len)
+static bool read_write(const void *data, uint8_t len, uint8_t *buf, uint8_t buf_len)
 {
     begin_transmission();
     spi_write_blocking(spi_port, data, len);
@@ -373,7 +373,7 @@ bool pn5180_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, 
 {
     static struct {
         uint32_t time;
-        uint32_t uid;
+        uint8_t uid[4];
         uint8_t key_id;
         uint8_t block_id;
         bool result;
@@ -381,7 +381,7 @@ bool pn5180_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, 
 
     uint32_t now = time_us_32();
     if ((now < cache.time + 1000000) &&
-        (cache.uid == *(uint32_t *)uid) &&
+        (memcmp(cache.uid, uid, 4) == 0) &&
         (cache.key_id == key_id) &&
         (cache .block_id == block_id)) {
         cache.time = now;
@@ -389,23 +389,30 @@ bool pn5180_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, 
     }
 
     cache.time = now;
-    cache.uid = *(uint32_t *)uid;
+    memcpy(cache.uid, uid, 4);
     cache.key_id = key_id;
     cache.block_id = block_id;
     cache.result = false;
 
-    uint8_t cmd[] = {
-        CMD_MIFARE_AUTHENTICATE,
-        key[0], key[1], key[2], key[3], key[4], key[5],
-        key_id ? 0x61 : 0x60, block_id,
-        uid[0], uid[1], uid[2], uid[3]
+    struct __attribute__((packed)) {
+        uint8_t cmd;
+        uint8_t key[6];
+        uint8_t key_id;
+        uint8_t block_id;
+        uint8_t uid[4];
+    } cmd = {
+        .cmd = CMD_MIFARE_AUTHENTICATE,
+        .key = { key[0], key[1], key[2], key[3], key[4], key[5] },
+        .key_id = key_id ? 0x61 : 0x60,
+        .block_id = block_id,
+        .uid = { uid[0], uid[1], uid[2], uid[3] }
     };
 
     uint8_t response = 0;
-    read_write(cmd, sizeof(cmd), &response, 1);
+    read_write(&cmd, sizeof(cmd), &response, 1);
 
     if ((response == 1) || (response == 2)) {
-        DEBUG("\nPN5180 Mifare auth failed: %d, [%02x:%d]", response, cmd[7], block_id);
+        DEBUG("\nPN5180 Mifare auth failed: %d, [%02x:%d]", response, cmd.key_id, cmd.block_id);
         return false;
     }
 
