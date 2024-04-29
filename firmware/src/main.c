@@ -99,11 +99,10 @@ void report_usb_hid()
 
 static void light_effect()
 {
-    uint64_t now = time_us_64();
     if (aime_is_active()) {
         light_set_rainbow(false);
         light_set_color_all(aime_led_color());
-    } else if (now < bana_is_active()) {
+    } else if (bana_is_active()) {
         light_set_rainbow(false);
         light_set_color_all(bana_led_color());
     } else {
