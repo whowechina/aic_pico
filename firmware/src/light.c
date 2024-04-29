@@ -201,6 +201,13 @@ void light_set_color_all(uint32_t color)
     }
 }
 
+static uint64_t last_hid = 0;
+void light_hid_light(uint8_t r, uint8_t g, uint8_t b)
+{
+    light_set_color_all(rgb32(r, g, b, false));
+    last_hid = time_us_64();
+}
+
 void light_set_brg(unsigned index, const uint8_t *brg_array, size_t num)
 {
     if (index >= RGB_NUM) {
@@ -246,7 +253,7 @@ void light_set_rainbow(bool enable)
 
 void light_update()
 {
-    if (rainbow) {
+    if (rainbow && (time_us_64() > last_hid + 1000000)) {
         generate_color_wheel();
         rainbow_update();
         rainbow_fade();
