@@ -14,11 +14,12 @@
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
 
+#include "config.h"
 #include "nfc.h"
 #include "aime.h"
 
 static bool debug = false;
-#define DEBUG(...) if (debug) printf(__VA_ARGS__)
+#define DEBUG(...) if (aic_runtime.debug) printf(__VA_ARGS__)
 
 #define AIME_EXPIRE_TIME 10000000ULL
 
@@ -96,11 +97,6 @@ const char *aime_get_mode_string()
 void aime_init(aime_putc_func putc_func)
 {
     aime_putc = putc_func;
-}
-
-void aime_debug(bool enable)
-{
-    debug = enable;
 }
 
 void aime_virtual_aic(bool enable)
@@ -184,7 +180,7 @@ static void send_response()
 
     aime_putc(checksum);
 
-    DEBUG("\n\033[33mResp %2d:%02x >>", response.payload_len, response.cmd);
+    DEBUG("\n\033[33m%6ld<< %02x:", time_us_32() / 1000, response.cmd);
     for (int i = 0; i < response.payload_len; i++) {
         DEBUG(" %02x", response.payload[i]);
     }

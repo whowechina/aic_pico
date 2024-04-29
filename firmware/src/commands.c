@@ -200,11 +200,8 @@ static void handle_level(int argc, char *argv[])
 
 static void handle_debug()
 {
-    static bool debug = true;
-    printf("Debug: %s\n", debug ? "ON" : "OFF");
-    aime_debug(debug);
-    bana_debug(debug);
-    debug = !debug;
+    aic_runtime.debug = !aic_runtime.debug;
+    printf("Debug: %s\n", aic_runtime.debug ? "ON" : "OFF");
 }
 
 void commands_init()

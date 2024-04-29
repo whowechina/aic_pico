@@ -14,11 +14,12 @@
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
 
+#include "config.h"
 #include "nfc.h"
 #include "bana.h"
 
 static bool debug = false;
-#define DEBUG(...) if (debug) printf(__VA_ARGS__)
+#define DEBUG(...) if (aic_runtime.debug) printf(__VA_ARGS__)
 
 #define BANA_EXPIRE_TIME 10000000ULL
 
@@ -38,11 +39,6 @@ static void bana_puts(const char *str, size_t len)
 void bana_init(bana_putc_func putc_func)
 {
     bana_putc = putc_func;
-}
-
-void bana_debug(bool enable)
-{
-    debug = enable;
 }
 
 typedef union __attribute__((packed)) {

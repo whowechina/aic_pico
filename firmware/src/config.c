@@ -17,7 +17,7 @@ static aic_cfg_t default_cfg = {
     .mode = 0,
 };
 
-aic_runtime_t *aic_runtime;
+aic_runtime_t aic_runtime;
 
 static void config_loaded()
 {

@@ -35,7 +35,7 @@
 #include "aime.h"
 #include "bana.h"
 
-#define DEBUG(...) { if (0) printf(__VA_ARGS__); }
+#define DEBUG(...) if (aic_runtime.debug) printf(__VA_ARGS__)
 
 static struct {
     uint8_t current[9];

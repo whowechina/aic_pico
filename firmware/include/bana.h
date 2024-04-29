@@ -13,7 +13,6 @@
 typedef void (*bana_putc_func)(uint8_t byte);
 
 void bana_init(bana_putc_func putc_func);
-void bana_debug(bool enable);
 
 bool bana_feed(int c);
 
