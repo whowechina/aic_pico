@@ -33,6 +33,12 @@ typedef struct {
     uint8_t syscode[2];
 } nfc_card_t;
 
+typedef struct {
+    bool debug;
+} nfc_runtime_t;
+
+extern nfc_runtime_t nfc_runtime;
+
 /* should init or attach i2c and spi port before init */
 void nfc_attach_i2c(i2c_inst_t *port);
 void nfc_attach_spi(spi_inst_t *port, uint8_t rst, uint8_t nss, uint8_t busy);

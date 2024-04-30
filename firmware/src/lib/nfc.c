@@ -15,6 +15,8 @@
 #include "pn532.h"
 #include "pn5180.h"
 
+nfc_runtime_t nfc_runtime;
+
 static enum {
     NFC_MODULE_PN532 = 0,
     NFC_MODULE_PN5180,

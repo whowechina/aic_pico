@@ -201,6 +201,7 @@ static void handle_level(int argc, char *argv[])
 static void handle_debug()
 {
     aic_runtime.debug = !aic_runtime.debug;
+    nfc_runtime.debug = aic_runtime.debug;
     printf("Debug: %s\n", aic_runtime.debug ? "ON" : "OFF");
 }
 

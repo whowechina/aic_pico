@@ -14,12 +14,11 @@
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
 
-#include "config.h"
 #include "nfc.h"
 #include "bana.h"
 
 static bool debug = false;
-#define DEBUG(...) if (aic_runtime.debug) printf(__VA_ARGS__)
+#define DEBUG(...) if (nfc_runtime.debug) printf(__VA_ARGS__)
 
 #define BANA_EXPIRE_TIME 10000000ULL
 
