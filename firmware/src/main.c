@@ -199,7 +199,7 @@ static void aime_poll_data()
         if (count > 0) {
             uint32_t now = time_us_32();
             DEBUG("\n\033[32m%6ld>>", now / 1000);
-            for (int i = 6; i < count; i++) {
+            for (int i = 0; i < count; i++) {
                 DEBUG(" %02X", aime.buf[aime.pos + i]);
             }
             DEBUG("\033[0m");
