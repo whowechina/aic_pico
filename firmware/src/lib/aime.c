@@ -163,21 +163,21 @@ static void build_response(int payload_len)
 static void send_response()
 {
     uint8_t checksum = 0;
-    uint8_t sync = 0xe0;
-    aime_putc(sync);
-
     for (int i = 0; i < response.len; i++) {
+        checksum += response.raw[i];
+    }
+    response.raw[response.len] = checksum;
+
+    aime_putc(0xe0); // sync
+
+    for (int i = 0; i < response.len + 1; i++) {
         uint8_t c = response.raw[i];
-        checksum += c;
         if (c == 0xe0 || c == 0xd0) {
-            uint8_t escape = 0xd0;
-            aime_putc(escape);
+            aime_putc(0xd0); // escape
             c--;
         }
         aime_putc(c);
     }
-
-    aime_putc(checksum);
 
     DEBUG("\n\033[33m%6ld<< %02x:", time_us_32() / 1000, response.cmd);
     for (int i = 0; i < response.payload_len; i++) {
