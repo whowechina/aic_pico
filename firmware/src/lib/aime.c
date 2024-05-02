@@ -142,7 +142,7 @@ static union __attribute__((packed)) {
     uint8_t raw[256];
 } request;
 
-struct {
+static struct {
     bool active;
     uint8_t len;
     uint8_t check_sum;

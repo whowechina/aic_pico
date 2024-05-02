@@ -74,7 +74,7 @@ typedef struct __attribute__((packed)) {
 
 static message_t request, response;
 
-struct {
+static struct {
     uint8_t frame_len;
     uint32_t time;
 } req_ctx;
