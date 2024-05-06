@@ -51,10 +51,6 @@ void report_hid_cardio()
 
     uint64_t now = time_us_64();
 
-    if (memcmp(hid_cardio.current, "\0\0\0\0\0\0\0\0\0", 9) != 0) {
-        light_stimulate();
-    }
-
     if ((memcmp(hid_cardio.current, hid_cardio.reported, 9) != 0) &&
         (now - hid_cardio.report_time > 1000000)) {
 
@@ -106,8 +102,12 @@ static void light_effect()
         light_set_rainbow(false);
         light_set_color_all(bana_led_color());
     } else {
+        if (memcmp(hid_cardio.current, "\0\0\0\0\0\0\0\0\0", 9) != 0) {
+            light_stimulate();
+        }
         light_set_rainbow(true);
     }
+
     light_update();
 }
 
@@ -160,6 +160,7 @@ static void update_cardio(nfc_card_t *card)
 static void cardio_run()
 {
     if (aime_is_active() || bana_is_active()) {
+        memset(hid_cardio.current, 0, 9);
         return;
     }
 

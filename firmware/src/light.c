@@ -86,19 +86,23 @@ uint32_t rgb32_from_hsv(uint8_t h, uint8_t s, uint8_t v)
     }
 }
 
-static uint8_t curr_level = 0;
-
-static inline uint32_t apply_level(uint32_t color)
+static inline uint32_t apply_level_by(uint32_t color, uint8_t level)
 {
     unsigned r = (color >> 16) & 0xff;
     unsigned g = (color >> 8) & 0xff;
     unsigned b = color & 0xff;
 
-    r = r * curr_level / 255;
-    g = g * curr_level / 255;
-    b = b * curr_level / 255;
+    r = r * level / 255;
+    g = g * level / 255;
+    b = b * level / 255;
 
     return r << 16 | g << 8 | b;
+}
+
+static uint8_t curr_level = 0;
+static inline uint32_t apply_level(uint32_t color)
+{
+    return apply_level_by(color, curr_level);
 }
 
 /* 6 segment regular hsv color wheel, better color cycle
@@ -197,7 +201,7 @@ void light_set_color(unsigned index, uint32_t color)
 void light_set_color_all(uint32_t color)
 {
     for (int i = 0; i < RGB_NUM; i++) {
-        rgb_buf[i] = apply_level(color);
+        rgb_buf[i] = apply_level_by(color, aic_cfg->light.max);
     }
 }
 
@@ -243,6 +247,7 @@ void light_init()
     }
 
     curr_level = aic_cfg->light.min;
+    generate_color_wheel();
 }
 
 static bool rainbow = true;
@@ -254,9 +259,8 @@ void light_set_rainbow(bool enable)
 void light_update()
 {
     if (rainbow && (time_us_64() > last_hid + 1000000)) {
-        generate_color_wheel();
         rainbow_update();
-        rainbow_fade();
     }
+    rainbow_fade();
     drive_led();
 }
