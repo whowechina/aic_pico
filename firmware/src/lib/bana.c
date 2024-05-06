@@ -20,7 +20,8 @@
 static bool debug = false;
 #define DEBUG(...) if (nfc_runtime.debug) printf(__VA_ARGS__)
 
-#define BANA_EXPIRE_TIME 10000000ULL
+#define BANA_EXPIRE_SEC 7200 
+#define BANA_FAST_EXPIRE_SEC 5
 
 static void putc_trap(uint8_t byte)
 {
@@ -428,7 +429,7 @@ bool bana_feed(int c)
     } else if (req_ctx.frame_len == request.hdr.len + 7) {
         handle_frame();
         req_ctx.frame_len = 0;
-        expire_time = time_us_64() + BANA_EXPIRE_TIME;
+        expire_time = time_us_64() + BANA_EXPIRE_SEC * 1000000ULL;
     }
     return true;
 }
@@ -436,6 +437,14 @@ bool bana_feed(int c)
 bool bana_is_active()
 {
     return time_us_64() < expire_time;
+}
+
+void bana_fast_expire()
+{
+    if (!bana_is_active()) {
+        return;
+    }
+    expire_time = time_us_64() + BANA_FAST_EXPIRE_SEC * 1000000ULL;
 }
 
 uint32_t bana_led_color()

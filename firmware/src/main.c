@@ -358,3 +358,9 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
         }
     }
 }
+
+void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
+{
+    aime_fast_expire();
+    bana_fast_expire();
+}

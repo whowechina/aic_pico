@@ -20,7 +20,8 @@
 static bool debug = false;
 #define DEBUG(...) if (nfc_runtime.debug) printf(__VA_ARGS__)
 
-#define AIME_EXPIRE_TIME 10000000ULL
+#define AIME_EXPIRE_SEC 7200 
+#define AIME_FAST_EXPIRE_SEC 5
 
 enum {
     CMD_GET_FW_VERSION = 0x30,
@@ -501,7 +502,7 @@ bool aime_feed(int c)
         if (req_ctx.check_sum == c) {
             handle_frame();
             req_ctx.active = false;
-            expire_time = time_us_64() + AIME_EXPIRE_TIME;
+            expire_time = time_us_64() + AIME_EXPIRE_SEC * 1000000ULL;
         }
         return true;
     }
@@ -516,6 +517,14 @@ bool aime_feed(int c)
 bool aime_is_active()
 {
     return time_us_64() < expire_time;
+}
+
+void aime_fast_expire()
+{
+    if (!aime_is_active()) {
+        return;
+    }
+    expire_time = time_us_64() + AIME_FAST_EXPIRE_SEC * 1000000ULL;
 }
 
 uint32_t aime_led_color()

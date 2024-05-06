@@ -23,6 +23,9 @@ bool aime_feed(int c);
 /* if aime is currently active */
 bool aime_is_active();
 
+/* force fast expire */
+void aime_fast_expire();
+
 uint32_t aime_led_color();
 
 #endif
