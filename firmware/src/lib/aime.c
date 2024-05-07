@@ -21,7 +21,7 @@ static bool debug = false;
 #define DEBUG(...) if (nfc_runtime.debug) printf(__VA_ARGS__)
 
 #define AIME_EXPIRE_SEC 7200 
-#define AIME_FAST_EXPIRE_SEC 5
+#define AIME_FAST_EXPIRE_SEC 10
 
 enum {
     CMD_GET_FW_VERSION = 0x30,

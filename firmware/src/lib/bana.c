@@ -21,7 +21,7 @@ static bool debug = false;
 #define DEBUG(...) if (nfc_runtime.debug) printf(__VA_ARGS__)
 
 #define BANA_EXPIRE_SEC 7200 
-#define BANA_FAST_EXPIRE_SEC 5
+#define BANA_FAST_EXPIRE_SEC 10
 
 static void putc_trap(uint8_t byte)
 {
