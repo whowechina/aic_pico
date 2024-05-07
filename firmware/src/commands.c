@@ -44,11 +44,12 @@ static void handle_display()
     printf("[AIME]\n");
     printf("    Virtual AIC: %s\n", aic_cfg->virtual_aic ? "ON" : "OFF");
 
-    printf("    Mode: %s\n", aic_cfg->mode == 0 ? "aime0" :
-                             aic_cfg->mode == 1 ? "aime1" :
-                            aic_cfg->mode == 0x10 ? "bana" : "not set");
-    if ((aic_cfg->mode & 0xf0) == 0) {
-        printf("    Pattern: %s\n", aime_get_mode_string());
+    printf("    Mode: %s\n", mode_name(aic_cfg->mode));
+    if (aic_cfg->mode == MODE_AUTO) {
+        printf("    Detected: %s\n", mode_name(aic_runtime.mode));
+    }
+    if ((aic_runtime.mode == MODE_AIME0) || (aic_runtime.mode == MODE_AIME1)) {
+        printf("    AIME Pattern: %s\n", aime_get_mode_string());
     }
 }
 
@@ -101,7 +102,8 @@ static void handle_virtual(int argc, char *argv[])
 
 static void handle_mode(int argc, char *argv[])
 {
-    const char *usage = "Usage: mode <aime0:aime1:bana>\n"
+    const char *usage = "Usage: mode <auto|aime0|aime1|bana>\n"
+                        "    auto: Auto detect\n"
                         "    aime0: Sega Aime 0\n"
                         "    aime1: Sega Aime 1\n"
                         "    bana: Bandai Namco\n";
@@ -110,27 +112,27 @@ static void handle_mode(int argc, char *argv[])
         return;
     }
 
-    const char *commands[] = { "aime0", "aime1", "bana" };
-    int match = cli_match_prefix(commands, 3, argv[0]);
+    const char *commands[] = { "auto", "aime0", "aime1", "bana" };
+    int match = cli_match_prefix(commands, 4, argv[0]);
     switch (match) {
         case 0:
-            aic_cfg->mode = 0x00;
+            aic_cfg->mode = MODE_AUTO;
             break;
         case 1:
-            aic_cfg->mode = 0x01;
+            aic_cfg->mode = MODE_AIME0;
             break;
         case 2:
-            aic_cfg->mode = 0x10;
+            aic_cfg->mode = MODE_AIME1;
+            break;
+        case 3:
+            aic_cfg->mode = MODE_BANA;
             break;
         default:
             printf("%s", usage);
             return;
     }
 
-    if ((aic_cfg->mode & 0xf0) == 0) {
-        aime_set_mode(aic_cfg->mode);
-    }
-
+    aic_runtime.mode = aic_cfg->mode == MODE_AUTO ? MODE_NONE : aic_cfg->mode;
     config_changed();
 }
 

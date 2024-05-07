@@ -9,6 +9,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <mode.h>
+
 typedef struct __attribute__((packed)) {
     struct {
         uint8_t min;
@@ -23,6 +25,7 @@ typedef struct __attribute__((packed)) {
 
 typedef volatile struct {
     bool debug;
+    reader_mode_t mode;
 } aic_runtime_t;
 
 extern aic_cfg_t *aic_cfg;

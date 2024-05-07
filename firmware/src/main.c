@@ -23,17 +23,17 @@
 #include "tusb.h"
 #include "usb_descriptors.h"
 
+#include <nfc.h>
+#include <mode.h>
+#include <aime.h>
+#include <bana.h>
+
 #include "save.h"
 #include "config.h"
 #include "cli.h"
 #include "commands.h"
 #include "light.h"
 #include "keypad.h"
-
-#include "nfc.h"
-
-#include "aime.h"
-#include "bana.h"
 
 #define DEBUG(...) if (aic_runtime.debug) printf(__VA_ARGS__)
 
@@ -209,22 +209,56 @@ static void aime_poll_data()
     }
 }
 
+static void aime_detect_mode()
+{
+    if (aic_cfg->mode == MODE_AUTO) {
+        static bool was_active = true; // so first time mode will be cleared
+        bool is_active = aime_is_active() || bana_is_active();
+        if (was_active && !is_active) {
+            aic_runtime.mode = MODE_NONE;
+        }
+        was_active = is_active;
+    } else {
+        aic_runtime.mode = aic_cfg->mode;
+    }
+
+    if (aic_runtime.mode == MODE_NONE) {
+        cdc_line_coding_t coding;
+        tud_cdc_n_get_line_coding(aime_intf, &coding);
+        aic_runtime.mode = mode_detect(aime.buf, aime.pos, coding.bit_rate);
+        if ((aime.pos > 10) && (aic_runtime.mode == MODE_NONE)) {
+            aime.pos = 0; // drop the buffer
+        }
+    }
+
+}
+
 static void aime_run()
 {
     aime_poll_data();
+    aime_detect_mode();
 
     if (aime.pos > 0) {
         uint8_t buf[64];
         memcpy(buf, aime.buf, aime.pos);
         int count = aime.pos;
-        aime.pos = 0;
-
-        for (int i = 0; i < count; i++) {
-            if ((aic_cfg->mode & 0xf0) == 0) {
-                aime_feed(buf[i]);
-            } else {
-                bana_feed(buf[i]);
-            }
+        switch (aic_runtime.mode) {
+            case MODE_AIME0:
+            case MODE_AIME1:
+                aime_sub_mode(aic_runtime.mode == MODE_AIME0 ? 0 : 1);
+                for (int i = 0; i < count; i++) {
+                    aime_feed(buf[i]);
+                }
+                aime.pos = 0;
+                break;
+            case MODE_BANA:
+                for (int i = 0; i < count; i++) {
+                    bana_feed(buf[i]);
+                }
+                aime.pos = 0;
+                break;
+            default:
+                break;
         }
     }
 }
@@ -279,10 +313,6 @@ void init()
 
     aime_init(cdc_aime_putc);
     aime_virtual_aic(aic_cfg->virtual_aic);
-
-    if ((aic_cfg->mode & 0x0f) == 0) {
-        aime_set_mode(aic_cfg->mode);
-    }
 
     bana_init(cdc_aime_putc);
 
@@ -361,6 +391,7 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
 
 void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
 {
+    DEBUG("\nCDC Line State: %d %d", dtr, rts);
     aime_fast_expire();
     bana_fast_expire();
 }

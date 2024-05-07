@@ -84,9 +84,9 @@ static void putc_trap(uint8_t byte)
 
 static aime_putc_func aime_putc = putc_trap;
 
-void aime_set_mode(int mode)
+void aime_sub_mode(int sub_mode)
 {
-    ver_mode = (mode == 0) ? 0 : 1;
+    ver_mode = (sub_mode == 0) ? 0 : 1;
 }
 
 const char *aime_get_mode_string()
