@@ -190,15 +190,7 @@ static void drive_led()
     }
 }
 
-void light_set_color(unsigned index, uint32_t color)
-{
-    if (index >= RGB_NUM) {
-        return;
-    }
-    rgb_buf[index] = apply_level(color);
-}
-
-void light_set_color_all(uint32_t color)
+void light_set_color(uint32_t color)
 {
     for (int i = 0; i < RGB_NUM; i++) {
         rgb_buf[i] = apply_level_by(color, aic_cfg->light.max);
@@ -208,7 +200,7 @@ void light_set_color_all(uint32_t color)
 static uint64_t last_hid = 0;
 void light_hid_light(uint8_t r, uint8_t g, uint8_t b)
 {
-    light_set_color_all(rgb32(r, g, b, false));
+    light_set_color(rgb32(r, g, b, false));
     last_hid = time_us_64();
 }
 

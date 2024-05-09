@@ -97,10 +97,10 @@ static void light_effect()
 {
     if (aime_is_active()) {
         light_set_rainbow(false);
-        light_set_color_all(aime_led_color());
+        light_set_color(aime_led_color());
     } else if (bana_is_active()) {
         light_set_rainbow(false);
-        light_set_color_all(bana_led_color());
+        light_set_color(bana_led_color());
     } else {
         if (memcmp(hid_cardio.current, "\0\0\0\0\0\0\0\0\0", 9) != 0) {
             light_stimulate();
