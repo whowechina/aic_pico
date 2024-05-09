@@ -6,6 +6,7 @@
 
 #include "light.h"
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -112,9 +113,116 @@ static void generate_color_wheel()
     }
 }
 
-static inline uint8_t lerp8u(uint8_t a, uint8_t b, uint8_t t)
+static inline uint8_t lerp8b(uint8_t a, uint8_t b, uint8_t t)
 {
     return a + (b - a) * t / 255;
+}
+
+static uint32_t lerp(uint32_t a, uint32_t b, int pos, int range)
+{
+    uint8_t t = pos * 255 / range;
+    uint32_t c1 = lerp8b((a >> 16) & 0xff, (b >> 16) & 0xff, t);
+    uint32_t c2 = lerp8b((a >> 8) & 0xff, (b >> 8) & 0xff, t);
+    uint32_t c3 = lerp8b(a & 0xff, b & 0xff, t);
+    return c1 << 16 | c2 << 8 | c3;
+}
+
+static enum {
+    MODE_FADE,
+    MODE_RAINBOW,
+} light_mode = MODE_RAINBOW;
+
+static struct {
+    int repeat;
+    int step_num;
+    int curr_step;
+    uint32_t color;
+    int elapsed;
+    struct {
+        uint32_t from;
+        uint32_t to;
+        int duration;
+    } steps[32];
+} fading;
+
+void light_fade_n(int repeat, int count, ...)
+{
+    va_list args;
+    va_start(args, count);
+
+    for (int i = 0; i < count; i++) {
+        fading.steps[i].from = i == 0 ? fading.color : fading.steps[i - 1].to;
+        fading.steps[i].to = va_arg(args, uint32_t);
+        fading.steps[i].duration = va_arg(args, int);
+    }
+
+    va_end(args);
+
+    fading.repeat = repeat;
+    fading.step_num = count;
+    fading.curr_step = 0;
+    fading.elapsed = 0;
+
+    light_mode = MODE_FADE;
+}
+
+void light_fade(uint32_t color, uint32_t fading_ms)
+{
+    light_fade_n(1, 1, color, fading_ms);
+}
+
+static void color_control(uint32_t delta_ms)
+{
+    if (fading.repeat == 0) {
+        return;
+    }
+
+    fading.elapsed += delta_ms;
+    if (fading.elapsed > fading.steps[fading.curr_step].duration) {
+        fading.elapsed = 0;
+        fading.color = fading.steps[fading.curr_step].to;
+        fading.curr_step++;
+        if (fading.curr_step == fading.step_num) {
+            fading.curr_step = 0;
+            if (fading.repeat > 0) {
+                fading.repeat--;
+            }
+        }
+        return;
+    }
+    
+    uint32_t color = lerp(fading.steps[fading.curr_step].from,
+                          fading.steps[fading.curr_step].to,
+                          fading.elapsed,
+                          fading.steps[fading.curr_step].duration);
+
+    fading.color = color;
+}
+
+static void color_render()
+{
+    uint32_t color = apply_level(fading.color, aic_cfg->light.max);
+
+    for (int i = 0; i < RGB_NUM; i++) {
+        rgb_buf[i] = color;
+    }
+
+    color &= 0xff;
+    for (int i = 0; i < LED_NUM; i++) {
+        led_buf[i] = color;
+    }
+}
+
+static void color_update(uint32_t delta_ms)
+{
+    if (light_mode != MODE_FADE) {
+        fading.color = 0x000000;
+        fading.repeat = 0;
+        return;
+    }
+
+    color_control(delta_ms);
+    color_render();
 }
 
 static struct {
@@ -137,41 +245,63 @@ void light_rainbow(int8_t speed, uint32_t smooth_ms, uint8_t level)
     if (smooth_ms != 0) {
         rainbow.speed.from = rainbow.speed.current;
         rainbow.speed.to = speed;
-        rainbow.smooth_ms = smooth_ms;
+
         rainbow.level.from = rainbow.level.current;
         rainbow.level.to = level;
+
+        rainbow.smooth_ms = smooth_ms;
         rainbow.elapsed = 0;
     } else {
         rainbow.speed.current = speed;
         rainbow.level.current = level;
         rainbow.smooth_ms = 0;
         rainbow.elapsed = 0;
-    } 
+    }
+    
+    light_mode = MODE_RAINBOW;
 }
 
-static void rainbow_control()
+static int fast_sqrt(int x)
 {
-    static uint64_t last_time;
-    uint64_t now = time_us_64();
-    uint32_t delta = (now - last_time) / 1000;
-    last_time = now;
+    int left = 0;
+    int right = x;
+    int result = 0;
 
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        int64_t sq = (int64_t)mid * mid;
+
+        if (sq <= x) {
+            result = mid;
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+
+    return result;
+}
+
+static void rainbow_control(uint32_t delta_ms)
+{
     if ((rainbow.smooth_ms == 0) || (rainbow.elapsed == rainbow.smooth_ms)) {
         return;
     }
 
-    rainbow.elapsed += delta;
+    rainbow.elapsed += delta_ms;
     if (rainbow.elapsed > rainbow.smooth_ms) {
         rainbow.elapsed = rainbow.smooth_ms;
     }
 
+    /* non linear speed change for better visual */
+
     int range = rainbow.speed.to - rainbow.speed.from;
-    int progress = range * rainbow.elapsed / rainbow.smooth_ms;
-    rainbow.speed.current = rainbow.speed.from + progress;
+    int progress = fast_sqrt(rainbow.elapsed * 10000 / rainbow.smooth_ms);
+    rainbow.speed.current = rainbow.speed.from + range * progress / 100;
 
     range = rainbow.level.to - rainbow.level.from;
-    progress = range * rainbow.elapsed / rainbow.smooth_ms;
-    rainbow.level.current = rainbow.level.from + progress;
+    progress = fast_sqrt(rainbow.elapsed * 10000 / rainbow.smooth_ms);
+    rainbow.level.current = rainbow.level.from + range * progress / 100;
 }
 
 #define RAINBOW_PITCH 37
@@ -197,6 +327,18 @@ static void rainbow_render()
         uint32_t index = (rotator + RAINBOW_PITCH * 2 * i) % COLOR_WHEEL_SIZE;
         led_buf[i] = apply_level(color_wheel[index], rainbow.level.current) & 0xff;
     }
+}
+
+static void rainbow_update(uint32_t delta_ms)
+{
+    if (light_mode != MODE_RAINBOW) {
+        rainbow.smooth_ms = 0;
+        rainbow.speed.current = rainbow.speed.to;
+        rainbow.level.current = rainbow.level.to;
+        return;
+    }
+    rainbow_control(delta_ms);
+    rainbow_render();
 }
 
 static void drive_led()
@@ -264,25 +406,18 @@ void light_init()
     generate_color_wheel();
 }
 
-static bool rainbow_mode = true;
-void light_set_rainbow(bool enable)
-{
-    rainbow_mode = enable;
-}
-
 void light_update()
 {
-    static uint64_t last = 0;
+    static uint64_t last_time = 0;
     uint64_t now = time_us_64();
-    if (now - last < 4000) { // no faster than 250Hz
+    if (now - last_time < 4000) { // no faster than 250Hz
         return;
     }
-    last = now;
+    uint32_t delta_ms = (now - last_time) / 1000;
+    last_time = now;
 
-    rainbow_control();
+    color_update(delta_ms);
+    rainbow_update(delta_ms);
 
-    if (rainbow_mode && (time_us_64() > last_hid + 1000000)) {
-        rainbow_render();
-    }
     drive_led();
 }

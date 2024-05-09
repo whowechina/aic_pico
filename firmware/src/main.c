@@ -93,23 +93,31 @@ void report_usb_hid()
     report_hid_key();
 }
 
-static void light_effect()
+static uint64_t last_hid_time = 0;
+
+static bool hid_is_active()
 {
-    if (aime_is_active()) {
-        light_set_rainbow(false);
-        light_set_color(aime_led_color());
-    } else if (bana_is_active()) {
-        light_set_rainbow(false);
-        light_set_color(bana_led_color());
-    } else {
-        if (memcmp(hid_cardio.current, "\0\0\0\0\0\0\0\0\0", 9) != 0) {
-            light_rainbow(40, 0, aic_cfg->light.max);
-            light_rainbow(1, 2500, aic_cfg->light.min);
-        }
-        light_set_rainbow(true);
+    if (last_hid_time == 0) {
+        return false;
+    }
+    return (time_us_64() - last_hid_time) < 2000000;
+}
+
+static bool cardio_is_available()
+{
+    return !(hid_is_active() || aime_is_active() || bana_is_active());
+}
+
+static void light_mode_update()
+{
+    static bool was_cardio = true;
+    bool cardio = cardio_is_available();
+
+    if (cardio && !was_cardio) {
+        light_rainbow(1, 1, aic_cfg->light.min);
     }
 
-    light_update();
+    was_cardio = cardio;
 }
 
 static mutex_t core1_io_lock;
@@ -117,9 +125,10 @@ static void core1_loop()
 {
     while (1) {
         if (mutex_try_enter(&core1_io_lock, NULL)) {
-            light_effect();
+            light_update();
             mutex_exit(&core1_io_lock);
         }
+        light_mode_update();
         cli_fps_count(1);
         sleep_us(500);
     }
@@ -142,7 +151,7 @@ static void update_cardio(nfc_card_t *card)
         case NFC_CARD_FELICA:
             hid_cardio.current[0] = REPORT_ID_FELICA;
             memcpy(hid_cardio.current + 1, card->uid, 8);
-            break;
+           break;
         case NFC_CARD_VICINITY:
             hid_cardio.current[0] = REPORT_ID_EAMU;
             memcpy(hid_cardio.current + 1, card->uid, 8);
@@ -176,6 +185,14 @@ static void cardio_run()
     }
 
     old_card = card;
+
+    if (cardio_is_available()) {
+        if (card.card_type != NFC_CARD_NONE) {
+            light_rainbow(30, 0, aic_cfg->light.max);
+        } else {
+            light_rainbow(1, 3000, aic_cfg->light.min);
+        }
+    }
 
     display_card(&card);
     update_cardio(&card);
@@ -234,6 +251,18 @@ static void aime_detect_mode()
 
 }
 
+static void aime_light()
+{
+    static uint32_t old_color = 0;
+    if (aime_is_active()) {
+        uint32_t color = aime_led_color();
+        if (old_color != color) {
+            light_fade(color, 100);
+            old_color = color;
+        }
+    }
+}
+
 static void aime_run()
 {
     aime_poll_data();
@@ -262,6 +291,8 @@ static void aime_run()
                 break;
         }
     }
+
+    aime_light();
 }
 
 void wait_loop()
@@ -387,7 +418,8 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
     if ((report_id == REPORT_ID_LIGHTS) &&
         (report_type == HID_REPORT_TYPE_OUTPUT)) {
         if (bufsize >= 3) {
-            light_hid_light(buffer[0], buffer[1], buffer[2]);
+            last_hid_time = time_us_64();
+            light_fade(rgb32(buffer[0], buffer[1], buffer[2], false), 0);
         }
     }
 }
