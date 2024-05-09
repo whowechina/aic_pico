@@ -86,7 +86,7 @@ uint32_t rgb32_from_hsv(uint8_t h, uint8_t s, uint8_t v)
     }
 }
 
-static inline uint32_t apply_level_by(uint32_t color, uint8_t level)
+static inline uint32_t apply_level(uint32_t color, uint8_t level)
 {
     unsigned r = (color >> 16) & 0xff;
     unsigned g = (color >> 8) & 0xff;
@@ -97,12 +97,6 @@ static inline uint32_t apply_level_by(uint32_t color, uint8_t level)
     b = b * level / 255;
 
     return r << 16 | g << 8 | b;
-}
-
-static uint8_t curr_level = 0;
-static inline uint32_t apply_level(uint32_t color)
-{
-    return apply_level_by(color, curr_level);
 }
 
 /* 6 segment regular hsv color wheel, better color cycle
@@ -118,11 +112,71 @@ static void generate_color_wheel()
     }
 }
 
-#define RAINBOW_PITCH 37
-#define RAINBOW_MIN_SPEED 1
-static uint32_t curr_speed = RAINBOW_MIN_SPEED;
+static inline uint8_t lerp8u(uint8_t a, uint8_t b, uint8_t t)
+{
+    return a + (b - a) * t / 255;
+}
 
-static void rainbow_update()
+static struct {
+    struct {
+        int current;
+        int from;
+        int to;
+    } speed;
+    struct {
+        int current;
+        int from;
+        int to;
+    } level;
+    int smooth_ms;
+    int elapsed;
+} rainbow = { { 1, 1, 1 }, { 255, 255, 255 }, 0, 0 };
+
+void light_rainbow(int8_t speed, uint32_t smooth_ms, uint8_t level)
+{
+    if (smooth_ms != 0) {
+        rainbow.speed.from = rainbow.speed.current;
+        rainbow.speed.to = speed;
+        rainbow.smooth_ms = smooth_ms;
+        rainbow.level.from = rainbow.level.current;
+        rainbow.level.to = level;
+        rainbow.elapsed = 0;
+    } else {
+        rainbow.speed.current = speed;
+        rainbow.level.current = level;
+        rainbow.smooth_ms = 0;
+        rainbow.elapsed = 0;
+    } 
+}
+
+static void rainbow_control()
+{
+    static uint64_t last_time;
+    uint64_t now = time_us_64();
+    uint32_t delta = (now - last_time) / 1000;
+    last_time = now;
+
+    if ((rainbow.smooth_ms == 0) || (rainbow.elapsed == rainbow.smooth_ms)) {
+        return;
+    }
+
+    rainbow.elapsed += delta;
+    if (rainbow.elapsed > rainbow.smooth_ms) {
+        rainbow.elapsed = rainbow.smooth_ms;
+    }
+
+    int range = rainbow.speed.to - rainbow.speed.from;
+    int progress = range * rainbow.elapsed / rainbow.smooth_ms;
+    rainbow.speed.current = rainbow.speed.from + progress;
+
+    range = rainbow.level.to - rainbow.level.from;
+    progress = range * rainbow.elapsed / rainbow.smooth_ms;
+    rainbow.level.current = rainbow.level.from + progress;
+}
+
+#define RAINBOW_PITCH 37
+
+static void rainbow_render()
 {
     static uint64_t last = 0;
     uint64_t now = time_us_64();
@@ -132,53 +186,21 @@ static void rainbow_update()
     last = now;
 
     static uint32_t rotator = 0;
-    rotator = (rotator + curr_speed) % COLOR_WHEEL_SIZE;
+    rotator = (rotator + rainbow.speed.current) % COLOR_WHEEL_SIZE;
 
     for (int i = 0; i < RGB_NUM; i++) {
         uint32_t index = (rotator + RAINBOW_PITCH * i) % COLOR_WHEEL_SIZE;
-        rgb_buf[i] = apply_level(color_wheel[index]);
+        rgb_buf[i] = apply_level(color_wheel[index], rainbow.level.current);
     }
 
     for (int i = 0; i < LED_NUM; i++) {
         uint32_t index = (rotator + RAINBOW_PITCH * 2 * i) % COLOR_WHEEL_SIZE;
-        led_buf[i] = apply_level(color_wheel[index]) & 0xff;
-    }
-}
-
-void light_stimulate()
-{
-    curr_speed = 48;
-    curr_level = aic_cfg->light.max;
-}
-
-static void rainbow_fade()
-{
-    static uint64_t last = 0;
-    uint64_t now = time_us_64();
-    if (now - last < 200000) {
-        return;
-    }
-    last = now;
-
-    if (curr_speed > RAINBOW_MIN_SPEED) {
-        curr_speed = curr_speed * 90 / 100;
-    }
-    if (curr_level > aic_cfg->light.min) {
-        curr_level -= (curr_level - aic_cfg->light.min) / 10 + 1;
-    } else if (curr_level < aic_cfg->light.min) {
-        curr_level += (aic_cfg->light.min - curr_level) / 10 + 1;
+        led_buf[i] = apply_level(color_wheel[index], rainbow.level.current) & 0xff;
     }
 }
 
 static void drive_led()
 {
-    static uint64_t last = 0;
-    uint64_t now = time_us_64();
-    if (now - last < 4000) { // no faster than 250Hz
-        return;
-    }
-    last = now;
-
     for (int i = 0; i < RGB_NUM; i++) {
         uint32_t color = aic_cfg->light.rgb ? rgb_buf[i] << 8u : 0;
         pio_sm_put_blocking(pio0, 0, color);
@@ -193,7 +215,7 @@ static void drive_led()
 void light_set_color(uint32_t color)
 {
     for (int i = 0; i < RGB_NUM; i++) {
-        rgb_buf[i] = apply_level_by(color, aic_cfg->light.max);
+        rgb_buf[i] = apply_level(color, aic_cfg->light.max);
     }
 }
 
@@ -216,7 +238,8 @@ void light_set_brg(unsigned index, const uint8_t *brg_array, size_t num)
         uint8_t b = brg_array[i * 3 + 0];
         uint8_t r = brg_array[i * 3 + 1];
         uint8_t g = brg_array[i * 3 + 2];
-        rgb_buf[index + i] = apply_level(rgb32(r, g, b, false));
+        uint32_t color = apply_level(rgb32(r, g, b, false), aic_cfg->light.max);
+        rgb_buf[index + i] = color;
     }
 }
 
@@ -238,21 +261,28 @@ void light_init()
         pwm_init(slice, &cfg, true);
     }
 
-    curr_level = aic_cfg->light.min;
     generate_color_wheel();
 }
 
-static bool rainbow = true;
+static bool rainbow_mode = true;
 void light_set_rainbow(bool enable)
 {
-    rainbow = enable;
+    rainbow_mode = enable;
 }
 
 void light_update()
 {
-    if (rainbow && (time_us_64() > last_hid + 1000000)) {
-        rainbow_update();
+    static uint64_t last = 0;
+    uint64_t now = time_us_64();
+    if (now - last < 4000) { // no faster than 250Hz
+        return;
     }
-    rainbow_fade();
+    last = now;
+
+    rainbow_control();
+
+    if (rainbow_mode && (time_us_64() > last_hid + 1000000)) {
+        rainbow_render();
+    }
     drive_led();
 }

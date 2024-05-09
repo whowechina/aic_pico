@@ -103,7 +103,8 @@ static void light_effect()
         light_set_color(bana_led_color());
     } else {
         if (memcmp(hid_cardio.current, "\0\0\0\0\0\0\0\0\0", 9) != 0) {
-            light_stimulate();
+            light_rainbow(40, 0, aic_cfg->light.max);
+            light_rainbow(1, 2500, aic_cfg->light.min);
         }
         light_set_rainbow(true);
     }
@@ -304,6 +305,8 @@ void init()
     save_init(0xca340a1c, &core1_io_lock);
 
     light_init();
+    light_rainbow(1, 0, aic_cfg->light.min);
+
     keypad_init();
 
     nfc_init_i2c(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ);
