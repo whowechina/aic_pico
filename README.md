@@ -15,12 +15,13 @@
   * AIC Pico Lib (see notes 1 below)
 * Easy to make.
 * Sega AIME I/O, Bandai Namco I/O and Spicetools CardIO emulation.
+* Automatic detection of I/O protocols above.
 * Command line for configurations.
 * Supported card:
   * FeliCa (Amusement IC)
   * ISO/IEC 14443 Type A (BanaPassport, Mifare, Amiibo, some IC tags, some ID tags, etc.)
   * ISO/IEC 15693 (Old E-Amusement cards), only with PN5180 (see notes 2 below)
-* Emulates virtual AIC from any Mifare cards.
+* Emulates virtual AIC from any Mifare cards (not for Bandai Namco I/O).
 * All source files open.
 
 **Notes:**

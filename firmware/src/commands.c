@@ -41,7 +41,7 @@ static void handle_display()
             aic_cfg->light.rgb ? "ON" : "OFF",
             aic_cfg->light.led ? "ON" : "OFF");
     printf("    Level: [%d ~ %d]\n", aic_cfg->light.min, aic_cfg->light.max);
-    printf("[AIME]\n");
+    printf("[Reader]]\n");
     printf("    Virtual AIC: %s\n", aic_cfg->virtual_aic ? "ON" : "OFF");
 
     printf("    Mode: %s\n", mode_name(aic_cfg->mode));
@@ -172,7 +172,8 @@ static void handle_light(int argc, char *argv[])
 
 static void handle_level(int argc, char *argv[])
 {
-    const char *usage = "Usage: level <0..255> <0..255>\n";
+    const char *usage = "Usage: level <dimmed> <active>\n"
+                        "    dimmed, active: [0..255]\n";
     if (argc != 2) {
         printf(usage);
         return;
@@ -214,7 +215,7 @@ void commands_init()
     cli_register("factory", handle_factory_reset, "Reset everything to default.");
     cli_register("nfc", handle_nfc, "NFC module.");
     cli_register("virtual", handle_virtual, "Virtual AIC card.");
-    cli_register("mode", handle_mode, "AIME version mode.");
+    cli_register("mode", handle_mode, "Reader mode/protocol.");
     cli_register("light", handle_light, "Turn on/off lights.");
     cli_register("level", handle_level, "Set light level.");
     cli_register("debug", handle_debug, "Toggle debug.");

@@ -18,12 +18,13 @@
   * AIC Pico Lib (参见下面的注释 1)
 * 易于制作。
 * Sega AIME I/O, Bandai Namco I/O 和 Spicetools CardIO 模拟。
+* 自动检测上述 I/O 协议。
 * 用于参数配置的命令行。
 * 支持的卡：
   * FeliCa (Amusement IC)
   * ISO/IEC 14443 类型 A (BanaPassport, Mifare, Amiibo, 一些 IC Tag 和 ID Tag 卡, 等等.)
   * ISO/IEC 15693 (旧的 E-Amusement 卡)，仅 PN5180 支持 (参见下面的注释 2)
-* 从任何 Mifare 卡模拟虚拟 AIC。
+* 从任何 Mifare 卡模拟虚拟 AIC（暂不支持 Bandai Namco I/O 外）。
 * 所有源文件开放。
 
 **注释：**

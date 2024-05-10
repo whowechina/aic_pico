@@ -198,36 +198,36 @@ static void cardio_run()
     update_cardio(&card);
 }
 
-const int aime_intf = 1;
+const int reader_intf = 1;
 static struct {
     uint8_t buf[64];
     int pos;
-} aime;
+} reader;
 
-static void cdc_aime_putc(uint8_t byte)
+static void cdc_reader_putc(uint8_t byte)
 {
-    tud_cdc_n_write(aime_intf, &byte, 1);
-    tud_cdc_n_write_flush(aime_intf);
+    tud_cdc_n_write(reader_intf, &byte, 1);
+    tud_cdc_n_write_flush(reader_intf);
 }
 
-static void aime_poll_data()
+static void reader_poll_data()
 {
-    if (tud_cdc_n_available(aime_intf)) {
-        int count = tud_cdc_n_read(aime_intf, aime.buf + aime.pos,
-                                   sizeof(aime.buf) - aime.pos);
+    if (tud_cdc_n_available(reader_intf)) {
+        int count = tud_cdc_n_read(reader_intf, reader.buf + reader.pos,
+                                   sizeof(reader.buf) - reader.pos);
         if (count > 0) {
             uint32_t now = time_us_32();
             DEBUG("\n\033[32m%6ld>>", now / 1000);
             for (int i = 0; i < count; i++) {
-                DEBUG(" %02X", aime.buf[aime.pos + i]);
+                DEBUG(" %02X", reader.buf[reader.pos + i]);
             }
             DEBUG("\033[0m");
-            aime.pos += count;
+            reader.pos += count;
         }
     }
 }
 
-static void aime_detect_mode()
+static void reader_detect_mode()
 {
     if (aic_cfg->mode == MODE_AUTO) {
         static bool was_active = true; // so first time mode will be cleared
@@ -242,16 +242,16 @@ static void aime_detect_mode()
 
     if (aic_runtime.mode == MODE_NONE) {
         cdc_line_coding_t coding;
-        tud_cdc_n_get_line_coding(aime_intf, &coding);
-        aic_runtime.mode = mode_detect(aime.buf, aime.pos, coding.bit_rate);
-        if ((aime.pos > 10) && (aic_runtime.mode == MODE_NONE)) {
-            aime.pos = 0; // drop the buffer
+        tud_cdc_n_get_line_coding(reader_intf, &coding);
+        aic_runtime.mode = mode_detect(reader.buf, reader.pos, coding.bit_rate);
+        if ((reader.pos > 10) && (aic_runtime.mode == MODE_NONE)) {
+            reader.pos = 0; // drop the buffer
         }
     }
 
 }
 
-static void aime_light()
+static void reader_light()
 {
     static uint32_t old_color = 0;
     if (aime_is_active()) {
@@ -265,15 +265,15 @@ static void aime_light()
     }
 }
 
-static void aime_run()
+static void reader_run()
 {
-    aime_poll_data();
-    aime_detect_mode();
+    reader_poll_data();
+    reader_detect_mode();
 
-    if (aime.pos > 0) {
+    if (reader.pos > 0) {
         uint8_t buf[64];
-        memcpy(buf, aime.buf, aime.pos);
-        int count = aime.pos;
+        memcpy(buf, reader.buf, reader.pos);
+        int count = reader.pos;
         switch (aic_runtime.mode) {
             case MODE_AIME0:
             case MODE_AIME1:
@@ -281,20 +281,20 @@ static void aime_run()
                 for (int i = 0; i < count; i++) {
                     aime_feed(buf[i]);
                 }
-                aime.pos = 0;
+                reader.pos = 0;
                 break;
             case MODE_BANA:
                 for (int i = 0; i < count; i++) {
                     bana_feed(buf[i]);
                 }
-                aime.pos = 0;
+                reader.pos = 0;
                 break;
             default:
                 break;
         }
     }
 
-    aime_light();
+    reader_light();
 }
 
 void wait_loop()
@@ -304,7 +304,7 @@ void wait_loop()
 
     tud_task();
     cli_run();
-    aime_poll_data();
+    reader_poll_data();
 
     cli_fps_count(0);
 }
@@ -315,7 +315,7 @@ static void core0_loop()
         tud_task();
 
         cli_run();
-        aime_run();
+        reader_run();
         cardio_run();
 
         keypad_update();
@@ -347,10 +347,10 @@ void init()
     nfc_init();
     nfc_set_wait_loop(wait_loop);
 
-    aime_init(cdc_aime_putc);
+    aime_init(cdc_reader_putc);
     aime_virtual_aic(aic_cfg->virtual_aic);
 
-    bana_init(cdc_aime_putc);
+    bana_init(cdc_reader_putc);
 
     cli_init("aic_pico>", "\n     << AIC Pico >>\n"
                             " https://github.com/whowechina\n\n");
