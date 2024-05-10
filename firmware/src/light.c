@@ -171,6 +171,69 @@ void light_fade(uint32_t color, uint32_t fading_ms)
     light_fade_n(1, 1, color, fading_ms);
 }
 
+static uint32_t htoi(const char *s)
+{
+    uint32_t result = 0;
+
+    for (; *s != '\0'; s++) {
+        char c = *s;
+        result <<= 4;
+        if ((c >= '0') && (c <= '9')) {
+            result |= c - '0';
+        } else if ((c >= 'A') && (c <= 'F')) {
+            result |= c - 'A' + 10;
+        } else if ((c >= 'a') && (c <= 'f')) {
+            result |= c - 'a' + 10;
+        } else {
+            break;
+        }
+    }
+
+    return result;
+}
+
+static int parse_integers(const char *str, int32_t *output)
+{
+    static char patt[256];
+    strncpy(patt, str, sizeof(patt) - 1);
+    patt[sizeof(patt) - 1] = '\0';
+
+    int count = 0;
+    for (char *token = strtok(patt, ", "); token; token = strtok(NULL, ", ")) {
+        if (token[0] == '#') {
+            output[count] = htoi(token + 1);
+        } else {
+            output[count] = atoi(token);
+        }
+        count++;
+    }
+
+    return count;
+}
+
+void light_fade_s(const char *pattern)
+{
+    static int32_t param[100];
+
+    int param_num = parse_integers(pattern, param);
+
+    if ((param_num < 3) || (param_num % 2 != 1)) {
+        return;
+    }
+    
+    fading.repeat = param[0];
+    fading.step_num = (param_num - 1) / 2;
+    for (int i = 0; i < fading.step_num; i++) {
+        fading.steps[i].from = i == 0 ? fading.color : fading.steps[i - 1].to;
+        fading.steps[i].to = param[i * 2 + 1];
+        fading.steps[i].duration = param[i * 2 + 2];
+    }
+    fading.curr_step = 0;
+    fading.elapsed = 0;
+
+    light_mode = MODE_FADE;
+}
+
 static void color_control(uint32_t delta_ms)
 {
     if (fading.repeat == 0) {
