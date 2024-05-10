@@ -22,7 +22,6 @@ bool bana_is_active();
 /* force fast expire */
 void bana_fast_expire();
 
-uint32_t bana_led_color();
-
+const char *bana_get_led_pattern();
 
 #endif

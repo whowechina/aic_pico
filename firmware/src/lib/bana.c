@@ -139,12 +139,21 @@ static void send_ack()
     bana_puts("\x00\x00\xff\x00\xff\x00", 6);
 }
 
+static struct {
+    int led;
+    int beep;
+} bana_gpio;
+
 static void cmd_gpio()
 {
-    if (request.data[0] == 0x08) {
-    } else if (request.data[0] == 0x01) {
-    } else {
+    if (request.data[0] == 0x01) {
+        DEBUG("\nLED:%02x", request.data[1]);
+        bana_gpio.led = request.data[1];
+    } else if (request.data[0] == 0x08) {
+        DEBUG("\nBEEP:%02x", request.data[1]);
+        bana_gpio.beep = request.data[1];
     }
+
     send_simple_response(0x0e);
 }
 
@@ -349,8 +358,6 @@ static void cmd_felica()
     }
 }
 
-static uint32_t led_color = 0;
-
 static void handle_frame()
 {
     switch (request.cmd) {
@@ -447,7 +454,48 @@ void bana_fast_expire()
     expire_time = time_us_64() + BANA_FAST_EXPIRE_SEC * 1000000ULL;
 }
 
-uint32_t bana_led_color()
+static const struct {
+    int cmd;
+    const char *pattern;
+} bana_led_patterns[] = {
+    { 0x00, " 1, #000000, 0" }, // off
+    { 0x01, " 1, #0000ff, 50" }, // blue
+    { 0x02, " 1, #00ff00, 50" }, // red
+    { 0x03, " 1, #ff0000, 50" }, // green
+    { 0x04, "-1, #0000ff, 100, #000000, 100" }, // fast blue flash
+    { 0x05, "-1, #0000ff, 500, #000000, 500" }, // slow blue flash
+    { 0x06, "-1, #0000ff, 200, #000000, 200" }, // regular blue flash
+    { 0x07, "-1, #0000ff, 200, #000000, 0, #000000, 1000" }, // blue flash with pause
+    { 0x08, "-1, #ffff00, 200, #000000, 200, #00ff00, 200, #000000, 200" }, // yellow and red cycle
+    { 0x09, "-1, #00ff00, 200, #000000, 200" }, // red on off flashing
+    { 0x0a, " 1, #00ff00, 300, #ff0000, 300, #0000ff, 300" }, // rgb cycle once
+    { 0x0b, "-1, #00ff00, 300, #ff0000, 300, #0000ff, 300" }, // rgb cycle endless
+    { 0x0c, "-1, #ff0000, 100, #0000ff, 100" }, // green blue epilepsy
+    { 0x0d, "-1, #ff0000, 100, #0000ff, 100" }, // green blue quick softer
+    { 0x0e, "-1, #ffffff, 300, #00ffff, 300, #ff00ff, 300" }, // white pink cyan
+    { 0x0f, "-1, #00ff00, 100, #ff0000, 100, #0000ff, 100" }, // rgb something
+    { 0x11, " 1, #ff0000, 200, #7f0000, 200, #ff0000, 200, #7f0000, 200, #0000ff, 200" }, // green to blue
+    { 0x14, " 1, #ff0000, 200, #ff0000, 1000, #000000, 0" }, // green then off
+    { 0x16, " 1, #00ff00, 200, #0000ff, 200" }, // red to blue
+    { 0x19, " 1, #00ff00, 200, #00ff00, 1000, #000000, 0" }, // red then off
+    { 0x1b, " 1, #0000ff, 200" } // to blue
+};
+
+const char *bana_get_led_pattern()
 {
-    return led_color;
+    if (bana_gpio.led < 0) {
+        return NULL;
+    }
+
+    int cmd = bana_gpio.led;
+    bana_gpio.led = -1;
+
+    int patt_num = sizeof(bana_led_patterns) / sizeof(bana_led_patterns[0]);
+    for (int i = 0; i < patt_num; i++) {
+        if (bana_led_patterns[i].cmd == cmd) {
+            return bana_led_patterns[i].pattern;
+        }
+    }
+
+    return NULL;
 }

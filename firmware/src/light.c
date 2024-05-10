@@ -215,6 +215,10 @@ void light_fade_s(const char *pattern)
 {
     static int32_t param[100];
 
+    if (!pattern) {
+        return;
+    }
+
     int param_num = parse_integers(pattern, param);
 
     if ((param_num < 3) || (param_num % 2 != 1)) {

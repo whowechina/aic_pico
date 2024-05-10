@@ -260,6 +260,8 @@ static void aime_light()
             light_fade(color, 100);
             old_color = color;
         }
+    } else if (bana_is_active()) {
+        light_fade_s(bana_get_led_pattern());
     }
 }
 
