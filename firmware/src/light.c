@@ -27,15 +27,6 @@ static uint8_t led_gpio[] = LED_DEF;
 #define LED_NUM (sizeof(led_gpio))
 static uint8_t led_buf[LED_NUM];
 
-
-#define _MAP_LED(x) _MAKE_MAPPER(x)
-#define _MAKE_MAPPER(x) MAP_LED_##x
-#define MAP_LED_RGB { c1 = r; c2 = g; c3 = b; }
-#define MAP_LED_GRB { c1 = g; c2 = r; c3 = b; }
-
-#define REMAP_BUTTON_RGB _MAP_LED(BUTTON_RGB_ORDER)
-#define REMAP_TT_RGB _MAP_LED(TT_RGB_ORDER)
-
 static inline uint32_t _rgb32(uint32_t c1, uint32_t c2, uint32_t c3, bool gamma_fix)
 {
     if (gamma_fix) {
@@ -45,6 +36,16 @@ static inline uint32_t _rgb32(uint32_t c1, uint32_t c2, uint32_t c3, bool gamma_
     }
     
     return (c1 << 16) | (c2 << 8) | (c3 << 0);    
+}
+
+/* translate RGB to local RGB channel order */
+static inline uint32_t rgb2local(uint32_t color)
+{
+    uint8_t r = (color >> 16) & 0xff;
+    uint8_t g = (color >> 8) & 0xff;
+    uint8_t b = color & 0xff;
+
+    return rgb32(r, g, b, false); 
 }
 
 uint32_t rgb32(uint32_t r, uint32_t g, uint32_t b, bool gamma_fix)
@@ -89,15 +90,15 @@ uint32_t rgb32_from_hsv(uint8_t h, uint8_t s, uint8_t v)
 
 static inline uint32_t apply_level(uint32_t color, uint8_t level)
 {
-    unsigned r = (color >> 16) & 0xff;
-    unsigned g = (color >> 8) & 0xff;
-    unsigned b = color & 0xff;
+    unsigned c1 = (color >> 16) & 0xff;
+    unsigned c2 = (color >> 8) & 0xff;
+    unsigned c3 = color & 0xff;
 
-    r = r * level / 255;
-    g = g * level / 255;
-    b = b * level / 255;
+    c1 = c1 * level / 255;
+    c2 = c2 * level / 255;
+    c3 = c3 * level / 255;
 
-    return r << 16 | g << 8 | b;
+    return c1 << 16 | c2 << 8 | c3;
 }
 
 /* 6 segment regular hsv color wheel, better color cycle
@@ -152,7 +153,7 @@ void light_fade_n(int repeat, int count, ...)
 
     for (int i = 0; i < count; i++) {
         fading.steps[i].from = i == 0 ? fading.color : fading.steps[i - 1].to;
-        fading.steps[i].to = va_arg(args, uint32_t);
+        fading.steps[i].to = rgb2local(va_arg(args, uint32_t));
         fading.steps[i].duration = va_arg(args, int);
     }
 
@@ -229,7 +230,7 @@ void light_fade_s(const char *pattern)
     fading.step_num = (param_num - 1) / 2;
     for (int i = 0; i < fading.step_num; i++) {
         fading.steps[i].from = i == 0 ? fading.color : fading.steps[i - 1].to;
-        fading.steps[i].to = param[i * 2 + 1];
+        fading.steps[i].to = rgb2local(param[i * 2 + 1]);
         fading.steps[i].duration = param[i * 2 + 2];
     }
     fading.curr_step = 0;
@@ -251,6 +252,7 @@ static void color_control(uint32_t delta_ms)
         fading.curr_step++;
         if (fading.curr_step == fading.step_num) {
             fading.curr_step = 0;
+            fading.steps[0].from = fading.color;
             if (fading.repeat > 0) {
                 fading.repeat--;
             }

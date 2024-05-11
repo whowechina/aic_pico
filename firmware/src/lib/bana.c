@@ -460,24 +460,24 @@ static const struct {
 } bana_led_patterns[] = {
     { 0x00, " 1, #000000, 0" }, // off
     { 0x01, " 1, #0000ff, 50" }, // blue
-    { 0x02, " 1, #00ff00, 50" }, // red
-    { 0x03, " 1, #ff0000, 50" }, // green
+    { 0x02, " 1, #ff0000, 50" }, // red
+    { 0x03, " 1, #00ff00, 50" }, // green
     { 0x04, "-1, #0000ff, 100, #000000, 100" }, // fast blue flash
     { 0x05, "-1, #0000ff, 500, #000000, 500" }, // slow blue flash
     { 0x06, "-1, #0000ff, 200, #000000, 200" }, // regular blue flash
     { 0x07, "-1, #0000ff, 200, #000000, 0, #000000, 1000" }, // blue flash with pause
-    { 0x08, "-1, #ffff00, 200, #000000, 200, #00ff00, 200, #000000, 200" }, // yellow and red cycle
-    { 0x09, "-1, #00ff00, 200, #000000, 200" }, // red on off flashing
-    { 0x0a, " 1, #00ff00, 300, #ff0000, 300, #0000ff, 300" }, // rgb cycle once
-    { 0x0b, "-1, #00ff00, 300, #ff0000, 300, #0000ff, 300" }, // rgb cycle endless
-    { 0x0c, "-1, #ff0000, 100, #0000ff, 100" }, // green blue epilepsy
-    { 0x0d, "-1, #ff0000, 100, #0000ff, 100" }, // green blue quick softer
-    { 0x0e, "-1, #ffffff, 300, #00ffff, 300, #ff00ff, 300" }, // white pink cyan
-    { 0x0f, "-1, #00ff00, 100, #ff0000, 100, #0000ff, 100" }, // rgb something
-    { 0x11, " 1, #ff0000, 200, #7f0000, 200, #ff0000, 200, #7f0000, 200, #0000ff, 200" }, // green to blue
-    { 0x14, " 1, #ff0000, 200, #ff0000, 1000, #000000, 0" }, // green then off
-    { 0x16, " 1, #00ff00, 200, #0000ff, 200" }, // red to blue
-    { 0x19, " 1, #00ff00, 200, #00ff00, 1000, #000000, 0" }, // red then off
+    { 0x08, "-1, #ffff00, 200, #000000, 200, #ff0000, 200, #000000, 200" }, // yellow and red cycle
+    { 0x09, "-1, #ff0000, 200, #000000, 200" }, // red on off flashing
+    { 0x0a, " 1, #ff0000, 300, #00ff00, 300, #0000ff, 300" }, // rgb cycle once
+    { 0x0b, "-1, #ff0000, 300, #00ff00, 300, #0000ff, 300" }, // rgb cycle endless
+    { 0x0c, "-1, #00ff00, 100, #0000ff, 100" }, // green blue epilepsy
+    { 0x0d, "-1, #00ff00, 100, #0000ff, 100" }, // green blue quick softer
+    { 0x0e, "-1, #ffffff, 300, #ff00ff, 300, #00ffff, 300" }, // white pink cyan
+    { 0x0f, "-1, #ff0000, 100, #00ff00, 100, #0000ff, 100" }, // rgb something
+    { 0x11, " 1, #00ff00, 200, #007f00, 200, #00ff00, 200, #007f00, 200, #0000ff, 200" }, // green to blue
+    { 0x14, " 1, #00ff00, 200, #00ff00, 1000, #000000, 0" }, // green then off
+    { 0x16, " 1, #ff0000, 200, #0000ff, 200" }, // red to blue
+    { 0x19, " 1, #ff0000, 200, #ff0000, 1000, #000000, 0" }, // red then off
     { 0x1b, " 1, #0000ff, 200" } // to blue
 };
 
