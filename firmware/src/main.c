@@ -421,7 +421,7 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
         (report_type == HID_REPORT_TYPE_OUTPUT)) {
         if (bufsize >= 3) {
             last_hid_time = time_us_64();
-            light_fade(rgb32(buffer[0], buffer[1], buffer[2], false), 0);
+            light_fade(buffer[0] << 16 | buffer[1] << 8 | buffer[2], 0);
         }
     }
 }

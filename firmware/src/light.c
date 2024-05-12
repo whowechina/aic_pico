@@ -27,7 +27,7 @@ static uint8_t led_gpio[] = LED_DEF;
 #define LED_NUM (sizeof(led_gpio))
 static uint8_t led_buf[LED_NUM];
 
-static inline uint32_t _rgb32(uint32_t c1, uint32_t c2, uint32_t c3, bool gamma_fix)
+static inline uint32_t rgb32(uint32_t c1, uint32_t c2, uint32_t c3, bool gamma_fix)
 {
     if (gamma_fix) {
         c1 = ((c1 + 1) * (c1 + 1) - 1) >> 8;
@@ -39,21 +39,16 @@ static inline uint32_t _rgb32(uint32_t c1, uint32_t c2, uint32_t c3, bool gamma_
 }
 
 /* translate RGB to local RGB channel order */
-static inline uint32_t rgb2local(uint32_t color)
+static inline uint32_t rgb2local(uint32_t color, bool gamma_fix)
 {
     uint8_t r = (color >> 16) & 0xff;
     uint8_t g = (color >> 8) & 0xff;
     uint8_t b = color & 0xff;
 
-    return rgb32(r, g, b, false); 
-}
-
-uint32_t rgb32(uint32_t r, uint32_t g, uint32_t b, bool gamma_fix)
-{
 #if BUTTON_RGB_ORDER == GRB
-    return _rgb32(g, r, b, gamma_fix);
+    return rgb32(g, r, b, gamma_fix);
 #else
-    return _rgb32(r, g, b, gamma_fix);
+    return rgb32(r, g, b, gamma_fix);
 #endif
 }
 
@@ -153,7 +148,7 @@ void light_fade_n(int repeat, int count, ...)
 
     for (int i = 0; i < count; i++) {
         fading.steps[i].from = i == 0 ? fading.color : fading.steps[i - 1].to;
-        fading.steps[i].to = rgb2local(va_arg(args, uint32_t));
+        fading.steps[i].to = rgb2local(va_arg(args, uint32_t), true);
         fading.steps[i].duration = va_arg(args, int);
     }
 
@@ -230,7 +225,7 @@ void light_fade_s(const char *pattern)
     fading.step_num = (param_num - 1) / 2;
     for (int i = 0; i < fading.step_num; i++) {
         fading.steps[i].from = i == 0 ? fading.color : fading.steps[i - 1].to;
-        fading.steps[i].to = rgb2local(param[i * 2 + 1]);
+        fading.steps[i].to = rgb2local(param[i * 2 + 1], true);
         fading.steps[i].duration = param[i * 2 + 2];
     }
     fading.curr_step = 0;
@@ -239,7 +234,7 @@ void light_fade_s(const char *pattern)
     light_mode = MODE_FADE;
 }
 
-static void color_control(uint32_t delta_ms)
+static void fade_control(uint32_t delta_ms)
 {
     if (fading.repeat == 0) {
         return;
@@ -268,7 +263,7 @@ static void color_control(uint32_t delta_ms)
     fading.color = color;
 }
 
-static void color_render()
+static void fade_render()
 {
     uint32_t color = apply_level(fading.color, aic_cfg->light.max);
 
@@ -282,7 +277,7 @@ static void color_render()
     }
 }
 
-static void color_update(uint32_t delta_ms)
+static void fade_update(uint32_t delta_ms)
 {
     if (light_mode != MODE_FADE) {
         fading.color = 0x000000;
@@ -290,8 +285,8 @@ static void color_update(uint32_t delta_ms)
         return;
     }
 
-    color_control(delta_ms);
-    color_render();
+    fade_control(delta_ms);
+    fade_render();
 }
 
 static struct {
@@ -423,37 +418,6 @@ static void drive_led()
     }
 }
 
-void light_set_color(uint32_t color)
-{
-    for (int i = 0; i < RGB_NUM; i++) {
-        rgb_buf[i] = apply_level(color, aic_cfg->light.max);
-    }
-}
-
-static uint64_t last_hid = 0;
-void light_hid_light(uint8_t r, uint8_t g, uint8_t b)
-{
-    light_set_color(rgb32(r, g, b, false));
-    last_hid = time_us_64();
-}
-
-void light_set_brg(unsigned index, const uint8_t *brg_array, size_t num)
-{
-    if (index >= RGB_NUM) {
-        return;
-    }
-    if (index + num > RGB_NUM) {
-        num = RGB_NUM - index;
-    }
-    for (int i = 0; i < num; i++) {
-        uint8_t b = brg_array[i * 3 + 0];
-        uint8_t r = brg_array[i * 3 + 1];
-        uint8_t g = brg_array[i * 3 + 2];
-        uint32_t color = apply_level(rgb32(r, g, b, false), aic_cfg->light.max);
-        rgb_buf[index + i] = color;
-    }
-}
-
 void light_init()
 {
     uint pio0_offset = pio_add_program(pio0, &ws2812_program);
@@ -485,7 +449,7 @@ void light_update()
     uint32_t delta_ms = (now - last_time) / 1000;
     last_time = now;
 
-    color_update(delta_ms);
+    fade_update(delta_ms);
     rainbow_update(delta_ms);
 
     drive_led();

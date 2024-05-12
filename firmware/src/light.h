@@ -15,7 +15,6 @@
 void light_init();
 void light_update();
 
-uint32_t rgb32(uint32_t r, uint32_t g, uint32_t b, bool gamma_fix);
 uint32_t rgb32_from_hsv(uint8_t h, uint8_t s, uint8_t v);
 
 void light_fade(uint32_t color, uint32_t fading_ms);
