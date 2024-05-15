@@ -13,6 +13,7 @@
 void st7789_reset();
 void st7789_init_spi(spi_inst_t *port, uint8_t sck, uint8_t tx, uint8_t csn);
 void st7789_init(spi_inst_t *port, uint8_t dc, uint8_t rst, uint8_t ledk);
+void st7789_crop(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
 void st7789_dimmer(uint8_t level);
 void st7789_vsync();
 void st7789_render(bool vsync);

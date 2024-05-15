@@ -16,6 +16,7 @@
 #include "hardware/spi.h"
 #include "hardware/dma.h"
 #include "hardware/pwm.h"
+#include "hardware/clocks.h"
 
 #include "st7789.h"
 
@@ -30,8 +31,14 @@ static struct {
     int dma_tx;
     dma_channel_config dma_cfg;
 } ctx;
+static struct {
+    uint16_t x;
+    uint16_t y;
+    uint16_t w;
+    uint16_t h;
+} crop = { 0, 0, WIDTH, HEIGHT };
 
-static uint16_t vram[HEIGHT][WIDTH];
+static uint16_t vram[HEIGHT * WIDTH];
 
 static void send_cmd(uint8_t cmd, const void *data, size_t len)
 {
@@ -46,29 +53,13 @@ static void send_cmd(uint8_t cmd, const void *data, size_t len)
     }
 }
 
-void st7789_reset()
-{
-    gpio_put(ctx.dc, 1);
-    gpio_put(ctx.rst, 1);
-    sleep_ms(100);
-    
-    send_cmd(0x01, NULL, 0); // Software Reset
-    sleep_ms(130);
-
-    send_cmd(0x11, NULL, 0); // Sleep Out
-    sleep_ms(10);
-
-    send_cmd(0x3a, "\x55", 1); // 16bit RGB (5-6-5)
-    send_cmd(0x36, "\x00", 1); // Regular VRam Access
-
-    send_cmd(0x21, NULL, 0); // Display Inversion for TTF
-    send_cmd(0x13, NULL, 0); // Normal Display Mode On
-    send_cmd(0x29, NULL, 0); // Turn On Display
-}
-
 void st7789_init_spi(spi_inst_t *port, uint8_t sck, uint8_t tx, uint8_t csn)
 {
-    spi_init(port, 125 * 1000 * 1000);
+    // to get max freq for SPI
+    uint32_t freq = clock_get_hz(clk_sys);
+    clock_configure(clk_peri, 0, CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS, freq, freq);
+    spi_init(port, freq);
+
     gpio_set_function(tx, GPIO_FUNC_SPI);
     gpio_set_function(sck, GPIO_FUNC_SPI);
     gpio_init(csn);
@@ -121,6 +112,48 @@ void st7789_init(spi_inst_t *port, uint8_t dc, uint8_t rst, uint8_t ledk)
     st7789_reset();
 }
 
+static void update_addr()
+{
+    uint16_t xe = crop.x + crop.w - 1;
+    uint8_t ca[] = { crop.x >> 8, crop.x & 0xff, xe >> 8, xe & 0xff };
+    send_cmd(0x2a, ca, sizeof(ca));
+
+    uint16_t ye = crop.y + crop.h - 1;
+    uint8_t ra[] = { crop.y >> 8, crop.y & 0xff, ye >> 8, ye & 0xff };
+    send_cmd(0x2b, ra, sizeof(ra));
+}
+
+void st7789_reset()
+{
+    gpio_put(ctx.dc, 1);
+    gpio_put(ctx.rst, 1);
+    sleep_ms(100);
+    
+    send_cmd(0x01, NULL, 0); // Software Reset
+    sleep_ms(130);
+
+    send_cmd(0x11, NULL, 0); // Sleep Out
+    sleep_ms(10);
+
+    send_cmd(0x3a, "\x55", 1); // 16bit RGB (5-6-5)
+    send_cmd(0x36, "\x00", 1); // Regular VRam Access
+
+    send_cmd(0x21, NULL, 0); // Display Inversion for TTF
+    send_cmd(0x13, NULL, 0); // Normal Display Mode On
+    send_cmd(0x29, NULL, 0); // Turn On Display
+
+    update_addr();
+}
+
+void st7789_crop(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
+{
+    crop.x = x;
+    crop.y = y;
+    crop.w = w;
+    crop.h = h;
+    update_addr();
+}
+
 void st7789_dimmer(uint8_t level)
 {
     pwm_set_gpio_level(ctx.ledk, level);
@@ -134,13 +167,12 @@ void st7789_vsync()
 void st7789_render(bool vsync)
 {
     send_cmd(0x2c, NULL, 0);
-
     spi_set_format(ctx.spi, 16, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
 
     dma_channel_configure(ctx.dma_tx, &ctx.dma_cfg,
-                          &spi_get_hw(ctx.spi)->dr, // write address
-                          vram, // read address
-                          sizeof(vram) / 2, // count
+                          &spi_get_hw(ctx.spi)->dr, // write to
+                          vram, // read from
+                          crop.w * crop.h, // element count
                           true); // start right now
     if (vsync) {
         st7789_vsync();
@@ -157,48 +189,53 @@ void st7789_clear()
     memset(vram, 0, sizeof(vram));
 }
 
+void static inline put_pixel(uint16_t x, uint16_t y, uint16_t color)
+{
+    vram[y * crop.w + x] = color;
+}
+
 void st7789_pixel(uint16_t x, uint16_t y, uint16_t color)
 {
-    if ((x >= WIDTH) || (y >= HEIGHT)) {
+    if ((x >= crop.w) || (y >= crop.h)) {
         return;
     }
-    vram[y][x] = color;
+    put_pixel(x, y, color);
 }
 
 void st7789_hline(uint16_t x, uint16_t y, uint16_t w, uint16_t color)
 {
-    if ((x >= WIDTH) || (y >= HEIGHT)) {
+    if ((x >= crop.w) || (y >= crop.h)) {
         return;
     }
-    w = x + w > WIDTH ? WIDTH - x : w;
+    w = x + w > crop.w ? crop.w - x : w;
 
     for (int i = 0; i < w; i++) {
-        vram[y][x + i] = color;
+        put_pixel(x + i, y, color);
     }
 }
 void st7789_vline(uint16_t x, uint16_t y, uint16_t h, uint16_t color)
 {
-    if ((x >= WIDTH) || (y >= HEIGHT)) {
+    if ((x >= crop.w) || (y >= crop.h)) {
         return;
     }
-    h = y + h > HEIGHT ? HEIGHT - y : h;
+    h = y + h > crop.h ? crop.h - y : h;
 
     for (int i = 0; i < h; i++) {
-        vram[y + i][x] = color;
+        put_pixel(x, y + i, color);
     }
 }
 
 void st7789_bar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color)
 {
-    if ((x >= WIDTH) || (y >= HEIGHT)) {
+    if ((x >= crop.w) || (y >= crop.h)) {
         return;
     }
-    w = x + w > WIDTH ? WIDTH - x : w;
-    h = y + h > HEIGHT ? HEIGHT - y : h;
+    w = x + w > crop.w ? crop.w - x : w;
+    h = y + h > crop.h ? crop.h - y : h;
 
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
-            vram[y + i][x + j] = color;
+            put_pixel(x + j, y + i, color);
         }
     }
 }

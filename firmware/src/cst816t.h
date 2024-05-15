@@ -12,15 +12,16 @@
 void cst816t_init_i2c(i2c_inst_t *i2c, uint8_t scl, uint8_t sda);
 void cst816t_init(i2c_inst_t *i2c, uint8_t trst, uint8_t tint);
 
-void cst816t_set_ratio(uint8_t xa, uint8_t xb, uint8_t ya, uint8_t yb);
-void cst816t_set_offset(int8_t dx, int8_t dy);
+void cst816t_crop(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, uint16_t width, uint16_t height);
 
 typedef struct {
-    uint8_t gesture; 
+    uint8_t gesture;
     uint8_t finger;
     uint8_t event;
     uint16_t x;
     uint16_t y;
+    uint16_t raw_x;
+    uint16_t raw_y;
 } cst816t_report_t;
 
 cst816t_report_t cst816t_read();

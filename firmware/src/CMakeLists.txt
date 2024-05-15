@@ -13,6 +13,7 @@ function(make_firmware board board_def)
 
     add_executable(${board}
                    main.c save.c config.c commands.c light.c keypad.c
+                   cst816t.c st7789.c
                    cli.c usb_descriptors.c)
     target_compile_definitions(${board} PUBLIC ${board_def})
     pico_enable_stdio_usb(${board} 1)
@@ -20,7 +21,7 @@ function(make_firmware board board_def)
     pico_generate_pio_header(${board} ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio)
     
     target_link_libraries(${board} PRIVATE
-        aic hardware_pio hardware_pwm hardware_flash)
+        aic hardware_pio hardware_pwm hardware_dma hardware_flash)
 
     pico_add_extra_outputs(${board})
 

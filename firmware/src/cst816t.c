@@ -16,13 +16,22 @@
 
 static i2c_inst_t *i2c_port = i2c0;
 
+static void cst816t_read_reg_n(uint8_t reg, uint8_t *buf, uint8_t len)
+{
+    i2c_write_blocking_until(i2c_port, CST816T_I2C_ADDR, &reg, 1, true,
+                             make_timeout_time_ms(1));
+    i2c_read_blocking_until(i2c_port, CST816T_I2C_ADDR, buf, len, false,
+                            make_timeout_time_ms(1));
+}
 
 void cst816t_init_i2c(i2c_inst_t *i2c, uint8_t scl, uint8_t sda)
 {
     i2c_port = i2c;
-    i2c_init(i2c_port, 200 * 000);
+    i2c_init(i2c_port, 200 * 1000);
     gpio_set_function(scl, GPIO_FUNC_I2C);
     gpio_set_function(sda, GPIO_FUNC_I2C);
+    gpio_pull_up(scl);
+    gpio_pull_up(sda);
 }
 
 void cst816t_init(i2c_inst_t *i2c, uint8_t trst, uint8_t tint)
@@ -39,48 +48,53 @@ void cst816t_init(i2c_inst_t *i2c, uint8_t trst, uint8_t tint)
 }
 
 static struct {
-    uint8_t xa;
-    uint8_t xb;
-    uint8_t ya;
-    uint8_t yb;
-    int8_t dx;
-    int8_t dy;
+    uint16_t x1;
+    uint16_t x2;
+    uint16_t y1;
+    uint16_t y2;
+    uint16_t width;
+    uint16_t height;
 } ctx = { 1, 1, 1, 1 };
 
-void cst816t_set_ratio(uint8_t xa, uint8_t xb, uint8_t ya, uint8_t yb)
+void cst816t_crop(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, uint16_t width, uint16_t height)
 {
-    ctx.xa = xa ? xa : 1;
-    ctx.xb = xb;
-    ctx.ya = ya ? ya : 1;
-    ctx.yb = yb;
-}
-
-void cst816t_set_offset(int8_t dx, int8_t dy)
-{
-    ctx.dx = dx;
-    ctx.dy = dy;
-}
-
-static void cst816t_read_reg_n(uint8_t reg, uint8_t *buf, uint8_t len)
-{
-    i2c_write_blocking_until(i2c_port, CST816T_I2C_ADDR, &reg, 1, true,
-                             make_timeout_time_ms(1));
-    i2c_read_blocking_until(i2c_port, CST816T_I2C_ADDR, buf, len, false,
-                            make_timeout_time_ms(1));
+    ctx.x1 = x1;
+    ctx.x2 = x2;
+    ctx.y1 = y1;
+    ctx.y2 = y2;
+    ctx.width = width;
+    ctx.height = height;
 }
 
 cst816t_report_t cst816t_read()
 {
     uint8_t buf[6];
+
     cst816t_read_reg_n(0x01, buf, 6);
 
     cst816t_report_t report = {
         .gesture = buf[0],
         .finger = buf[1],
         .event = (buf[2] >> 4) & 0x0f,
-        .x = (((buf[2] & 0x0f) << 8) | buf[3]) * ctx.xb / ctx.xa + ctx.dx,
-        .y = ((buf[4] << 8) | buf[5]) * ctx.yb / ctx.ya + ctx.dy,
+        .raw_x = ((buf[2] & 0x0f) << 8) | buf[3],
+        .raw_y = ((buf[4] & 0x0f) << 8) | buf[5],
     };
+
+    int x = (report.raw_x - ctx.x1) * ctx.width / (ctx.x2 - ctx.x1);
+    int y = (report.raw_y - ctx.y1) * ctx.height / (ctx.y2 - ctx.y1);
+    if (x < 0) {
+        x = 0;
+    } else if (x >= ctx.width) {
+        x = ctx.width - 1;
+    }
+    if (y < 0) {
+        y = 0;
+    } else if (y >= ctx.height) {
+        y = ctx.height - 1;
+    }
+
+    report.x = x;
+    report.y = y;
 
     return report;
 }
