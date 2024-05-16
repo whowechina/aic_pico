@@ -1,4 +1,4 @@
-22385510438984962
+22387226264238324
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -92286,7 +92286,7 @@ TE FPC connector, 18 top-side contacts, 0.5mm pitch, SMT, https://www.te.com/com
 te fpc 1734839
 0
 20
-19
+18
 aic_pico
 MountingHole_3.2mm_M3
 Mounting Hole 3.2mm, no annular, M3
@@ -92366,6 +92366,13 @@ WS2812B-1615
 4
 aic_pico
 WS2812B-2835
+
+
+0
+4
+4
+aic_pico
+WS2812B-4020
 
 
 0
