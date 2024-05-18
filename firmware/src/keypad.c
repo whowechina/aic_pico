@@ -21,9 +21,20 @@ static const uint8_t keypad_gpio[] = KEYPAD_DEF;
 
 static bool sw_val[KEY_NUM]; /* true if pressed */
 static uint64_t sw_freeze_time[KEY_NUM];
+static bool keypad_en = true;
+static bool keystuck = false;
 
 void keypad_init()
 {
+    gpio_init(KEYPAD_EN);
+    gpio_set_function(KEYPAD_EN, GPIO_FUNC_SIO);
+    gpio_set_dir(KEYPAD_EN, GPIO_IN);
+    gpio_pull_up(KEYPAD_EN);
+    keypad_en = gpio_get(KEYPAD_EN);
+    if (!keypad_en) {
+        return;
+    }
+
     for (int i = 0; i < KEY_NUM; i++)
     {
         sw_val[i] = false;
@@ -33,12 +44,16 @@ void keypad_init()
         gpio_set_function(gpio, GPIO_FUNC_SIO);
         gpio_set_dir(gpio, GPIO_IN);
         gpio_pull_up(gpio);
+        if (gpio_get(gpio) == 0) {
+            keystuck = true;
+            break;
+        }
     }
 }
 
 uint8_t keypad_key_num()
 {
-    return KEY_NUM;
+    return keypad_en ? KEY_NUM : 0;
 }
 
 static uint16_t keypad_reading;
@@ -47,6 +62,10 @@ static uint16_t keypad_reading;
 #define DEBOUNCE_FREEZE_TIME_US 20000
 void keypad_update()
 {
+    if (!keypad_en || keystuck) {
+        return;
+    }
+
     uint64_t now = time_us_64();
     uint16_t keys = 0;
 
@@ -72,4 +91,9 @@ void keypad_update()
 uint16_t keypad_read()
 {
     return keypad_reading;
+}
+
+bool keypad_is_stuck()
+{
+    return keystuck;
 }
