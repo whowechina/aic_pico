@@ -427,6 +427,7 @@ void light_init()
     for (int i = 0; i < LED_NUM; i++) {
         gpio_init(led_gpio[i]);
         gpio_set_dir(led_gpio[i], GPIO_OUT);
+        gpio_set_drive_strength(RGB_PIN, GPIO_DRIVE_STRENGTH_12MA);
         gpio_set_function(led_gpio[i], GPIO_FUNC_PWM);
 
         int slice = pwm_gpio_to_slice_num(led_gpio[i]);
