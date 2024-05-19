@@ -6,6 +6,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -28,12 +29,17 @@ static struct {
     uint8_t dc;
     uint8_t rst;
     uint8_t ledk;
-    int dma_tx;
-    dma_channel_config dma_cfg;
+    int spi_dma;
+    dma_channel_config spi_dma_cfg;
+    int mem_dma;
+    dma_channel_config mem_dma_cfg;    
 } ctx;
+
 static struct {
     uint16_t x;
     uint16_t y;
+    uint16_t vx;
+    uint16_t vy;
     uint16_t w;
     uint16_t h;
 } crop = { 0, 0, WIDTH, HEIGHT };
@@ -92,10 +98,15 @@ static void init_pwm()
 
 static void init_dma()
 {
-    ctx.dma_tx = dma_claim_unused_channel(true);
-    ctx.dma_cfg = dma_channel_get_default_config(ctx.dma_tx);
-    channel_config_set_transfer_data_size(&ctx.dma_cfg, DMA_SIZE_16);
-    channel_config_set_dreq(&ctx.dma_cfg, spi_get_dreq(ctx.spi, true));
+    ctx.spi_dma = dma_claim_unused_channel(true);
+    ctx.spi_dma_cfg = dma_channel_get_default_config(ctx.spi_dma);
+    channel_config_set_transfer_data_size(&ctx.spi_dma_cfg, DMA_SIZE_16);
+    channel_config_set_dreq(&ctx.spi_dma_cfg, spi_get_dreq(ctx.spi, true));
+
+    ctx.mem_dma = dma_claim_unused_channel(true);
+    ctx.mem_dma_cfg = dma_channel_get_default_config(ctx.mem_dma);
+    channel_config_set_transfer_data_size(&ctx.mem_dma_cfg, DMA_SIZE_32);
+    channel_config_set_write_increment(&ctx.mem_dma_cfg, true);
 }
 
 void st7789_init(spi_inst_t *port, uint8_t dc, uint8_t rst, uint8_t ledk)
@@ -114,12 +125,14 @@ void st7789_init(spi_inst_t *port, uint8_t dc, uint8_t rst, uint8_t ledk)
 
 static void update_addr()
 {
-    uint16_t xe = crop.x + crop.w - 1;
-    uint8_t ca[] = { crop.x >> 8, crop.x & 0xff, xe >> 8, xe & 0xff };
+    uint16_t xs = crop.x + crop.vx;
+    uint16_t xe = xs + crop.w - 1;
+    uint8_t ca[] = { xs >> 8, xs & 0xff, xe >> 8, xe & 0xff };
     send_cmd(0x2a, ca, sizeof(ca));
 
-    uint16_t ye = crop.y + crop.h - 1;
-    uint8_t ra[] = { crop.y >> 8, crop.y & 0xff, ye >> 8, ye & 0xff };
+    uint16_t ys = crop.y + crop.vy;
+    uint16_t ye = ys + crop.h - 1;
+    uint8_t ra[] = { ys >> 8, ys & 0xff, ye >> 8, ye & 0xff };
     send_cmd(0x2b, ra, sizeof(ra));
 }
 
@@ -145,10 +158,17 @@ void st7789_reset()
     update_addr();
 }
 
-void st7789_crop(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
+void st7789_crop(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool absolute)
 {
-    crop.x = x;
-    crop.y = y;
+    if (absolute) {
+        crop.x = x;
+        crop.y = y;
+        crop.vx = 0;
+        crop.vy = 0;
+    } else {
+        crop.vx = x;
+        crop.vy = y;
+    }
     crop.w = w;
     crop.h = h;
     update_addr();
@@ -161,15 +181,19 @@ void st7789_dimmer(uint8_t level)
 
 void st7789_vsync()
 {
-    dma_channel_wait_for_finish_blocking(ctx.dma_tx);
+    dma_channel_wait_for_finish_blocking(ctx.spi_dma);
 }
 
 void st7789_render(bool vsync)
 {
+    if (dma_channel_is_busy(ctx.spi_dma)) {
+        return;
+    }
+
     send_cmd(0x2c, NULL, 0);
     spi_set_format(ctx.spi, 16, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
 
-    dma_channel_configure(ctx.dma_tx, &ctx.dma_cfg,
+    dma_channel_configure(ctx.spi_dma, &ctx.spi_dma_cfg,
                           &spi_get_hw(ctx.spi)->dr, // write to
                           vram, // read from
                           crop.w * crop.h, // element count
@@ -179,14 +203,33 @@ void st7789_render(bool vsync)
     }
 }
 
+uint16_t st7789_rgb32(uint8_t r, uint8_t g, uint8_t b)
+{
+    return (r << 16) | (g << 8) | b;
+}
+
 uint16_t st7789_rgb565(uint32_t rgb32)
 {
     return ((rgb32 >> 8) & 0xf800) | ((rgb32 >> 5) & 0x07e0) | ((rgb32 >> 3) & 0x001f);
 }
 
-void st7789_clear()
+static void vram_dma(uint16_t x, uint16_t y, const void *src, bool inc, size_t pixels)
 {
-    memset(vram, 0, sizeof(vram));
+    channel_config_set_read_increment(&ctx.mem_dma_cfg, inc);
+    dma_channel_configure(ctx.mem_dma, &ctx.mem_dma_cfg,
+                          &vram[y * crop.w + x], src, pixels / 2, true);
+    dma_channel_wait_for_finish_blocking(ctx.mem_dma);
+}
+
+void st7789_clear(uint16_t color)
+{
+    uint32_t c32 = (color << 16) | color;
+    vram_dma(0, 0, &c32, false, crop.w * crop.h);
+}
+
+void st7789_vramcpy(uint16_t x, uint16_t y, const void *src, size_t pixels)
+{
+    vram_dma(x, y, src, true, pixels);
 }
 
 void static inline put_pixel(uint16_t x, uint16_t y, uint16_t color)
@@ -261,4 +304,9 @@ void st7789_line(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t co
             y0 += sy;
         }
     }
+}
+
+uint16_t *st7789_vram(uint16_t x, uint16_t y)
+{
+    return &vram[y * crop.w + x];
 }
