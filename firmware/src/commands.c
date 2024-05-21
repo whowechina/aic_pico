@@ -54,8 +54,7 @@ static void handle_display()
         printf("    AIME Pattern: %s\n", aime_get_mode_string());
     }
     if (keypad_is_stuck()) {
-        printf("\n    Warning: Keypad disabled due to key STUCK!\n");
-    
+        printf("\nWarning: Keypad disabled due to key STUCK!\n");
     }
 }
 
