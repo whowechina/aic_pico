@@ -19,7 +19,7 @@ bool pn532_init(i2c_inst_t *i2c);
 int pn532_write_command(uint8_t cmd, const uint8_t *param, uint8_t len);
 int pn532_read_response(uint8_t cmd, uint8_t *resp, uint8_t len);
 
-uint32_t pn532_firmware_ver();
+const char *pn532_firmware_ver();
 
 bool pn532_config_sam();
 bool pn532_config_rf();

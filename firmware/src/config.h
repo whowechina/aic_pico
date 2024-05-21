@@ -25,6 +25,7 @@ typedef struct __attribute__((packed)) {
 
 typedef volatile struct {
     bool debug;
+    bool touch;
     reader_mode_t mode;
 } aic_runtime_t;
 

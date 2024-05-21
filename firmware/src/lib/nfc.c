@@ -51,6 +51,7 @@ const char *nfc_card_name(nfc_card_type card_type)
 
 #define func_null NULL
 struct {
+    const char *(*firmware_ver)();
     bool (*poll_mifare)(uint8_t uid[7], int *len);
     bool (*poll_felica)(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool from_cache);
     bool (*poll_vicinity)(uint8_t uid[8]);
@@ -63,6 +64,7 @@ struct {
     void (*deselect)();
 } api[3] = {
     {
+        pn532_firmware_ver,
         pn532_poll_mifare, pn532_poll_felica, func_null,
         pn532_rf_field,
         pn532_mifare_auth, pn532_mifare_read,
@@ -72,6 +74,7 @@ struct {
         NULL,
     },
     {
+        pn5180_firmware_ver,
         pn5180_poll_mifare, pn5180_poll_felica, pn5180_poll_vicinity,
         pn5180_rf_field,
         pn5180_mifare_auth, pn5180_mifare_read,
@@ -121,7 +124,7 @@ void nfc_attach_spi(spi_inst_t *port, uint8_t rst, uint8_t nss, uint8_t busy)
 void nfc_init_spi(spi_inst_t *port, uint8_t miso, uint8_t sck, uint8_t mosi,
                  uint8_t rst, uint8_t nss, uint8_t busy)
 {
-    spi_init(port, 8000 * 1000);
+    spi_init(port, 8 * 1000 * 1000);
     spi_set_format(port, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
     gpio_set_function(miso, GPIO_FUNC_SPI);
@@ -152,6 +155,14 @@ void nfc_set_wait_loop(nfc_wait_loop_t loop)
         return;
     }
     api[nfc_module].set_wait_loop(loop);
+}
+
+const char *nfc_module_version()
+{
+    if (!api[nfc_module].firmware_ver) {
+        return 0;
+    }
+    return api[nfc_module].firmware_ver();
 }
 
 static bool nfc_detect_mifare(nfc_card_t *card)

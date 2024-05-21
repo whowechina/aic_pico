@@ -13,9 +13,10 @@
 #include "hardware/gpio.h"
 #include "hardware/spi.h"
 
+#include "nfc.h"
 #include "pn5180.h"
 
-#define DEBUG(...) { if (0) printf(__VA_ARGS__); }
+#define DEBUG(...) { if (nfc_runtime.debug) printf(__VA_ARGS__); }
 
 #define IO_TIMEOUT_US 1000
 #define PN5180_I2C_ADDRESS 0x24
@@ -38,6 +39,7 @@ static spi_inst_t *spi_port;
 static uint8_t gpio_rst;
 static uint8_t gpio_nss;
 static uint8_t gpio_busy;
+static uint8_t version[2];
 
 bool pn5180_init(spi_inst_t *port, uint8_t rst, uint8_t nss, uint8_t busy)
 {
@@ -56,9 +58,15 @@ bool pn5180_init(spi_inst_t *port, uint8_t rst, uint8_t nss, uint8_t busy)
     gpio_nss = nss;
     gpio_busy = busy;
 
-    uint8_t buf[2];
-    pn5180_read_eeprom(0x12, buf, sizeof(buf));
-    return (buf[0] <= 15) && (buf[1] >= 2) && (buf[1] <= 15);
+    pn5180_read_eeprom(0x12, version, sizeof(version));
+    return (version[0] <= 15) && (version[1] >= 2) && (version[1] <= 15);
+}
+
+const char *pn5180_firmware_ver()
+{
+    static char ver_str[8];
+    sprintf(ver_str, "%d.%d", version[1], version[0]);
+    return ver_str;
 }
 
 static pn5180_wait_loop_t wait_loop = NULL;
@@ -283,6 +291,7 @@ static void poll_mifare_2()
 
 bool pn5180_poll_mifare(uint8_t uid[7], int *len)
 {
+    DEBUG("pn5180_poll_mifare\n");
     poll_mifare_1();
     poll_mifare_2();
     
@@ -295,6 +304,7 @@ static uint8_t idm_cache[8] = {0};
 
 bool pn5180_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool from_cache)
 {
+    DEBUG("pn5180_poll_mifare\n");
     pn5180_reset();
     pn5180_load_rf_config(0x09, 0x89);
     pn5180_rf_field(true);
@@ -329,6 +339,7 @@ bool pn5180_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool
 
 bool pn5180_poll_vicinity(uint8_t uid[8])
 {
+    DEBUG("pn5180_poll_mifare\n");
     pn5180_reset();
     pn5180_load_rf_config(0x0d, 0x8d);
     pn5180_rf_field(true);

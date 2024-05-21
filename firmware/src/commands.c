@@ -11,6 +11,8 @@
 #include "save.h"
 #include "cli.h"
 
+#include "keypad.h"
+
 #include "aime.h"
 #include "bana.h"
 #include "nfc.h"
@@ -35,13 +37,13 @@ void fps_count(int core)
 static void handle_display()
 {
     printf("[NFC Module]\n");
-    printf("    %s\n", nfc_module_name());
+    printf("    %s (%s)\n", nfc_module_name(), nfc_module_version());
     printf("[Config]\n");
     printf("    Light: RGB-%s LED-%s\n",
             aic_cfg->light.rgb ? "ON" : "OFF",
             aic_cfg->light.led ? "ON" : "OFF");
     printf("    Level: [%d ~ %d]\n", aic_cfg->light.min, aic_cfg->light.max);
-    printf("[Reader]]\n");
+    printf("[Reader]\n");
     printf("    Virtual AIC: %s\n", aic_cfg->virtual_aic ? "ON" : "OFF");
 
     printf("    Mode: %s\n", mode_name(aic_cfg->mode));
@@ -50,6 +52,10 @@ static void handle_display()
     }
     if ((aic_runtime.mode == MODE_AIME0) || (aic_runtime.mode == MODE_AIME1)) {
         printf("    AIME Pattern: %s\n", aime_get_mode_string());
+    }
+    if (keypad_is_stuck()) {
+        printf("\n    Warning: Keypad disabled due to key STUCK!\n");
+    
     }
 }
 

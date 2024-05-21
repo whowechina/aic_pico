@@ -27,13 +27,24 @@
 #define PN532_PN532TOHOST 0xd5
 
 static i2c_inst_t *i2c_port = i2c0;
+static uint32_t version = 0;
+
+static uint32_t read_firmware_ver()
+{
+    uint8_t buf[4];
+    if ((pn532_write_command(0x02, NULL, 0) >= 0) &&
+        (pn532_read_response(0x02, buf, sizeof(buf)) == 4)) {
+        return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+    }
+    return 0;
+}
 
 bool pn532_init(i2c_inst_t *i2c)
 {
     i2c_port = i2c;
+    version = read_firmware_ver();
 
-    uint32_t ver = pn532_firmware_ver();
-    return (ver > 0) && (ver < 0x7fffffff);
+    return (version > 0) && (version < 0x7fffffff);
 }
 
 static pn532_wait_loop_t wait_loop = NULL;
@@ -237,25 +248,11 @@ int pn532_read_response(uint8_t cmd, uint8_t *resp, uint8_t len)
     return data_len;
 }
 
-uint32_t pn532_firmware_ver()
+const char *pn532_firmware_ver()
 {
-    int ret = pn532_write_command(0x02, NULL, 0);
-    if (ret < 0) {
-        return 0;
-    }
-
-    uint8_t ver[4];
-    int result = pn532_read_response(0x02, ver, sizeof(ver));
-    if (result < 4) {
-        return 0;
-    }
-
-    uint32_t version = 0;
-    for (int i = 0; i < 4; i++) {
-        version <<= 8;
-        version |= ver[i];
-    }
-    return version;
+    static char ver_str[16];
+    sprintf(ver_str, "%08lX", version);
+    return ver_str;
 }
 
 bool pn532_config_rf()
