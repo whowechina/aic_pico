@@ -11,8 +11,8 @@
 
 void keypad_init();
 uint8_t keypad_key_num();
+bool keypad_is_stuck();
 void keypad_update();
 uint16_t keypad_read();
-bool keypad_is_stuck();
 
 #endif
