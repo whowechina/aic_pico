@@ -139,6 +139,8 @@ AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico"
   * 选项 2（仅适用于 PN532 版本）：6x WS2812C-2020 LED（D13 到 D18），在组装图像中标记为蓝色。
   * 选项 3：6x 常规单色 0603 LED（D7 到 D12）和 6x 100ohm 0603 电阻（R2 到 R7），在组装图像中标记为紫色。
 
+* 为了给 PN5180 提供更纯净的供电，建议焊接 L1（0805 100nH 电感），C1（0603 10uF 电容）和 C2（0603 0.1uF 电容）。如果这些器件无法获得，您可以选择使用 0 欧姆电阻来短接 L1 的焊盘。在大多数情况下，它也能正常工作。
+
 * 对于开关，你有 2 个选项：
   * 选项 1：12x ALPS SKRRAAE010 低调 TACT 开关。  
     https://www.mouser.com/ProductDetail/Alps-Alpine/SKRRAAE010?qs=m0BA540hBPeKhAe3239t1w%3D%3D

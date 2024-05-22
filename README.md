@@ -136,6 +136,8 @@ AIC Key is a variation of the AIC Pico - a keypad is integrated. Much more diffi
   * Option 2 (avaiable only for PN532 version): 6x WS2812C-2020 LEDs (D13 to D18), BLUE mark in the assemble image.
   * Option 3: 6x regular single-color 0603 LEDs (D7 to D12) and 6x 100ohm 0603 resistors (R2 to R7), PURPLE mark in the assemble image.
 
+* For optimal power supply to the PN5180, it's recommended to solder L1 (0805 100nH inductor), C1 (0603 10uF capacitor), and C2 (0603 0.1uF capacitor). If these components are unavailable, you can alternatively use an 0 ohm resistor to bridge the L1 footprint. This workaround should suffice in most scenarios.
+
 * For switches, you still have 2 option:
   * Option 1: 12x ALPS SKRRAAE010 low-profile TACT switch.  
     https://www.mouser.com/ProductDetail/Alps-Alpine/SKRRAAE010?qs=m0BA540hBPeKhAe3239t1w%3D%3D
