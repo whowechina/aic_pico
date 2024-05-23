@@ -13,23 +13,19 @@
 aic_cfg_t *aic_cfg;
 
 static aic_cfg_t default_cfg = {
-    .light = { .min = 24, .max = 128, .rgb = true, .led = true },
-    .virtual_aic = true,
-    .mode = MODE_AUTO,
+    .light = { .level_idle = 24, .level_active = 128, .rgb = true, .led = true },
+    .reader = { .virtual_aic = true, .mode = MODE_AUTO },
+    .lcd = { .backlight = 200, }
 };
 
 aic_runtime_t aic_runtime;
 
 static void config_loaded()
 {
-    if (aic_cfg->light.min > aic_cfg->light.max) {
-        aic_cfg->light = default_cfg.light;
-        config_changed();
-    }
-    if ((aic_cfg->mode != MODE_AIME0) &&
-        (aic_cfg->mode != MODE_AIME1) &&
-        (aic_cfg->mode != MODE_BANA)) {
-        aic_cfg->mode = MODE_AUTO;
+    if ((aic_cfg->reader.mode != MODE_AIME0) &&
+        (aic_cfg->reader.mode != MODE_AIME1) &&
+        (aic_cfg->reader.mode != MODE_BANA)) {
+        aic_cfg->reader.mode = MODE_AUTO;
         config_changed();
     }
 }

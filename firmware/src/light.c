@@ -265,7 +265,7 @@ static void fade_control(uint32_t delta_ms)
 
 static void fade_render()
 {
-    uint32_t color = apply_level(fading.color, aic_cfg->light.max);
+    uint32_t color = apply_level(fading.color, aic_cfg->light.level_active);
 
     for (int i = 0; i < RGB_NUM; i++) {
         rgb_buf[i] = color;

@@ -38,21 +38,23 @@ static void handle_display()
 {
     printf("[NFC Module]\n");
     printf("    %s (%s)\n", nfc_module_name(), nfc_module_version());
-    printf("[Config]\n");
-    printf("    Light: RGB-%s LED-%s\n",
+
+    printf("[Light]\n");
+    printf("    RGB-%s, LED-%s\n",
             aic_cfg->light.rgb ? "ON" : "OFF",
             aic_cfg->light.led ? "ON" : "OFF");
-    printf("    Level: [%d ~ %d]\n", aic_cfg->light.min, aic_cfg->light.max);
-    printf("[Reader]\n");
-    printf("    Virtual AIC: %s\n", aic_cfg->virtual_aic ? "ON" : "OFF");
+    printf("    Level: Idle-%d, Active-%d\n", aic_cfg->light.level_idle, aic_cfg->light.level_active);
 
-    printf("    Mode: %s\n", mode_name(aic_cfg->mode));
-    if (aic_cfg->mode == MODE_AUTO) {
+    printf("[Reader]\n");
+    printf("    Virtual AIC: %s\n", aic_cfg->reader.virtual_aic ? "ON" : "OFF");
+    printf("    Mode: %s\n", mode_name(aic_cfg->reader.mode));
+    if (aic_cfg->reader.mode == MODE_AUTO) {
         printf("    Detected: %s\n", mode_name(aic_runtime.mode));
     }
     if ((aic_runtime.mode == MODE_AIME0) || (aic_runtime.mode == MODE_AIME1)) {
         printf("    AIME Pattern: %s\n", aime_get_mode_string());
     }
+
     if (keypad_is_stuck()) {
         printf("\nWarning: Keypad disabled due to key STUCK!\n");
     }
@@ -99,9 +101,9 @@ static void handle_virtual(int argc, char *argv[])
         return;
     }
 
-    aic_cfg->virtual_aic = (match == 0);
+    aic_cfg->reader.virtual_aic = (match == 0);
 
-    aime_virtual_aic(aic_cfg->virtual_aic);
+    aime_virtual_aic(aic_cfg->reader.virtual_aic);
     config_changed();
 }
 
@@ -117,27 +119,29 @@ static void handle_mode(int argc, char *argv[])
         return;
     }
 
+    reader_mode_t newmode = MODE_NONE;
     const char *commands[] = { "auto", "aime0", "aime1", "bana" };
     int match = cli_match_prefix(commands, 4, argv[0]);
     switch (match) {
         case 0:
-            aic_cfg->mode = MODE_AUTO;
+            newmode = MODE_AUTO;
             break;
         case 1:
-            aic_cfg->mode = MODE_AIME0;
+            newmode = MODE_AIME0;
             break;
         case 2:
-            aic_cfg->mode = MODE_AIME1;
+            newmode = MODE_AIME1;
             break;
         case 3:
-            aic_cfg->mode = MODE_BANA;
+            newmode = MODE_BANA;
             break;
         default:
             printf("%s", usage);
             return;
     }
 
-    aic_runtime.mode = aic_cfg->mode == MODE_AUTO ? MODE_NONE : aic_cfg->mode;
+    aic_cfg->reader.mode = newmode;
+    aic_runtime.mode = (newmode == MODE_AUTO) ? MODE_NONE : newmode;
     config_changed();
 }
 
@@ -184,23 +188,16 @@ static void handle_level(int argc, char *argv[])
         return;
     }
 
-    int min = cli_extract_non_neg_int(argv[0], 0);
-    if ((min < 0) || (min > 255)) {
-        printf(usage);
-        return;
-    }
-    int max = cli_extract_non_neg_int(argv[1], 0);
-    if (max > 255) {
+    int idle = cli_extract_non_neg_int(argv[0], 0);
+    int active = cli_extract_non_neg_int(argv[1], 0);
+    if ((idle < 0) || (idle > 255) ||
+        (active < 0) || (active > 255)) {
         printf(usage);
         return;
     }
 
-    if (max < min) {
-        max = min;
-    }
-
-    aic_cfg->light.min = min;
-    aic_cfg->light.max = max;
+    aic_cfg->light.level_idle = idle;
+    aic_cfg->light.level_active = active;
 
     config_changed();
     handle_display();

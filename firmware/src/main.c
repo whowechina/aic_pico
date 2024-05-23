@@ -73,7 +73,7 @@ void report_hid_key()
         return;
     }
 
-    uint16_t keys = keypad_read();
+    uint16_t keys = aic_runtime.touch ? 0 : keypad_read();
     for (int i = 0; i < keypad_key_num(); i++) {
         uint8_t code = keymap[i];
         uint8_t byte = code / 8;
@@ -114,7 +114,7 @@ static void light_mode_update()
     bool cardio = cardio_is_available();
 
     if (cardio && !was_cardio) {
-        light_rainbow(1, 1, aic_cfg->light.min);
+        light_rainbow(1, 1, aic_cfg->light.level_idle);
     }
 
     was_cardio = cardio;
@@ -125,12 +125,15 @@ static void core1_loop()
 {
     while (1) {
         if (mutex_try_enter(&core1_io_lock, NULL)) {
+            if (aic_runtime.touch) {
+                /* touch screen related things */
+            }
             light_update();
             mutex_exit(&core1_io_lock);
         }
         light_mode_update();
         cli_fps_count(1);
-        sleep_us(500);
+        sleep_us(100); // critical for flash programming
     }
 }
 
@@ -188,9 +191,9 @@ static void cardio_run()
 
     if (cardio_is_available()) {
         if (card.card_type != NFC_CARD_NONE) {
-            light_rainbow(30, 0, aic_cfg->light.max);
+            light_rainbow(30, 0, aic_cfg->light.level_active);
         } else {
-            light_rainbow(1, 3000, aic_cfg->light.min);
+            light_rainbow(1, 3000, aic_cfg->light.level_idle);
         }
     }
 
@@ -229,7 +232,7 @@ static void reader_poll_data()
 
 static void reader_detect_mode()
 {
-    if (aic_cfg->mode == MODE_AUTO) {
+    if (aic_cfg->reader.mode == MODE_AUTO) {
         static bool was_active = true; // so first time mode will be cleared
         bool is_active = aime_is_active() || bana_is_active();
         if (was_active && !is_active) {
@@ -237,7 +240,7 @@ static void reader_detect_mode()
         }
         was_active = is_active;
     } else {
-        aic_runtime.mode = aic_cfg->mode;
+        aic_runtime.mode = aic_cfg->reader.mode;
     }
 
     if (aic_runtime.mode == MODE_NONE) {
@@ -323,9 +326,18 @@ static void core0_loop()
     
         save_loop();
         cli_fps_count(0);
-    
         sleep_ms(1);
     }
+}
+
+static void identify_touch()
+{
+    gpio_init(AIC_TOUCH_EN);
+    gpio_set_function(AIC_TOUCH_EN, GPIO_FUNC_SIO);
+    gpio_set_dir(AIC_TOUCH_EN, GPIO_IN);
+    gpio_pull_up(AIC_TOUCH_EN);
+    sleep_us(0);
+    aic_runtime.touch = !gpio_get(AIC_TOUCH_EN);
 }
 
 void init()
@@ -337,10 +349,14 @@ void init()
     mutex_init(&core1_io_lock);
     save_init(0xca340a1c, &core1_io_lock);
 
-    light_init();
-    light_rainbow(1, 0, aic_cfg->light.min);
+    identify_touch();
 
-    keypad_init();
+    light_init();
+    light_rainbow(1, 0, aic_cfg->light.level_idle);
+
+    if (!aic_runtime.touch) {
+        keypad_init();
+    }
 
     nfc_init_i2c(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ);
     nfc_init_spi(SPI_PORT, SPI_MISO, SPI_SCK, SPI_MOSI, SPI_RST, SPI_NSS, SPI_BUSY);
@@ -348,9 +364,12 @@ void init()
     nfc_set_wait_loop(wait_loop);
 
     aime_init(cdc_reader_putc);
-    aime_virtual_aic(aic_cfg->virtual_aic);
-
+    aime_virtual_aic(aic_cfg->reader.virtual_aic);
     bana_init(cdc_reader_putc);
+
+    if (aic_runtime.touch) {
+        /* touch screen related things */
+    }
 
     cli_init("aic_pico>", "\n     << AIC Pico >>\n"
                             " https://github.com/whowechina\n\n");

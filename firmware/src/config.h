@@ -13,13 +13,18 @@
 
 typedef struct __attribute__((packed)) {
     struct {
-        uint8_t min;
-        uint8_t max;
+        uint8_t level_idle;
+        uint8_t level_active;
         bool rgb;
         bool led;
     } light;
-    bool virtual_aic;
-    uint8_t mode;
+    struct {
+        bool virtual_aic;
+        uint8_t mode;
+    } reader;
+    struct {
+        uint8_t backlight;
+    } lcd;
     uint32_t reserved;
 } aic_cfg_t;
 
