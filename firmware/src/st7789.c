@@ -17,7 +17,8 @@
 #include "hardware/spi.h"
 #include "hardware/dma.h"
 #include "hardware/pwm.h"
-#include "hardware/clocks.h"
+
+#include "lvgl_font.h"
 
 #include "st7789.h"
 
@@ -61,10 +62,7 @@ static void send_cmd(uint8_t cmd, const void *data, size_t len)
 
 void st7789_init_spi(spi_inst_t *port, uint8_t sck, uint8_t tx, uint8_t csn)
 {
-    // to get max freq for SPI
-    uint32_t freq = clock_get_hz(clk_sys);
-    clock_configure(clk_peri, 0, CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS, freq, freq);
-    spi_init(port, freq);
+    spi_init(port, 80 * 1000 * 1000);
 
     gpio_set_function(tx, GPIO_FUNC_SPI);
     gpio_set_function(sck, GPIO_FUNC_SPI);
@@ -203,7 +201,7 @@ void st7789_render(bool vsync)
     }
 }
 
-uint16_t st7789_rgb32(uint8_t r, uint8_t g, uint8_t b)
+uint32_t st7789_rgb32(uint8_t r, uint8_t g, uint8_t b)
 {
     return (r << 16) | (g << 8) | b;
 }
@@ -232,20 +230,29 @@ void st7789_vramcpy(uint16_t x, uint16_t y, const void *src, size_t pixels)
     vram_dma(x, y, src, true, pixels);
 }
 
-void static inline put_pixel(uint16_t x, uint16_t y, uint16_t color)
+void static inline put_pixel(uint16_t x, uint16_t y, uint16_t color, uint8_t blend)
 {
-    vram[y * crop.w + x] = color;
+    if (blend == 0xff) {
+        vram[y * crop.w + x] = color;
+    } else if (blend != 0x00) {
+        uint16_t bg = vram[y * crop.w + x];
+        uint16_t bg_ratio = 0x100 - blend;
+        uint8_t r = ((bg >> 11) * bg_ratio + (color >> 11) * blend) >> 8;
+        uint8_t g = (((bg >> 5) & 0x3f) * bg_ratio + ((color >> 5) & 0x3f) * blend) >> 8;
+        uint8_t b = ((bg & 0x1f) * bg_ratio + (color & 0x1f) * blend) >> 8;
+        vram[y * crop.w + x] = (r << 11) | (g << 5) | b;
+    }
 }
 
-void st7789_pixel(uint16_t x, uint16_t y, uint16_t color)
+void st7789_pixel(uint16_t x, uint16_t y, uint16_t color, uint8_t blend)
 {
     if ((x >= crop.w) || (y >= crop.h)) {
         return;
     }
-    put_pixel(x, y, color);
+    put_pixel(x, y, color, blend);
 }
 
-void st7789_hline(uint16_t x, uint16_t y, uint16_t w, uint16_t color)
+void st7789_hline(uint16_t x, uint16_t y, uint16_t w, uint16_t color, uint8_t blend)
 {
     if ((x >= crop.w) || (y >= crop.h)) {
         return;
@@ -253,10 +260,10 @@ void st7789_hline(uint16_t x, uint16_t y, uint16_t w, uint16_t color)
     w = x + w > crop.w ? crop.w - x : w;
 
     for (int i = 0; i < w; i++) {
-        put_pixel(x + i, y, color);
+        put_pixel(x + i, y, color, blend);
     }
 }
-void st7789_vline(uint16_t x, uint16_t y, uint16_t h, uint16_t color)
+void st7789_vline(uint16_t x, uint16_t y, uint16_t h, uint16_t color, uint8_t blend)
 {
     if ((x >= crop.w) || (y >= crop.h)) {
         return;
@@ -264,11 +271,11 @@ void st7789_vline(uint16_t x, uint16_t y, uint16_t h, uint16_t color)
     h = y + h > crop.h ? crop.h - y : h;
 
     for (int i = 0; i < h; i++) {
-        put_pixel(x, y + i, color);
+        put_pixel(x, y + i, color, blend);
     }
 }
 
-void st7789_bar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color)
+void st7789_bar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, uint8_t blend)
 {
     if ((x >= crop.w) || (y >= crop.h)) {
         return;
@@ -278,19 +285,19 @@ void st7789_bar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color)
 
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
-            put_pixel(x + j, y + i, color);
+            put_pixel(x + j, y + i, color, blend);
         }
     }
 }
 
-void st7789_line(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t color)
+void st7789_line(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t color, uint8_t blend)
 {
     int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
     int dy = abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
     int err = (dx > dy ? dx : -dy) / 2, e2;
 
     for (;;) {
-        st7789_pixel(x0, y0, color);
+        st7789_pixel(x0, y0, color, blend);
         if (x0 == x1 && y0 == y1) {
             break;
         }
@@ -303,6 +310,30 @@ void st7789_line(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t co
             err += dx;
             y0 += sy;
         }
+    }
+}
+
+void st7789_char(uint16_t x, uint16_t y, char c, const lv_font_t *font, uint16_t color)
+{
+    if (c < font->range_start || c >= font->range_start + font->range_length) {
+        return;
+    }
+    const lv_font_dsc_t *dsc = &font->dsc[c - font->range_start];
+    const uint8_t *bitmap = font->bitmap + dsc->bitmap_index;
+    for (int i = 0; i < dsc->box_h; i++) {
+        for (int j = 0; j < dsc->box_w; j++) {
+            uint8_t blend = bitmap[i * dsc->box_w + j];
+            st7789_pixel(x + dsc->ofs_x + j, y + dsc->ofs_y + i, color, blend);
+        }
+    }
+}
+
+void st7789_text(uint16_t x, uint16_t y, const char *text,
+                 const lv_font_t *font, uint16_t spacing, uint16_t color)
+{
+    while (*text) {
+        st7789_char(x, y, *text++, font, color);
+        x += font->dsc[*text - font->range_start].box_w + spacing;
     }
 }
 
