@@ -34,17 +34,23 @@ void fps_count(int core)
     counter[core] = 0;
 }
 
-static void handle_display()
+static void display_nfc()
 {
     printf("[NFC Module]\n");
     printf("    %s (%s)\n", nfc_module_name(), nfc_module_version());
+}
 
+static void display_light()
+{
     printf("[Light]\n");
     printf("    RGB-%s, LED-%s\n",
             aic_cfg->light.rgb ? "ON" : "OFF",
             aic_cfg->light.led ? "ON" : "OFF");
     printf("    Level: Idle-%d, Active-%d\n", aic_cfg->light.level_idle, aic_cfg->light.level_active);
+}
 
+static void display_reader()
+{
     printf("[Reader]\n");
     printf("    Virtual AIC: %s\n", aic_cfg->reader.virtual_aic ? "ON" : "OFF");
     printf("    Mode: %s\n", mode_name(aic_cfg->reader.mode));
@@ -54,10 +60,21 @@ static void handle_display()
     if ((aic_runtime.mode == MODE_AIME0) || (aic_runtime.mode == MODE_AIME1)) {
         printf("    AIME Pattern: %s\n", aime_get_mode_string());
     }
+}
 
+static void display_warning()
+{
     if (keypad_is_stuck()) {
         printf("\nWarning: Keypad disabled due to key STUCK!\n");
     }
+}
+
+static void handle_display()
+{
+    display_nfc();
+    display_light();
+    display_reader();
+    display_warning();
 }
 
 static void handle_save()
@@ -105,6 +122,7 @@ static void handle_virtual(int argc, char *argv[])
 
     aime_virtual_aic(aic_cfg->reader.virtual_aic);
     config_changed();
+    display_reader();
 }
 
 static void handle_mode(int argc, char *argv[])
@@ -143,6 +161,7 @@ static void handle_mode(int argc, char *argv[])
     aic_cfg->reader.mode = newmode;
     aic_runtime.mode = (newmode == MODE_AUTO) ? MODE_NONE : newmode;
     config_changed();
+    display_reader();
 }
 
 static void handle_light(int argc, char *argv[])
@@ -177,6 +196,7 @@ static void handle_light(int argc, char *argv[])
             return;
     }
     config_changed();
+    display_light();
 }
 
 static void handle_level(int argc, char *argv[])
@@ -200,7 +220,7 @@ static void handle_level(int argc, char *argv[])
     aic_cfg->light.level_active = active;
 
     config_changed();
-    handle_display();
+    display_light();
 }
 
 static void handle_debug()
