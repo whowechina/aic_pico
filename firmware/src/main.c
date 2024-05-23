@@ -330,6 +330,12 @@ static void core0_loop()
     }
 }
 
+static void spi_overclock()
+{
+    uint32_t freq = clock_get_hz(clk_sys);
+    clock_configure(clk_peri, 0, CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS, freq, freq);
+}
+
 static void identify_touch()
 {
     gpio_init(AIC_TOUCH_EN);
@@ -357,6 +363,8 @@ void init()
     if (!aic_runtime.touch) {
         keypad_init();
     }
+
+    spi_overclock();
 
     nfc_init_i2c(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ);
     nfc_init_spi(SPI_PORT, SPI_MISO, SPI_SCK, SPI_MOSI, SPI_RST, SPI_NSS, SPI_BUSY);
