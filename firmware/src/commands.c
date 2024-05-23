@@ -49,6 +49,12 @@ static void display_light()
     printf("    Level: Idle-%d, Active-%d\n", aic_cfg->light.level_idle, aic_cfg->light.level_active);
 }
 
+static void display_lcd()
+{
+    printf("[LCD]\n");
+    printf("    Backlight: %d\n", aic_cfg->lcd.backlight);
+}
+
 static void display_reader()
 {
     printf("[Reader]\n");
@@ -73,6 +79,7 @@ static void handle_display()
 {
     display_nfc();
     display_light();
+    display_lcd();
     display_reader();
     display_warning();
 }
@@ -223,6 +230,26 @@ static void handle_level(int argc, char *argv[])
     display_light();
 }
 
+static void handle_lcd(int argc, char *argv[])
+{
+    const char *usage = "Usage: lcd <backlight>\n"
+                        "    backlight: [0..255]\n";
+    if (argc != 1) {
+        printf(usage);
+        return;
+    }
+
+    int backlight = cli_extract_non_neg_int(argv[0], 0);
+    if ((backlight < 0) || (backlight > 255)) {
+        printf(usage);
+        return;
+    }
+
+    aic_cfg->lcd.backlight = backlight;
+    config_changed();
+    display_lcd();
+}
+
 static void handle_debug()
 {
     aic_runtime.debug = !aic_runtime.debug;
@@ -240,5 +267,6 @@ void commands_init()
     cli_register("mode", handle_mode, "Reader mode/protocol.");
     cli_register("light", handle_light, "Turn on/off lights.");
     cli_register("level", handle_level, "Set light level.");
+    cli_register("lcd", handle_lcd, "Touch LCD settings.");
     cli_register("debug", handle_debug, "Toggle debug.");
 }
