@@ -404,7 +404,7 @@ static void handle_frame()
             cmd_select();
             break;
         default:
-            printf("\nUnknown cmd: %02x\n", request.cmd);
+            printf("\nUnknown cmd: %02x (%d)\n", request.cmd, request.hdr.len);
             send_ack();
             break;
     }
