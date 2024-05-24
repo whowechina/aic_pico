@@ -20,16 +20,26 @@ void st7789_dimmer(uint8_t level);
 void st7789_vsync();
 void st7789_render(bool vsync);
 
-uint32_t st7789_rgb32(uint8_t r, uint8_t g, uint8_t b);
-uint16_t st7789_rgb565(uint32_t rgb32);
+static inline uint32_t st7789_rgb32(uint8_t r, uint8_t g, uint8_t b)
+{
+    return (r << 16) | (g << 8) | b;
+}
+
+static inline uint16_t st7789_rgb565(uint32_t rgb32)
+{
+    return ((rgb32 >> 8) & 0xf800) | ((rgb32 >> 5) & 0x07e0) | ((rgb32 >> 3) & 0x001f);
+}
+
 void st7789_clear(uint16_t color);
 uint16_t *st7789_vram(uint16_t x, uint16_t y);
 void st7789_vramcpy(uint16_t x, uint16_t y, const void *src, size_t count);
-void st7789_pixel(uint16_t x, uint16_t y, uint16_t color, uint8_t blend);
-void st7789_hline(uint16_t x, uint16_t y, uint16_t w, uint16_t color, uint8_t blend);
-void st7789_vline(uint16_t x, uint16_t y, uint16_t h, uint16_t color, uint8_t blend);
-void st7789_bar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, uint8_t blend);
-void st7789_line(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t color, uint8_t blend);
+void st7789_pixel(uint16_t x, uint16_t y, uint16_t color, uint8_t mix);
+void st7789_hline(uint16_t x, uint16_t y, uint16_t w, uint16_t color, uint8_t mix);
+void st7789_vline(uint16_t x, uint16_t y, uint16_t h, uint16_t color, uint8_t mix);
+void st7789_bar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, uint8_t mix);
+void st7789_line(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t color, uint8_t mix);
+
+/* char and text out only supports 1/2/4/8 bit-per-pixel */
 void st7789_char(uint16_t x, uint16_t y, char c, const lv_font_t *font, uint16_t color);
 void st7789_text(uint16_t x, uint16_t y, const char *text,
                  const lv_font_t *font, uint16_t spacing, uint16_t color);
