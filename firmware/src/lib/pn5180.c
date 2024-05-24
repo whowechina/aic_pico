@@ -251,6 +251,7 @@ static void anti_collision(uint8_t code, uint8_t uid[5], uint8_t *sak)
 }
 
 static struct {
+    uint8_t atqa[2];
     uint8_t buf[5];
     uint8_t sak;
     uint8_t uid[7];
@@ -269,12 +270,24 @@ static void poll_mifare_1()
     pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03);
     uint8_t cmd[1] = {0x26};
     pn5180_send_data(cmd, 1, 7);
-    pn5180_read_data(mi_poll.buf, 2);
+    pn5180_read_data(mi_poll.atqa, 2);
 }
 
 static void poll_mifare_2()
 {
+    if ((memcmp(mi_poll.atqa, "\x44\x00", 2) != 0) &&
+        (memcmp(mi_poll.atqa, "\x04\x00", 2) != 0)) {
+            mi_poll.len = 0;
+        return;
+    }
+
     anti_collision(0x93, mi_poll.buf, &mi_poll.sak);
+
+    if (mi_poll.sak == 0x00) {
+        mi_poll.len = 0;
+        return;
+    }
+
     mi_poll.len = 0;
     if ((mi_poll.sak & 0x04) == 0) {
         memmove(mi_poll.uid, mi_poll.buf, 4);
@@ -292,9 +305,10 @@ static void poll_mifare_2()
 bool pn5180_poll_mifare(uint8_t uid[7], int *len)
 {
     DEBUG("pn5180_poll_mifare\n");
+
     poll_mifare_1();
     poll_mifare_2();
-    
+
     memcpy(uid, mi_poll.uid, mi_poll.len);
     *len = mi_poll.len;
     return *len > 0;
