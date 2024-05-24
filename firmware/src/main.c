@@ -38,6 +38,7 @@
 
 #include "st7789.h"
 #include "cst816t.h"
+
 #include "conthrax.h"
 
 #define DEBUG(...) if (aic_runtime.debug) printf(__VA_ARGS__)
@@ -131,7 +132,7 @@ static void disp_loop()
     phase = (phase + 1) % 256;
     for (int i = 0; i < 240; i++) {
         st7789_vline(i, 0, 320,
-                    st7789_rgb565(rgb32_from_hsv(phase + i, 255, 128)), 0xc0);
+                    st7789_rgb565(rgb32_from_hsv(phase + i, 255, 128)), 0xff);
     }
 
     static struct {
@@ -155,10 +156,9 @@ static void disp_loop()
 
     uint32_t color = rgb32_from_hsv(time_us_32() / 100000, 200, 200);
     for (int i = 0; i < 12; i++) {
-        st7789_char(signs[i].x + 2, signs[i].y + 2, signs[i].c, &lv_conthrax, 0x0);
+        st7789_char(signs[i].x + 2, signs[i].y + 2, signs[i].c, &lv_conthrax, st7789_rgb565(0x101010));
         st7789_char(signs[i].x, signs[i].y, signs[i].c, &lv_conthrax, st7789_rgb565(color));
     }
-
 }
 
 static mutex_t core1_io_lock;
@@ -167,7 +167,7 @@ static void core1_loop()
     while (1) {
         if (mutex_try_enter(&core1_io_lock, NULL)) {
             if (aic_runtime.touch) {
-                st7789_dimmer(aic_cfg->lcd.backlight);
+                st7789_dimmer(255 - aic_cfg->lcd.backlight);
                 disp_loop();
                 st7789_render(true);
             }
