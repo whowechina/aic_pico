@@ -43,6 +43,10 @@
       (effects (font (size 0.8 0.8) (thickness 0.15)))
     (tstamp 2ebe85cd-db9a-456c-bca5-12c43146896e)
   )
+  (fp_text user "USB" (at -1.524 -23.114 unlocked) (layer "F.SilkS")
+      (effects (font (size 1 1) (thickness 0.1)) (justify left bottom))
+    (tstamp 3d632168-2c02-46af-bc25-e39751f73a47)
+  )
   (fp_text user "3" (at -12.1 -13.97) (layer "F.SilkS")
       (effects (font (size 0.8 0.8) (thickness 0.15)))
     (tstamp 3ef78a32-9229-43d6-bb73-95121358d409)
@@ -181,8 +185,6 @@
   )
   (fp_line (start -10.5 -23.1) (end -10.5 -22.7)
     (stroke (width 0.12) (type solid)) (layer "F.SilkS") (tstamp d1eb9f49-3c8a-42cf-8505-f71a4977bc4b))
-  (fp_line (start -10.5 -22.833) (end -7.493 -22.833)
-    (stroke (width 0.12) (type solid)) (layer "F.SilkS") (tstamp 75c933d5-c25a-42a5-954d-73a6fcc2aa56))
   (fp_line (start -10.5 -20.5) (end -10.5 -20.1)
     (stroke (width 0.12) (type solid)) (layer "F.SilkS") (tstamp 2d3cc976-fb78-4605-95ed-a14cc0518d0b))
   (fp_line (start -10.5 -18) (end -10.5 -17.6)
@@ -257,6 +259,8 @@
     (stroke (width 0.12) (type solid)) (layer "F.SilkS") (tstamp b816cad4-b559-4e16-9d4b-7a3a00e0cdcb))
   (fp_line (start 10.5 22.7) (end 10.5 23.1)
     (stroke (width 0.12) (type solid)) (layer "F.SilkS") (tstamp c54d27ea-32ee-4e2e-89c2-09fa49878876))
+  (fp_rect (start -2.54 -24.892) (end 2.54 -22.606)
+    (stroke (width 0.1) (type default)) (fill none) (layer "F.SilkS") (tstamp d1323596-0353-4bb6-9168-992c638aea30))
   (fp_poly
     (pts
       (xy -1.5 -16.5)
