@@ -13,8 +13,8 @@
 * 有许多变种：
   * AIC Pico (PN532)
   * AIC Pico (PN5180, 无壳)
-  * AIC Key PN532
-  * AIC Key PN5180
+  * AIC Key PN532/PN5180
+  * AIC Touch PN532/PN5180
   * AIC Pico Lib (参见下面的注释 1)
 * 易于制作。
 * Sega AIME I/O, Bandai Namco I/O 和 Spicetools CardIO 模拟。
@@ -134,12 +134,11 @@ AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico"
   * 1x PN5180 模块 (蓝色矩形版本，便宜的克隆版也可以)。PN5180 支持 ISO/IEC 15693 (旧的 e-amusement 卡)。  
     <img src="doc/pn5180.jpg" width="50%">
 
-* 对于 LED，你有 3 个选项：
-  * 选项 1：6x 侧光 WS2812B 1204 LED（D1 到 D6）和一个 10ohm 0603 电阻（R1），在组装图像中标记为绿色。
-  * 选项 2（仅适用于 PN532 版本）：6x WS2812C-2020 LED（D13 到 D18），在组装图像中标记为蓝色。
-  * 选项 3：6x 常规单色 0603 LED（D7 到 D12）和 6x 100ohm 0603 电阻（R2 到 R7），在组装图像中标记为紫色。
+* 对于 LED，你有 2 个选项：
+  * 选项 1：6x 侧光 WS2812B 1204 LED（D1 到 D6）和一个 10ohm 0603 电阻（R1），在组装图像中标记为绿色。( AIC Key 和 AIC Touch 均支持)
+  * 选项 2：6x 常规单色 0603 LED（D7 到 D12）和 6x 100ohm 0603 电阻（R2 到 R7），在组装图像中标记为紫色。(仅 AIC Key)
 
-* 为了给 PN5180 提供更纯净的供电，建议焊接 L1（1206 100nH 电感），C1（0603 10uF 电容）和 C2（0603 0.1uF 电容）。如果这些器件无法获得，您可以选择使用 0 欧姆电阻来短接 L1 的焊盘，在大多数情况下，它也能正常工作。
+* C1, C2, C3 电容, 0603 0.1uF。它们提供更好的供电稳定性。
 
 * 对于开关，你有 2 个选项：
   * 选项 1：12x ALPS SKRRAAE010 低调 TACT 开关。  
@@ -171,6 +170,7 @@ AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico"
 
 ### 组装
 我还是让这些图片来说明。记住在组装之前先将固件上传到树莓派 Pico。
+注意，最新的 PCB 已经同时兼容 PN532 和 PN5180，根据需要焊接即可。下面的照片是基于早期的 PCB 版本拍摄的，不能精确对应，但我相信你能够看明白。
 
 #### 通用部分
 <img src="doc/key_assemble_1a.jpg" width="30%">

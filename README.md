@@ -10,8 +10,8 @@
 * Many variants
   * AIC Pico (PN532)
   * AIC Pico (PN5180, no housing)
-  * AIC Key PN532
-  * AIC Key PN5180
+  * AIC Key PN532/PN5180
+  * AIC Touch PN532/PN5180
   * AIC Pico Lib (see notes 1 below)
 * Easy to make.
 * Sega AIME I/O, Bandai Namco I/O and Spicetools CardIO emulation.
@@ -132,11 +132,10 @@ AIC Key is a variation of the AIC Pico - a keypad is integrated. Much more diffi
     <img src="doc/pn5180.jpg" width="50%">
 
 * For LEDs, you also have 3 options:
-  * Option 1: 6x side-light WS2812B 1204 LEDs (D1 to D6) and a 10ohm 0603 resistor (R1), GREEN mark in the assemble image.
-  * Option 2 (avaiable only for PN532 version): 6x WS2812C-2020 LEDs (D13 to D18), BLUE mark in the assemble image.
-  * Option 3: 6x regular single-color 0603 LEDs (D7 to D12) and 6x 100ohm 0603 resistors (R2 to R7), PURPLE mark in the assemble image.
+  * Option 1: 6x side-light WS2812B 1204 LEDs (D1 to D6) and a 10ohm 0603 resistor (R1), GREEN mark in the assemble image. (available for both AIC Key and AIC Touch)
+  * Option 2: 6x regular single-color 0603 LEDs (D7 to D12) and 6x 100ohm 0603 resistors (R2 to R7), PURPLE mark in the assemble image. (available for AIC Key only)
 
-* For optimal power supply to the PN5180, it's recommended to solder L1 (1206 100nH inductor), C1 (0603 10uF capacitor), and C2 (0603 0.1uF capacitor). If these components are unavailable, you can alternatively use an 0 ohm resistor to bridge the L1 footprint. This workaround should suffice in most scenarios.
+* C1, C2, C3, 0603 10uF capacitors, they contribute to a more stable power supply.
 
 * For switches, you still have 2 option:
   * Option 1: 12x ALPS SKRRAAE010 low-profile TACT switch.  
@@ -168,6 +167,7 @@ AIC Key is a variation of the AIC Pico - a keypad is integrated. Much more diffi
 
 ### Assembly
 Again I'll let these images do the talk. Remember to upload the firmware onto Raspberry Pi Pico before assemble.
+Please note, the latest PCB is compatible with both PN532 and PN5180, and you can solder according to your needs. The photos below are based on an earlier version of the PCB and may not correspond exactly, but I believe you will be able to understand.
 
 #### General Part
 <img src="doc/key_assemble_1a.jpg" width="30%">
