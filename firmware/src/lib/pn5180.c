@@ -304,8 +304,6 @@ static void poll_mifare_2()
 
 bool pn5180_poll_mifare(uint8_t uid[7], int *len)
 {
-    DEBUG("pn5180_poll_mifare\n");
-
     poll_mifare_1();
     poll_mifare_2();
 
@@ -318,7 +316,6 @@ static uint8_t idm_cache[8] = {0};
 
 bool pn5180_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool from_cache)
 {
-    DEBUG("pn5180_poll_mifare\n");
     pn5180_reset();
     pn5180_load_rf_config(0x09, 0x89);
     pn5180_rf_field(true);
@@ -353,7 +350,6 @@ bool pn5180_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool
 
 bool pn5180_poll_vicinity(uint8_t uid[8])
 {
-    DEBUG("pn5180_poll_mifare\n");
     pn5180_reset();
     pn5180_load_rf_config(0x0d, 0x8d);
     pn5180_rf_field(true);
