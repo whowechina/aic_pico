@@ -235,11 +235,23 @@ static void rf_crc_on()
     pn5180_or_reg(PN5180_REG_CRC_RX_CONFIG, 0x01);
 }
 
-static void anti_collision(uint8_t code, uint8_t uid[5], uint8_t *sak)
+static struct {
+    uint8_t atqa[2];
+    uint8_t buf[5];
+    uint8_t sak;
+    uint8_t uid[7];
+    uint8_t len;
+    bool ready;
+} mi_poll;
+
+static bool anti_collision(uint8_t code, uint8_t uid[5], uint8_t *sak)
 {
     rf_crc_off();
     uint8_t cmd[7] = { code, 0x20 };
     pn5180_send_data(cmd, 2, 0);
+    if ((pn5180_get_rx() & 0x1ff) != 5) {
+        return false;
+    }
     pn5180_read_data(cmd + 2, 5); // uid
     memmove(uid, cmd + 2, 5);
 
@@ -247,16 +259,12 @@ static void anti_collision(uint8_t code, uint8_t uid[5], uint8_t *sak)
     cmd[0] = code;
     cmd[1] = 0x70;
     pn5180_send_data(cmd, 7, 0);
+    if ((pn5180_get_rx() & 0x1ff) != 1) {
+        return false;
+    }
     pn5180_read_data(sak, 1); // sak
+    return true;
 }
-
-static struct {
-    uint8_t atqa[2];
-    uint8_t buf[5];
-    uint8_t sak;
-    uint8_t uid[7];
-    uint8_t len;
-} mi_poll;
 
 static void poll_mifare_1()
 {
@@ -268,23 +276,26 @@ static void poll_mifare_1()
     pn5180_and_reg(PN5180_REG_IRQ_CLEAR, 0x000fffff);
     pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8);
     pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03);
+
+    mi_poll.len = 0;
+    mi_poll.ready = true;
+
     uint8_t cmd[1] = {0x26};
     pn5180_send_data(cmd, 1, 7);
+    if ((pn5180_get_rx() & 0x1ff) != 2) {
+        mi_poll.ready = false;
+        return;
+    }
     pn5180_read_data(mi_poll.atqa, 2);
 }
 
 static void poll_mifare_2()
 {
-    if ((memcmp(mi_poll.atqa, "\x44\x00", 2) != 0) &&
-        (memcmp(mi_poll.atqa, "\x04\x00", 2) != 0)) {
-            mi_poll.len = 0;
+    if (!mi_poll.ready) {
         return;
     }
 
-    anti_collision(0x93, mi_poll.buf, &mi_poll.sak);
-
-    if (mi_poll.sak == 0x00) {
-        mi_poll.len = 0;
+    if (!anti_collision(0x93, mi_poll.buf, &mi_poll.sak)) {
         return;
     }
 
@@ -294,7 +305,9 @@ static void poll_mifare_2()
         mi_poll.len = 4;
     } else if (mi_poll.buf[0] == 0x88) {
         memmove(mi_poll.uid, mi_poll.buf + 1, 3);
-        anti_collision(0x95, mi_poll.buf, &mi_poll.sak);
+        if (!anti_collision(0x95, mi_poll.buf, &mi_poll.sak)) {
+            return;
+        }
         if (mi_poll.sak != 0xff) {
             memmove(mi_poll.uid + 3, mi_poll.buf, 4);
             mi_poll.len = 7;
