@@ -470,7 +470,18 @@ bool pn532_felica_write(uint16_t svc_code, uint16_t block_id, const uint8_t bloc
 
 void pn532_select()
 {
-    uint8_t ignore_buf[7];
-    int ignore_len;
-    pn532_poll_mifare(ignore_buf, &ignore_len);
+    uint8_t param[] = {0x01};
+    pn532_write_command(0x54, param, sizeof(param));
+
+    uint8_t ignored;
+    pn532_read_response(0x54, &ignored, 1);
+}
+
+void pn532_deselect()
+{
+    uint8_t param[] = {0x01};
+    pn532_write_command(0x44, param, sizeof(param));
+
+    uint8_t ignored;
+    pn532_read_response(0x44, &ignored, 1);
 }

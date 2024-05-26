@@ -71,7 +71,7 @@ struct {
         pn532_felica_read,
         pn532_set_wait_loop,
         pn532_select,
-        NULL,
+        pn532_deselect,
     },
     {
         pn5180_firmware_ver,
