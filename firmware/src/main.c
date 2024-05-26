@@ -323,17 +323,17 @@ static void reader_run()
         switch (aic_runtime.mode) {
             case MODE_AIME0:
             case MODE_AIME1:
+                reader.pos = 0;
                 aime_sub_mode(aic_runtime.mode == MODE_AIME0 ? 0 : 1);
                 for (int i = 0; i < count; i++) {
                     aime_feed(buf[i]);
                 }
-                reader.pos = 0;
                 break;
             case MODE_BANA:
+                reader.pos = 0;
                 for (int i = 0; i < count; i++) {
                     bana_feed(buf[i]);
                 }
-                reader.pos = 0;
                 break;
             default:
                 break;
