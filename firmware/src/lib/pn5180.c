@@ -266,13 +266,16 @@ static bool anti_collision(uint8_t code, uint8_t uid[5], uint8_t *sak)
     return true;
 }
 
-static void poll_mifare_1()
+static void poll_mifare_0()
 {
     pn5180_reset();
     pn5180_load_rf_config(0x00, 0x80);
     pn5180_rf_field(true);
     rf_crc_off();
+}
 
+static void poll_mifare_1()
+{
     pn5180_and_reg(PN5180_REG_IRQ_CLEAR, 0x000fffff);
     pn5180_and_reg(PN5180_REG_SYSTEM_CONFIG, 0xfffffff8);
     pn5180_or_reg(PN5180_REG_SYSTEM_CONFIG, 0x03);
@@ -317,6 +320,7 @@ static void poll_mifare_2()
 
 bool pn5180_poll_mifare(uint8_t uid[7], int *len)
 {
+    poll_mifare_0();
     poll_mifare_1();
     poll_mifare_2();
 
@@ -528,13 +532,15 @@ bool pn5180_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data
     return true;
 }
 
-/* Not real select, just a time distribution of a poll */
-void pn5180_select()
+void pn5180_select(int phase)
 {
-    poll_mifare_1();
+    if (phase == 0) {
+        poll_mifare_0();
+    } else {
+        poll_mifare_1();
+    }
 }
 
-/* Not real deselect, just a time distribution of a poll */
 void pn5180_deselect()
 {
     poll_mifare_2();

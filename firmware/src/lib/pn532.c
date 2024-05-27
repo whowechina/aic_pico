@@ -468,8 +468,12 @@ bool pn532_felica_write(uint16_t svc_code, uint16_t block_id, const uint8_t bloc
     return false;
 }
 
-void pn532_select()
+void pn532_select(int phase)
 {
+    if (phase != 0) {
+        return;
+    }
+
     uint8_t param[] = {0x01};
     pn532_write_command(0x54, param, sizeof(param));
 

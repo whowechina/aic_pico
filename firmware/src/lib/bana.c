@@ -201,13 +201,12 @@ static void handle_no_card()
     send_response_data("\x00\x00\x00", 3);
 }
 
-static void cmd_poll_card()
+static void cmd_poll_card(bool mifare, bool felica)
 {
-    nfc_card_t card = nfc_detect_card_ex(true, true, false);
+    nfc_card_t card = nfc_detect_card_ex(mifare, felica, false);
     if (debug) {
         display_card(&card);
     }
-
     switch (card.card_type) {
         case NFC_CARD_MIFARE:
             handle_mifare(card.uid);
@@ -281,8 +280,9 @@ static void cmd_mifare()
 
 static void cmd_select()
 {
+    nfc_select(0);
     send_response_data("\x00", 1);
-    nfc_select();
+    nfc_select(1);
 }
 
 static void cmd_deselect()
@@ -386,7 +386,7 @@ static void handle_frame()
             send_response_data("\x00\x06\x00", 3);
             break;
         case 0x4a:
-            cmd_poll_card();
+            cmd_poll_card(request.hdr.len == 4, request.hdr.len == 9);
             break;
         case 0x40:
             cmd_mifare();

@@ -60,7 +60,7 @@ struct {
     bool (*mifare_read)(uint8_t block_id, uint8_t block_data[16]);
     bool (*felica_read)(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16]);
     void (*set_wait_loop)(nfc_wait_loop_t loop);
-    void (*select)();
+    void (*select)(int phase);
     void (*deselect)();
 } api[3] = {
     {
@@ -285,10 +285,10 @@ bool nfc_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16
     return api[nfc_module].felica_read(svc_code, block_id, block_data);
 }
 
-void nfc_select()
+void nfc_select(int phase)
 {
     if (api[nfc_module].select) {
-        api[nfc_module].select();
+        api[nfc_module].select(phase);
     }
 }
 

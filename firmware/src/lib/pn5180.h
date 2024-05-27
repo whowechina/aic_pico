@@ -52,7 +52,7 @@ bool pn5180_mifare_read(uint8_t block_id, uint8_t block_data[16]);
 
 bool pn5180_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16]);
 
-void pn5180_select();
+void pn5180_select(int phase);
 void pn5180_deselect();
 
 #endif

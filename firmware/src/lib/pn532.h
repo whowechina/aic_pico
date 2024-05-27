@@ -35,7 +35,7 @@ bool pn532_mifare_read(uint8_t block_id, uint8_t block_data[16]);
 bool pn532_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16]);
 bool pn532_felica_write(uint16_t svc_code, uint16_t block_id, const uint8_t block_data[16]);
 
-void pn532_select();
+void pn532_select(int phase);
 void pn532_deselect();
 
 #endif
