@@ -201,8 +201,10 @@ static void handle_no_card()
     send_response_data("\x00\x00\x00", 3);
 }
 
-static void cmd_poll_card(bool mifare, bool felica)
+static void cmd_poll_card()
 {
+    bool mifare = (request.data[1] == 0);
+    bool felica = (request.data[1] == 1);
     nfc_card_t card = nfc_detect_card_ex(mifare, felica, false);
     if (debug) {
         display_card(&card);
@@ -276,6 +278,11 @@ static void cmd_mifare()
             send_ack();
             break;
     }
+}
+
+static void cmd_commthru()
+{
+    send_response_data("\x01", 1); // not sure if this is correct
 }
 
 static void cmd_select()
@@ -386,10 +393,13 @@ static void handle_frame()
             send_response_data("\x00\x06\x00", 3);
             break;
         case 0x4a:
-            cmd_poll_card(request.hdr.len == 4, request.hdr.len == 9);
+            cmd_poll_card();
             break;
         case 0x40:
             cmd_mifare();
+            break;
+        case 0x42:
+            cmd_commthru();
             break;
         case 0x44:
             cmd_deselect();

@@ -67,7 +67,7 @@ bool nfc_mifare_read(uint8_t block_id, uint8_t block_data[16]);
 
 bool nfc_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16]);
 
-void nfc_select();
+void nfc_select(int phase);
 void nfc_deselect();
 
 #endif
