@@ -131,7 +131,7 @@ AIC Key is a variation of the AIC Pico - a keypad is integrated. Much more diffi
   * 1x PN5180 Module (the blue rectangle version, cheap clones work too). PN5180 supports ISO/IEC 15693 (old e-amusement cards).  
     <img src="doc/pn5180.jpg" width="50%">
 
-* For LEDs, you also have 3 options:
+* For LEDs, you also have 2 options:
   * Option 1: 6x side-light WS2812B 1204 LEDs (D1 to D6) and a 10ohm 0603 resistor (R1), GREEN mark in the assemble image. (available for both AIC Key and AIC Touch)
   * Option 2: 6x regular single-color 0603 LEDs (D7 to D12) and 6x 100ohm 0603 resistors (R2 to R7), PURPLE mark in the assemble image. (available for AIC Key only)
 
