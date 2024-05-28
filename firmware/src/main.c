@@ -413,6 +413,7 @@ void init()
     nfc_init_spi(SPI_PORT, SPI_MISO, SPI_SCK, SPI_MOSI, SPI_RST, SPI_NSS, SPI_BUSY);
     nfc_init();
     nfc_set_wait_loop(wait_loop);
+    nfc_pn5180_tx_tweak(aic_cfg->tweak.pn5180_tx);
 
     aime_init(cdc_reader_putc);
     aime_virtual_aic(aic_cfg->reader.virtual_aic);

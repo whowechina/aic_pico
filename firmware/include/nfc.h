@@ -35,6 +35,7 @@ typedef struct {
 
 typedef struct {
     bool debug;
+    bool pn5180_tx_tweak;
 } nfc_runtime_t;
 
 extern nfc_runtime_t nfc_runtime;
@@ -51,6 +52,8 @@ void nfc_init();
 
 /* should be called only after init */
 void nfc_set_wait_loop(nfc_wait_loop_t loop);
+
+void nfc_pn5180_tx_tweak(bool enable);
 
 void nfc_rf_field(bool on);
 

@@ -165,6 +165,11 @@ const char *nfc_module_version()
     return api[nfc_module].firmware_ver();
 }
 
+void nfc_pn5180_tx_tweak(bool enable)
+{
+    nfc_runtime.pn5180_tx_tweak = enable;
+}
+
 static bool nfc_detect_mifare(nfc_card_t *card)
 {
     uint8_t id[20] = { 0 };
