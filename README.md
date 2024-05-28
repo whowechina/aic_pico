@@ -182,6 +182,10 @@ Remember set to I2C mode first.
 <img src="doc/key_assemble_4.jpg" width="40%">
 <img src="doc/key_assemble_5.jpg" width="40%">
 
+**CAUTION:** There's a possibility that the antenna on the PN532 PCB may come into contact with the USB connector and cause RF problem. To prevent this, you can apply some insulating tape.
+
+<img src="doc/key_pn532_tape.jpg" width="60%">
+
 #### PN5180 Version
 You need to cut off the original antenna and use the one in our PCB.
 
@@ -202,10 +206,11 @@ You may use some instant adhesive to fix stickers.
   * For the new build, hold the BOOTSEL button while connect the USB to a PC, there will be a disk named "RPI-RP2" showed up. Drag the UF2 firmware binary file into it. That's it.
   * If there's already a working firmware, you can use "update" command in command line to update the firmware in the future, so you don't need to open the housing.
   * If there's already a working firmware later than 2023-12-02, you can also press "00" key and "·" key (or directly ground the GPIO10 and the GPIO11) at the same time when plug in the USB cable, it will boot into firmware update mode.
-* You can use this Web Serial Terminal to connect to the main USB serial port of the board which is the command line interface. (Note: "?" is for help)  
+* One USB serial port is for command line. You can use this Web Serial Terminal to connect to it. (Note: "?" is for help)  
   https://googlechromelabs.github.io/serial-terminal/
-* Spicetools cardio (Card I/O) HID is supported;
-* SEGA AIME protocol is supported on a second serial port.
+* The other serial port is for reader protocol, currently SEGA AIME and Bandai Namco are supported.
+* Spicetools cardio (Card I/O) HID is always enabled unless a reader protocol is active;
+* If your PN5180 module has an issue with Mifare (Such as AIME and Bana Passport) reading, you can try enable the PN5180 TX tweak by "pn5180_tweak on" command.
 * Some command line commands:
   * "light \<rgb|led|both|off\>" to turn on or off the LEDs.
   * "level <0..255> <0..255>" to adjust the brightness.

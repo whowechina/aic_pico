@@ -185,6 +185,10 @@ AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico"
 <img src="doc/key_assemble_4.jpg" width="40%">
 <img src="doc/key_assemble_5.jpg" width="40%">
 
+**注意：** PN532 PCB 上的天线有可能会接触到 USB 插座并导致射频问题。为了防止这种情况，你可以贴上绝缘胶带避免它们互相接触。
+
+<img src="doc/key_pn532_tape.jpg" width="60%">
+
 #### PN5180 版本
 你需要切掉原来的天线并使用我们 PCB 中的天线。
 
@@ -205,10 +209,11 @@ AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico"
   * 对于新构建，握住 BOOTSEL 按钮，同时将 USB 连接到 PC，会出现一个名为 "RPI-RP2" 的磁盘。将 UF2 固件二进制文件拖入其中。这样就 OK 了。
   * 如果已经上传过可用的的固件，你可以在命令行中使用 "update" 命令来更新未来的固件，这样你就不需要打开外壳。
   * 如果已经有一个在 2023-12-02 之后的工作固件，你也可以在插入 USB 线时同时按下 "00" 键和 "·" 键（或直接接地 GPIO10 和 GPIO11），它将进入固件更新模式。
-* 你可以使用这个 Web Serial Terminal 来连接到板的主 USB 串行端口来访问命令行。（注意："?" 是帮助）  
+* 其中一个 USB 串口是命令行，你可以使用这个 Web Serial Terminal 来连接和访问命令行。（注意："?" 是帮助）  
   https://googlechromelabs.github.io/serial-terminal/
-* 支持 Spicetools cardio (Card I/O) HID。
-* 在第二个串行端口上跑的是 SEGA AIME 协议。
+* 另外一个串口上运行读卡器协议，当前支持 AIME 和 Bandai Namco。
+* Spicetools cardio (Card I/O) HID 是一直开启的，除非读卡器协议正在工作中。
+* 如果你的 PN5180 模块在读取 Mifare 卡（AIME 卡和 Bana Passport 卡）的时候遇到问题，你可以试试用“pn5180_tweak on”命令来启用 PN5180 射频调整。
 * 一些命令行命令：
   * "light \<rgb|led|both|off\>" 来打开或关闭 LED。
   * "level <0..255> <0..255>" 来调整亮度。
