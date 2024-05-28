@@ -271,7 +271,7 @@ static void poll_mifare_0()
     pn5180_reset();
     pn5180_load_rf_config(0x00, 0x80);
     if (nfc_runtime.pn5180_tx_tweak) {
-        write_reg(CMD_WRITE_REG, 0x21, 0x789);
+        write_reg(CMD_WRITE_REG, 0x21, 0x783); // Enable DPLL
     }
     pn5180_rf_field(true);
     rf_crc_off();
