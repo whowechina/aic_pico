@@ -13,7 +13,7 @@ function(make_firmware board board_def)
 
     add_executable(${board}
                    main.c save.c config.c commands.c light.c keypad.c
-                   cst816t.c st7789.c
+                   cst816t.c st7789.c gui.c
                    cli.c usb_descriptors.c)
     target_compile_definitions(${board} PUBLIC ${board_def})
     pico_enable_stdio_usb(${board} 1)
