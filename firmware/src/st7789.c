@@ -353,27 +353,48 @@ void st7789_char(int x, int y, char c, const lv_font_t *font, uint16_t color)
     }
 }
 
-static uint16_t text_width(const char *text, const lv_font_t *font, uint16_t spacing)
+static uint16_t spacing_x = 1, spacing_y = 1;
+
+void st7789_spacing(uint16_t dx, uint16_t dy)
+{
+    spacing_x = dx;
+    spacing_y = dy;
+}
+
+static uint16_t text_width(const char *text, const lv_font_t *font)
 {
     uint16_t width = 0;
-    for (; *text; text++) {
-        width += (font->dsc[*text - font->range_start].adv_w >> 4) + spacing;
+    for (; *text && (*text != '\n'); text++) {
+        if (*text - font->range_start < font->range_length) {
+            width += (font->dsc[*text - font->range_start].adv_w >> 4) + spacing_x;
+        }
     }
     return width;
 }
 
 void st7789_text(int x, int y, const char *text,
-                 const lv_font_t *font, uint16_t spacing, uint16_t color, alignment_t align)
+                 const lv_font_t *font, uint16_t color, alignment_t align)
 {
-    int width = text_width(text, font, spacing);
-    if (align == ALIGN_CENTER) {
-        x -= width / 2;
-    } else if (align == ALIGN_RIGHT) {
-        x -= width;
-    }
+    bool newline = true;
+    int pos_x = x;
     for (; *text; text++) {
-        st7789_char(x, y, *text, font, color);
-        x += (font->dsc[*text - font->range_start].adv_w >> 4) + spacing;
+        if (*text == '\n') {
+            newline = true;
+            pos_x = x;;
+            y += font->line_height + spacing_y;
+            continue;
+        }
+        if (newline) {
+            int width = text_width(text, font);
+            if (align == ALIGN_CENTER) {
+                pos_x -= width / 2;
+            } else if (align == ALIGN_RIGHT) {
+                pos_x -= width;
+            }
+            newline = false;
+        }
+        st7789_char(pos_x, y, *text, font, color);
+        pos_x += (font->dsc[*text - font->range_start].adv_w >> 4) + spacing_x;
     }
 }
 

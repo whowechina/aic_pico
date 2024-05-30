@@ -49,5 +49,6 @@ typedef enum {
     ALIGN_RIGHT
 } alignment_t;
 
+void st7789_spacing(uint16_t dx, uint16_t dy);
 void st7789_text(int x, int y, const char *text, const lv_font_t *font,
-                 uint16_t spacing, uint16_t color, alignment_t align);
+                 uint16_t color, alignment_t align);
