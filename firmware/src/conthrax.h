@@ -774,7 +774,7 @@ static const lv_font_dsc_t conthrax_dsc[] = {
     {.bitmap_index = 4370, .adv_w = 463, .box_w = 27, .box_h = 23, .ofs_x = 1, .ofs_y = 0},
     {.bitmap_index = 4991, .adv_w = 444, .box_w = 25, .box_h = 23, .ofs_x = 1, .ofs_y = 0},
     {.bitmap_index = 5566, .adv_w = 222, .box_w = 28, .box_h = 23, .ofs_x = 0, .ofs_y = 0},
-    {.bitmap_index = 6210, .adv_w = 217, .box_w = 8, .box_h = 7, .ofs_x = 8, .ofs_y = 8}
+    {.bitmap_index = 6210, .adv_w = 217, .box_w = 8, .box_h = 7, .ofs_x = 8, .ofs_y = -6}
 };
 
 static const lv_font_t lv_conthrax = {
