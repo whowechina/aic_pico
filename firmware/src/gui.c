@@ -22,6 +22,7 @@
 
 #include "conthrax.h"
 #include "upheaval.h"
+#include "ltsaeada.h"
 #include "light.h"
 #include "gui.h"
 
@@ -45,8 +46,8 @@ static void run_numpad()
     static uint16_t phase = 0;
     phase++;
     for (int i = 0; i < 240; i++) {
-        st7789_vline(i, 0, 320,
-                    st7789_rgb565(rgb32_from_hsv(phase % 256 + i, 255, 128)), 0xff);
+        uint16_t color = st7789_rgb565(rgb32_from_hsv(phase + i, 255, 128));
+        st7789_vline(i, 0, 320, color, 0xff);
     }
 
     static struct {
@@ -77,18 +78,38 @@ static void run_numpad()
 
 static void run_status()
 {
+    uint16_t patt[14];
+    for (int i = 0; i < 14; i++) {
+        patt[i] = (i % 7) ? 0x4040 : 0x0000;
+    }
+
+    st7789_fill(patt, 14);
+
+    const uint8_t spacing = 1;
     char buf[32];
 
-    st7789_text(5, 5, "SN:", &lv_upheaval, 1, st7789_rgb565(0x00ff00));
+    st7789_text(121, 6, "SN", &lv_lts16, spacing, 0x0000, ALIGN_CENTER);
+    st7789_text(120, 5, "SN", &lv_lts16, spacing, st7789_rgb565(0x00c000), ALIGN_CENTER);
     sprintf(buf, "%016llx", board_id_64());
-    st7789_text(5, 25, buf, &lv_upheaval, 1, st7789_rgb565(0x808080));
+    st7789_text(120, 21, buf, &lv_lts18, spacing, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 
-    st7789_text(5, 45, "Built:", &lv_upheaval, 1, st7789_rgb565(0x00ff00));
-    st7789_text(5, 65, built_time, &lv_upheaval, 1, st7789_rgb565(0x808080));
+    st7789_text(121, 46, "Built", &lv_lts16, spacing, 0x0000, ALIGN_CENTER);
+    st7789_text(120, 45, "Built", &lv_lts16, spacing, st7789_rgb565(0x00c000), ALIGN_CENTER);
+    st7789_text(120, 61, built_time, &lv_lts18, spacing, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 
-    st7789_text(5, 85, "NFC Module:", &lv_upheaval, 1, st7789_rgb565(0x00ff00));
-    sprintf(buf, "%s (%s)\n", nfc_module_name(), nfc_module_version());
-    st7789_text(5, 105, buf, &lv_upheaval, 1, st7789_rgb565(0x808080));
+    st7789_text(121, 86, "NFC Module", &lv_lts16, spacing, 0x0000, ALIGN_CENTER);
+    st7789_text(120, 85, "NFC Module", &lv_lts16, spacing, st7789_rgb565(0x00c000), ALIGN_CENTER);
+    sprintf(buf, "%s (%s)", nfc_module_name(), nfc_module_version());
+    st7789_text(120, 101, buf, &lv_lts18, spacing, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
+
+    st7789_text(121, 126, "Light", &lv_lts16, spacing, 0x0000, ALIGN_CENTER);
+    st7789_text(120, 125, "Light", &lv_lts16, spacing, st7789_rgb565(0x00c000), ALIGN_CENTER);
+    if (aic_cfg->light.rgb) {
+        sprintf(buf, "RGB %d ~ %d", aic_cfg->light.level_idle, aic_cfg->light.level_active);
+    } else {
+        sprintf(buf, "RGB OFF");
+    }
+    st7789_text(120, 141, buf, &lv_lts18, spacing, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 }
 
 void gui_loop()
