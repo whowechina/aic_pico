@@ -201,23 +201,35 @@ void st7789_render(bool vsync)
     }
 }
 
-static void vram_dma(uint16_t x, uint16_t y, const void *src, bool inc, size_t pixels)
+static void vram_dma(uint32_t offset, const void *src, bool inc, size_t pixels)
 {
     channel_config_set_read_increment(&ctx.mem_dma_cfg, inc);
     dma_channel_configure(ctx.mem_dma, &ctx.mem_dma_cfg,
-                          &vram[y * crop.w + x], src, pixels / 2, true);
+                          &vram[offset], src, pixels / 2, true);
     dma_channel_wait_for_finish_blocking(ctx.mem_dma);
 }
 
 void st7789_clear(uint16_t color)
 {
     uint32_t c32 = (color << 16) | color;
-    vram_dma(0, 0, &c32, false, crop.w * crop.h);
+    vram_dma(0, &c32, false, crop.w * crop.h);
 }
 
-void st7789_vramcpy(uint16_t x, uint16_t y, const void *src, size_t pixels)
+void st7789_fill(uint16_t *pattern, size_t size)
 {
-    vram_dma(x, y, src, true, pixels);
+    int remain = crop.w * crop.h;
+    int offset = 0;
+    while (remain > 0) {
+        int to_copy = remain < size ? remain : size;
+        vram_dma(offset, pattern, true, to_copy);
+        offset += to_copy;
+        remain -= to_copy;
+    }
+}
+
+void st7789_vramcpy(uint32_t offset, const void *src, size_t pixels)
+{
+    vram_dma(offset, src, true, pixels);
 }
 
 void static inline put_pixel(uint16_t x, uint16_t y, uint16_t color)
@@ -311,7 +323,7 @@ void st7789_line(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t co
     }
 }
 
-void st7789_char(uint16_t x, uint16_t y, char c, const lv_font_t *font, uint16_t color)
+void st7789_char(int x, int y, char c, const lv_font_t *font, uint16_t color)
 {
     if (c < font->range_start || c >= font->range_start + font->range_length) {
         return;
@@ -322,14 +334,16 @@ void st7789_char(uint16_t x, uint16_t y, char c, const lv_font_t *font, uint16_t
 
     uint8_t bpp = font->bit_per_pixel;
     uint8_t mask = (1L << bpp) - 1;
+    uint8_t off_y = font->line_height - font->base_line - dsc->box_h - dsc->ofs_y;
+
     for (int i = 0; i < dsc->box_h; i++) {
-        uint16_t dot_y = y + dsc->ofs_y + i;
-        if (dot_y > crop.h) {
-            break;
+        int dot_y = y + off_y + i;
+        if ((dot_y < 0) || (dot_y > crop.h)) {
+            continue;
         }
         for (int j = 0; j < dsc->box_w; j++) {
-            uint16_t dot_x = x  + dsc->ofs_x + j;
-            if (dot_x > crop.w) {
+            int dot_x = x + dsc->ofs_x + j;
+            if ((dot_x < 0) || (dot_x > crop.w)) {
                 break;
             }
             uint16_t bits = (i * dsc->box_w + j) * bpp;
@@ -339,9 +353,24 @@ void st7789_char(uint16_t x, uint16_t y, char c, const lv_font_t *font, uint16_t
     }
 }
 
-void st7789_text(uint16_t x, uint16_t y, const char *text,
-                 const lv_font_t *font, uint16_t spacing, uint16_t color)
+static uint16_t text_width(const char *text, const lv_font_t *font, uint16_t spacing)
 {
+    uint16_t width = 0;
+    for (; *text; text++) {
+        width += (font->dsc[*text - font->range_start].adv_w >> 4) + spacing;
+    }
+    return width;
+}
+
+void st7789_text(int x, int y, const char *text,
+                 const lv_font_t *font, uint16_t spacing, uint16_t color, alignment_t align)
+{
+    int width = text_width(text, font, spacing);
+    if (align == ALIGN_CENTER) {
+        x -= width / 2;
+    } else if (align == ALIGN_RIGHT) {
+        x -= width;
+    }
     for (; *text; text++) {
         st7789_char(x, y, *text, font, color);
         x += (font->dsc[*text - font->range_start].adv_w >> 4) + spacing;
