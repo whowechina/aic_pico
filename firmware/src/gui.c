@@ -76,6 +76,12 @@ static void run_numpad()
     }
 }
 
+static void status_title(int x, int y, const char *title, uint16_t color)
+{
+    st7789_text(x + 1, y + 1, title, &lv_lts16, 0x0000, ALIGN_CENTER);
+    st7789_text(x, y, title, &lv_lts16, color, ALIGN_CENTER);
+}
+
 static void run_status()
 {
     uint16_t patt[14];
@@ -85,31 +91,40 @@ static void run_status()
 
     st7789_fill(patt, 14);
 
-    const uint8_t spacing = 1;
+    st7789_spacing(1, 0);
+
     char buf[32];
-
-    st7789_text(121, 6, "SN", &lv_lts16, spacing, 0x0000, ALIGN_CENTER);
-    st7789_text(120, 5, "SN", &lv_lts16, spacing, st7789_rgb565(0x00c000), ALIGN_CENTER);
+    status_title(120, 3, "Serial Number", st7789_rgb565(0x00c000));
     sprintf(buf, "%016llx", board_id_64());
-    st7789_text(120, 21, buf, &lv_lts18, spacing, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
+    st7789_text(120, 22, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 
-    st7789_text(121, 46, "Built", &lv_lts16, spacing, 0x0000, ALIGN_CENTER);
-    st7789_text(120, 45, "Built", &lv_lts16, spacing, st7789_rgb565(0x00c000), ALIGN_CENTER);
-    st7789_text(120, 61, built_time, &lv_lts18, spacing, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
+    status_title(120, 46, "Firmware Timestamp", st7789_rgb565(0x00c000));
+    st7789_text(120, 66, built_time, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 
-    st7789_text(121, 86, "NFC Module", &lv_lts16, spacing, 0x0000, ALIGN_CENTER);
-    st7789_text(120, 85, "NFC Module", &lv_lts16, spacing, st7789_rgb565(0x00c000), ALIGN_CENTER);
+    status_title(120, 89, "NFC Module", st7789_rgb565(0x00c000));
     sprintf(buf, "%s (%s)", nfc_module_name(), nfc_module_version());
-    st7789_text(120, 101, buf, &lv_lts18, spacing, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
+    st7789_text(120, 105, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 
-    st7789_text(121, 126, "Light", &lv_lts16, spacing, 0x0000, ALIGN_CENTER);
-    st7789_text(120, 125, "Light", &lv_lts16, spacing, st7789_rgb565(0x00c000), ALIGN_CENTER);
+    status_title(120, 132, "Light", st7789_rgb565(0x00c000));
     if (aic_cfg->light.rgb) {
-        sprintf(buf, "RGB %d ~ %d", aic_cfg->light.level_idle, aic_cfg->light.level_active);
+        sprintf(buf, "RGB: %d ~ %d", aic_cfg->light.level_idle, aic_cfg->light.level_active);
     } else {
-        sprintf(buf, "RGB OFF");
+        sprintf(buf, "RGB: OFF");
     }
-    st7789_text(120, 141, buf, &lv_lts18, spacing, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
+    st7789_text(120, 148, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
+
+    status_title(120, 175, "LCD", st7789_rgb565(0x00c000));
+    sprintf(buf, "Backlight: %d", aic_cfg->lcd.backlight);
+    st7789_text(120, 191, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
+
+    status_title(120, 218, "Reader", st7789_rgb565(0x00c000));
+    int len = sprintf(buf, "Virtual AIC: %s\nMode: %s",
+                      aic_cfg->reader.virtual_aic ? "ON" : "OFF",
+                      mode_name(aic_cfg->reader.mode));
+    if (aic_cfg->reader.mode == MODE_AUTO) {
+        sprintf(buf + len, " (%s)", mode_name(aic_runtime.mode));
+    }
+    st7789_text(120, 234, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 }
 
 void gui_loop()
