@@ -30,15 +30,17 @@ static inline uint16_t st7789_rgb565(uint32_t rgb32)
     return ((rgb32 >> 8) & 0xf800) | ((rgb32 >> 5) & 0x07e0) | ((rgb32 >> 3) & 0x001f);
 }
 
-void st7789_clear(uint16_t color);
-void st7789_fill(uint16_t *pattern, size_t size);
+void st7789_clear(uint16_t color, bool raw);
+void st7789_fill(uint16_t *pattern, size_t size, bool raw);
 uint16_t *st7789_vram(uint16_t x, uint16_t y);
 void st7789_vramcpy(uint32_t offset, const void *src, size_t count);
-void st7789_pixel(uint16_t x, uint16_t y, uint16_t color, uint8_t mix);
-void st7789_hline(uint16_t x, uint16_t y, uint16_t w, uint16_t color, uint8_t mix);
-void st7789_vline(uint16_t x, uint16_t y, uint16_t h, uint16_t color, uint8_t mix);
-void st7789_bar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, uint8_t mix);
-void st7789_line(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t color, uint8_t mix);
+void st7789_pixel(int x, int y, uint16_t color, uint8_t mix);
+void st7789_hline(int x, int y, uint16_t w, uint16_t color, uint8_t mix);
+void st7789_vline(int x, int y, uint16_t h, uint16_t color, uint8_t mix);
+void st7789_bar(int x, int y, uint16_t w, uint16_t h, uint16_t color, uint8_t mix);
+void st7789_line(int x0, int y0, int x1, int y1, uint16_t color, uint8_t mix);
+
+void st7789_scroll(int dx, int dy);
 
 /* char and text out only supports 1/2/4/8 bit-per-pixel */
 void st7789_char(int x, int y, char c, const lv_font_t *font, uint16_t color);
@@ -49,6 +51,6 @@ typedef enum {
     ALIGN_RIGHT
 } alignment_t;
 
-void st7789_spacing(uint16_t dx, uint16_t dy);
+void st7789_spacing(int dx, int dy);
 void st7789_text(int x, int y, const char *text, const lv_font_t *font,
                  uint16_t color, alignment_t align);

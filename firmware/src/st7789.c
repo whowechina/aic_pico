@@ -36,14 +36,19 @@ static struct {
     dma_channel_config mem_dma_cfg;    
 } ctx;
 
-static struct {
+static struct crop_ctx {
     uint16_t x;
     uint16_t y;
     uint16_t vx;
     uint16_t vy;
     uint16_t w;
     uint16_t h;
-} crop = { 0, 0, WIDTH, HEIGHT };
+} crop = { .w = WIDTH, .h = HEIGHT };
+
+static struct {
+    int x;
+    int y;
+} scroll;
 
 static uint16_t vram[HEIGHT * WIDTH];
 
@@ -126,6 +131,7 @@ static void update_addr()
     uint16_t xs = crop.x + crop.vx;
     uint16_t xe = xs + crop.w - 1;
     uint8_t ca[] = { xs >> 8, xs & 0xff, xe >> 8, xe & 0xff };
+    printf("xs: %d xe: %d\n", xs, xe);
     send_cmd(0x2a, ca, sizeof(ca));
 
     uint16_t ys = crop.y + crop.vy;
@@ -209,22 +215,61 @@ static void vram_dma(uint32_t offset, const void *src, bool inc, size_t pixels)
     dma_channel_wait_for_finish_blocking(ctx.mem_dma);
 }
 
-void st7789_clear(uint16_t color)
+void static inline put_pixel(int x, int y, uint16_t color)
 {
-    uint32_t c32 = (color << 16) | color;
-    vram_dma(0, &c32, false, crop.w * crop.h);
+    x += scroll.x;
+    y += scroll.y;
+    if ((x < 0) || (x >= crop.w) || (y < 0) || (y >= crop.h)) {
+        return;
+    }
+    vram[y * crop.w + x] = color;
 }
 
-void st7789_fill(uint16_t *pattern, size_t size)
+static void soft_fill(uint16_t *pattern, size_t size)
 {
-    int remain = crop.w * crop.h;
-    int offset = 0;
-    while (remain > 0) {
-        int to_copy = remain < size ? remain : size;
-        vram_dma(offset, pattern, true, to_copy);
-        offset += to_copy;
-        remain -= to_copy;
+    int x = scroll.x > 0 ? scroll.x : 0;
+    int y = scroll.y > 0 ? scroll.y : 0;
+    int w = crop.w - abs(scroll.x);
+    int h = crop.h - abs(scroll.y);
+    if ((crop.w <= 0) || (crop.h <= 0)) {
+        return;
     }
+
+    int p = 0;
+    for (int i = 0; i < w; i++) {
+        for (int j = 0; j < h; j++) {
+            vram[(y + j) * crop.w + x + i] = pattern[p];
+            p = (p + 1) % size;
+        }
+    }
+}
+
+void st7789_clear(uint16_t color, bool raw)
+{
+    if (raw || !(scroll.x || scroll.y)) {
+        uint32_t c32 = (color << 16) | color;
+        vram_dma(0, &c32, false, crop.w * crop.h);
+        return;
+    }
+
+    soft_fill(&color, 1);
+}
+
+void st7789_fill(uint16_t *pattern, size_t size, bool raw)
+{
+    if (raw || !(scroll.x || scroll.y)) {
+        int remain = crop.w * crop.h;
+        int offset = 0;
+        while (remain > 0) {
+            int to_copy = remain < size ? remain : size;
+            vram_dma(offset, pattern, true, to_copy);
+            offset += to_copy;
+            remain -= to_copy;
+        }
+        return;
+    }
+
+    soft_fill(pattern, size);
 }
 
 void st7789_vramcpy(uint32_t offset, const void *src, size_t pixels)
@@ -232,20 +277,29 @@ void st7789_vramcpy(uint32_t offset, const void *src, size_t pixels)
     vram_dma(offset, src, true, pixels);
 }
 
-void static inline put_pixel(uint16_t x, uint16_t y, uint16_t color)
+void st7789_scroll(int dx, int dy)
 {
-    vram[y * crop.w + x] = color;
+    scroll.x = dx;
+    scroll.y = dy;
 }
 
-void static inline mix_pixel(uint16_t x, uint16_t y, uint16_t color, uint8_t mix, uint8_t bits)
+void static inline mix_pixel(int x, int y, uint16_t color, uint8_t mix, uint8_t bits)
 {
     if (mix == 0) {
         return;
     }
+
+    x += scroll.x;
+    y += scroll.y;
+    if ((x < 0) || (x >= crop.w) || (y < 0) || (y >= crop.h)) {
+        return;
+    }
+
     if (mix == (1L << bits) - 1) {
         vram[y * crop.w + x] = color;
         return;
     }
+
     uint16_t bg = vram[y * crop.w + x];
     uint16_t bg_ratio = (1L << bits) - mix;
     uint8_t r = ((bg >> 11) * bg_ratio + (color >> 11) * mix) >> bits;
@@ -254,45 +308,27 @@ void static inline mix_pixel(uint16_t x, uint16_t y, uint16_t color, uint8_t mix
     vram[y * crop.w + x] = (r << 11) | (g << 5) | b;
 }
 
-void st7789_pixel(uint16_t x, uint16_t y, uint16_t color, uint8_t mix)
+void st7789_pixel(int x, int y, uint16_t color, uint8_t mix)
 {
-    if ((x >= crop.w) || (y >= crop.h)) {
-        return;
-    }
     mix_pixel(x, y, color, mix, 8);
 }
 
-void st7789_hline(uint16_t x, uint16_t y, uint16_t w, uint16_t color, uint8_t mix)
+void st7789_hline(int x, int y, uint16_t w, uint16_t color, uint8_t mix)
 {
-    if ((x >= crop.w) || (y >= crop.h)) {
-        return;
-    }
-    w = x + w > crop.w ? crop.w - x : w;
-
     for (int i = 0; i < w; i++) {
         mix_pixel(x + i, y, color, mix, 8);
     }
 }
-void st7789_vline(uint16_t x, uint16_t y, uint16_t h, uint16_t color, uint8_t mix)
-{
-    if ((x >= crop.w) || (y >= crop.h)) {
-        return;
-    }
-    h = y + h > crop.h ? crop.h - y : h;
 
+void st7789_vline(int x, int y, uint16_t h, uint16_t color, uint8_t mix)
+{
     for (int i = 0; i < h; i++) {
         mix_pixel(x, y + i, color, mix, 8);
     }
 }
 
-void st7789_bar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, uint8_t mix)
+void st7789_bar(int x, int y, uint16_t w, uint16_t h, uint16_t color, uint8_t mix)
 {
-    if ((x >= crop.w) || (y >= crop.h)) {
-        return;
-    }
-    w = x + w > crop.w ? crop.w - x : w;
-    h = y + h > crop.h ? crop.h - y : h;
-
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
             mix_pixel(x + j, y + i, color, mix, 8);
@@ -300,14 +336,14 @@ void st7789_bar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, 
     }
 }
 
-void st7789_line(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t color, uint8_t mix)
+void st7789_line(int x0, int y0, int x1, int y1, uint16_t color, uint8_t mix)
 {
     int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
     int dy = abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
     int err = (dx > dy ? dx : -dy) / 2, e2;
 
     for (;;) {
-        st7789_pixel(x0, y0, color, mix);
+        mix_pixel(x0, y0, color, mix, 8);
         if (x0 == x1 && y0 == y1) {
             break;
         }
@@ -353,9 +389,9 @@ void st7789_char(int x, int y, char c, const lv_font_t *font, uint16_t color)
     }
 }
 
-static uint16_t spacing_x = 1, spacing_y = 1;
+static int spacing_x = 1, spacing_y = 1;
 
-void st7789_spacing(uint16_t dx, uint16_t dy)
+void st7789_spacing(int dx, int dy)
 {
     spacing_x = dx;
     spacing_y = dy;
