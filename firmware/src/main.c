@@ -390,7 +390,7 @@ void init()
 }
 
 /* if certain key pressed when booting, enter update mode */
-static void update_check()
+static void boot_update_check()
 {
     const uint8_t pins[] = { 10, 11 }; // keypad 00 and *
     bool all_pressed = true;
@@ -424,7 +424,7 @@ static void sys_init()
 int main(void)
 {
     sys_init();
-    update_check();
+    boot_update_check();
     init();
     multicore_launch_core1(core1_loop);
     core0_loop();
