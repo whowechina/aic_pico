@@ -52,5 +52,16 @@ typedef enum {
 } alignment_t;
 
 void st7789_spacing(int dx, int dy);
+
+/* Color escape scheme:
+  "\x01\xRR\xGG\xBB" set color;
+  "\x02" back to previous color;
+  "\x03" reset to default color;
+ */
+
+#define SET_COLOR(rgb) "\x01" #rgb
+#define PREV_COLOR "\x02"
+#define RESET_COLOR "\x03"
+
 void st7789_text(int x, int y, const char *text, const lv_font_t *font,
                  uint16_t color, alignment_t align);

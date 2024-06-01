@@ -401,6 +401,12 @@ static uint16_t text_width(const char *text, const lv_font_t *font)
 {
     uint16_t width = 0;
     for (; *text && (*text != '\n'); text++) {
+        if (*text == '\x01') {
+            text += 3;
+            continue;
+        } else if (*text == '\x02' || *text == '\x03') {
+            continue;
+        }
         if (*text - font->range_start < font->range_length) {
             width += (font->dsc[*text - font->range_start].adv_w >> 4) + spacing_x;
         }
@@ -411,10 +417,26 @@ static uint16_t text_width(const char *text, const lv_font_t *font)
 void st7789_text(int x, int y, const char *text,
                  const lv_font_t *font, uint16_t color, alignment_t align)
 {
+    uint16_t old_color = color;
+    uint16_t curr_color = color;
     bool newline = true;
     int pos_x = x;
     for (; *text; text++) {
-        if (*text == '\n') {
+        if (*text == '\x01') { // set color
+            old_color = curr_color;
+            curr_color = st7789_rgb565(st7789_rgb32(text[1], text[2], text[3]));
+            text += 3;
+            continue;
+        } else if (*text == '\x02') { // back to previous color
+            uint16_t tmp = curr_color;
+            curr_color = old_color;
+            old_color = tmp;
+            continue;
+        } else if (*text == '\x03') { // reset to default color
+            old_color = curr_color;
+            curr_color = color;
+            continue;
+        } else if (*text == '\n') { // line wrap
             newline = true;
             pos_x = x;;
             y += font->line_height + spacing_y;
@@ -429,7 +451,7 @@ void st7789_text(int x, int y, const char *text,
             }
             newline = false;
         }
-        st7789_char(pos_x, y, *text, font, color);
+        st7789_char(pos_x, y, *text, font, curr_color);
         pos_x += (font->dsc[*text - font->range_start].adv_w >> 4) + spacing_x;
     }
 }
