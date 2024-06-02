@@ -34,6 +34,11 @@ void cst816t_init_i2c(i2c_inst_t *i2c, uint8_t scl, uint8_t sda)
     gpio_pull_up(sda);
 }
 
+static void irq_handler(uint gpio, uint32_t events)
+{
+    cst816t_update();
+}
+
 void cst816t_init(i2c_inst_t *i2c, uint8_t trst, uint8_t tint)
 {
     i2c_port = i2c;
@@ -45,6 +50,8 @@ void cst816t_init(i2c_inst_t *i2c, uint8_t trst, uint8_t tint)
     gpio_init(tint);
     gpio_set_dir(tint, GPIO_IN);
     gpio_pull_up(tint);
+
+    gpio_set_irq_enabled_with_callback(tint, GPIO_IRQ_EDGE_FALL, true, &irq_handler);
 }
 
 static struct {
@@ -66,22 +73,40 @@ void cst816t_crop(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, uint16_t w
     ctx.height = height;
 }
 
-cst816t_report_t cst816t_read()
+static struct {
+    bool touched;
+    uint16_t x;
+    uint16_t y;
+} reading;
+
+void cst816t_update()
 {
     uint8_t buf[6];
-
     cst816t_read_reg_n(0x01, buf, 6);
+    reading.touched = buf[1];
+    reading.x = ((buf[2] & 0x0f) << 8) | buf[3];
+    reading.y = ((buf[4] & 0x0f) << 8) | buf[5];
+}
 
-    cst816t_report_t report = {
-        .gesture = buf[0],
-        .finger = buf[1],
-        .event = (buf[2] >> 4) & 0x0f,
-        .raw_x = ((buf[2] & 0x0f) << 8) | buf[3],
-        .raw_y = ((buf[4] & 0x0f) << 8) | buf[5],
+cst816t_raw_t cst816t_read_raw()
+{
+    static cst816t_raw_t old = { 0 };
+    cst816t_raw_t raw = {
+        .updated = false,
+        .touched = reading.touched,
+        .x = old.x,
+        .y = old.y,
+        .raw_x = reading.x,
+        .raw_y = reading.y,
     };
 
-    int x = (report.raw_x - ctx.x1) * ctx.width / (ctx.x2 - ctx.x1);
-    int y = (report.raw_y - ctx.y1) * ctx.height / (ctx.y2 - ctx.y1);
+    if ((old.raw_x == raw.raw_x) && (old.raw_y == raw.raw_y) &&
+        (old.touched == raw.touched)) {
+        return raw;
+    }
+
+    int x = (raw.raw_x - ctx.x1) * ctx.width / (ctx.x2 - ctx.x1);
+    int y = (raw.raw_y - ctx.y1) * ctx.height / (ctx.y2 - ctx.y1);
     if (x < 0) {
         x = 0;
     } else if (x >= ctx.width) {
@@ -93,8 +118,42 @@ cst816t_report_t cst816t_read()
         y = ctx.height - 1;
     }
 
-    report.x = x;
-    report.y = y;
+    raw.x = x;
+    raw.y = y;
 
+    raw.updated = true;
+    old = raw;
+
+    return raw;
+}
+
+cst816t_report_t cst816t_read()
+{
+    cst816t_raw_t raw = cst816t_read_raw();
+
+    static struct {
+        cst816t_report_t old_report;
+        bool x_revert;
+        bool x_slide;
+        bool y_revert;
+        bool y_slide;
+    } ctx;
+
+    cst816t_report_t report = ctx.old_report;
+    report.updated = false;
+
+    if (raw.updated) {
+        /* touch related changes */
+        report.x = raw.x;
+        report.y = raw.y;
+        report.updated = true;
+    }
+
+    if (1) {
+        /* timing */
+        report.updated = true;
+    }
+
+    ctx.old_report = report;
     return report;
 }
