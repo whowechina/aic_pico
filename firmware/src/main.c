@@ -122,9 +122,19 @@ static void light_mode_update()
     was_cardio = cardio;
 }
 
+static void core1_init()
+{
+    if (aic_runtime.touch) {
+        gui_init();
+        gui_level(aic_cfg->lcd.backlight);
+    }
+}
+
 static mutex_t core1_io_lock;
 static void core1_loop()
 {
+    core1_init();
+
     while (1) {
         if (mutex_try_enter(&core1_io_lock, NULL)) {
             if (aic_runtime.touch) {
@@ -377,11 +387,6 @@ void init()
     aime_init(cdc_reader_putc);
     aime_virtual_aic(aic_cfg->reader.virtual_aic);
     bana_init(cdc_reader_putc);
-
-    if (aic_runtime.touch) {
-        gui_init();
-        gui_level(aic_cfg->lcd.backlight);
-    }
 
     cli_init("aic_pico>", "\n     << AIC Pico >>\n"
                             " https://github.com/whowechina\n\n");
