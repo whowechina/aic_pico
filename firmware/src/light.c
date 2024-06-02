@@ -407,10 +407,12 @@ static void rainbow_update(uint32_t delta_ms)
 
 static void drive_led()
 {
+    irq_set_enabled(IO_IRQ_BANK0, false);
     for (int i = 0; i < RGB_NUM; i++) {
         uint32_t color = aic_cfg->light.rgb ? rgb_buf[i] << 8u : 0;
         pio_sm_put_blocking(pio0, 0, color);
     }
+    irq_set_enabled(IO_IRQ_BANK0, true);
 
     for (int i = 0; i < LED_NUM; i++) {
         uint8_t level = aic_cfg->light.led ? led_buf[i] : 0;
