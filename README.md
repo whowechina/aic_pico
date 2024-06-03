@@ -68,7 +68,13 @@ https://github.com/whowechina/
 ## About the License
 It's CC-NC. So DIY for yourself and for your friend, don't make money from it.
 
-## Building "AIC Pico (PN532)"
+## List of Building Choices
+- [AIC Pico PN532](#Building-AIC-Pico-PN532)
+- [AIC Pico PN5180](#Building-AIC-Pico-PN5180)
+- [AIC Key](#Building-AIC-Key)
+- [AIC Touch](#Building-AIC-Touch)
+
+## Building AIC Pico PN532
 Seriously, this is the easiest one among all my Pico series projects.
 ### Components
 * 1x Rasberry Pi Pico or Pico W (clones work too).  
@@ -93,6 +99,8 @@ For the top part, choose one that fits your need.
 * **aic_pico_top_tall_ams.3mf**  
   Taller top part, multi-color printing.
 
+Top parts should be printed upside-down.
+
 ### Wiring
 <img src="doc/pico_pn532_wiring.png" width="70%">
 
@@ -110,7 +118,7 @@ I'll let these images do the talk.
 * The mode switch on PN532 must be in "I2C" mode, picture below shows the correct settings.  
   <img src="doc/pn532_i2c.jpg" width="40%">
 
-## Building "AIC Pico (PN5180)"
+## Building AIC Pico PN5180
 If you opt for the PN5180 NFC module, note that the housing design is up to you. Ensure it fits your design or you can use it without a case. Be prepared to solder more wires compared to the PN532 version.
 
 ### Wiring
@@ -118,7 +126,7 @@ If you opt for the PN5180 NFC module, note that the housing design is up to you.
 
 Note: WS2812B LED Strip wiring is the same as the PN532 version.
 
-## Building "AIC Key"
+## Building AIC Key
 AIC Key is a variation of the AIC Pico - a keypad is integrated. Much more difficult to build than the "AIC Pico" as it has many tiny components to solder.
 
 ### Components
@@ -150,7 +158,7 @@ AIC Key is a variation of the AIC Pico - a keypad is integrated. Much more diffi
   <img src="doc/bonito_stickers.png" width="50%">  
   <img src="doc/bonito_action.jpg" width="50%">
 
-* PCB, just visit JLCPCB (https://jlcpcb.com/) and place an order there. Leave everything default, 1.6mm thickness, whatever color you like. PCB gerber files are in "Production/PCB" folder. For PN532 version, use "aic_key_pn532_v*.zip", for PN5180 version, use "aic_key_pn5180_v*.zip".  
+* PCB, visit JLCPCB (https://jlcpcb.com/) and place an order there. Leave everything default, 1.6mm thickness, whatever color you like. The PCB gerber file is "Production/PCB/aic_key_v*.zip".  
   <img src="doc/pcbs.jpg" width="60%">
 
 ### 3D Prints
@@ -164,6 +172,8 @@ AIC Key is a variation of the AIC Pico - a keypad is integrated. Much more diffi
   Top part for Panasonic tact switches.
 * **aic_key_top_tact_ams.3mf**  
   Top part for Panasonic tact switches, multi-color printing.
+
+Top parts should be printed upside-down.
 
 ### Assembly
 Again I'll let these images do the talk. Remember to upload the firmware onto Raspberry Pi Pico before assemble.
@@ -182,9 +192,12 @@ Remember set to I2C mode first.
 <img src="doc/key_assemble_4.jpg" width="40%">
 <img src="doc/key_assemble_5.jpg" width="40%">
 
-**CAUTION:** There's a possibility that the antenna on the PN532 PCB may come into contact with the USB connector and cause RF problem. To prevent this, you can apply some insulating tape.
+**CAUTION:**
+- There's a possibility that the antenna on the PN532 PCB may come into contact with the USB connector and cause RF problem. To prevent this, you can apply some insulating tape.
 
-<img src="doc/key_pn532_tape.jpg" width="60%">
+  <img src="doc/key_pn532_tape.jpg" width="60%">
+
+- Due to manufacturing errors, your PN532 module may not fit perfectly into the housing. If necessary, you can gently trim the edges of the PN532 module for a better fit.
 
 #### PN5180 Version
 You need to cut off the original antenna and use the one in our PCB.
@@ -199,6 +212,59 @@ You may use some instant adhesive to fix stickers.
 
 <img src="doc/key_assemble_10.jpg" width="46%">
 <img src="doc/pico_assemble_4.jpg" width="40%">
+
+## Building AIC Touch
+AIC Touch, another variant of AIC Pico, comes with an integrated touchscreen. However, its tiny FPC/FFC connector significantly increases the soldering and assembly difficulty.
+
+### Components
+* For the Raspberry Pi Pico, NFC module, 6x WS2812B 1204 LEDs and the R1 resistor part, follow the guide for AIC Key.
+* C1, C2, C3, 0603 0.1uF capacitors, they contribute to a more stable power supply.
+* R2, R3, pull-up resistors for the I2C bus, 0603 1Kohm ~ 4.7Kohm.
+* 1.69 inch 240x280 LCD touchscreen (ST7789 + CST816). Several vendors are making this model, as long as one has the exact same looking, it will be fine. It looks like this.
+
+  <img src="doc/touchscreen.jpg" width="30%">
+
+* The FPC/FFC flip cover connector for the touchscreen. 18P, 0.5mm Pitch, 1.0H (1mm height), front flip (flip cover at cable side), bottom contact. It looks like this:
+
+  <img src="doc/fpc_socket.jpg" width="30%">
+
+* PCB file "aic_touch_v*.zip".  
+  <img src="doc/pcbs.jpg" width="60%">
+
+### 3D Prints
+* **aic_touch_bottom.stl**  
+  Bottom part.
+* **aic_touch_top.stl**  
+  Top part.
+* **aic_touch_top_ams.3mf**  
+  Top part for multi-color printing.
+
+Top parts should be printed upside-down.
+
+To achieve the best aesthetic results, I recommend using the combination of clear PLA and black PLA. For the top part, make the first 2 layers of the sub-object "Top" black, and all others clear.    
+  <img src="doc/touch_3d_print.jpg" width="40%">
+
+### Assembly
+For most of the part, just follow the guide of AIC key.
+
+Soldering the 18P-0.5mm-1.0H FPC/FFC connector can be challenging. Here are some tips to make the process easier:
+* Use a small, sharp iron tip, the smaller the better.
+* Set your soldering iron to a lower temperature, below 280 degrees Celsius.
+* Apply a generous amount of high-quality solder flux to keep the pins "wet" during soldering.
+* Use thin low-temperature solder wire (for example, diameter of 0.3mm).
+* Start by soldering the mounting pins on both sides for proper alignment, then proceed with the 18 main pins.
+* Don't feed solder wire directly onto the main pins.
+* When soldering main pins, only apply a very small amount of solder to the iron tip.
+* If you apply too much solder, a solder wick can be used effectively to remove the excess.
+
+Remember to attach 1mm-thick soft pads to support the touchscreen. You can use 1mm 3M VHB double-sided tape, but do NOT remove the red film liner (don't let the tape stick to the touchscreen).
+
+<img src="doc/touch_assemble_1.jpg" width="30%">
+<img src="doc/touch_assemble_2.jpg" width="30%">
+
+It's done.
+
+<img src="doc/touch_assemble_3.jpg" width="30%">
 
 ## Firmware
 * UF2 file is in `Production\Firmware` folder.

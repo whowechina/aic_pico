@@ -71,7 +71,13 @@ https://github.com/whowechina/
 ## 关于许可证
 它是 CC-NC 授权。所以你只能给自己和你的朋友 DIY，不能利用这个项目赚钱。
 
-## 构建 "AIC Pico (PN532)"
+## 多种制作版本选择
+- [AIC Pico PN532](#制作-AIC-Pico-PN532)
+- [AIC Pico PN5180](#制作-AIC-Pico-PN5180)
+- [AIC Key](#制作-AIC-Key)
+- [AIC Touch](#制作-AIC-Touch)
+
+## 制作 AIC Pico PN532
 说真的，这是我所有 Pico 系列项目中最简单的一个。
 ### 组件
 * 1x 树莓派 Pico 或 Pico W (克隆版也可以)。  
@@ -96,6 +102,8 @@ https://github.com/whowechina/
 * **aic_pico_top_tall_ams.3mf**  
   加高的顶部部分，多色打印。
 
+顶部部分需要上下颠倒打印。
+
 ### 接线
 <img src="doc/pico_pn532_wiring.png" width="70%">
 
@@ -113,7 +121,7 @@ https://github.com/whowechina/
 * PN532 上的模式开关必须处于 "I2C" 模式，下面的图片显示了正确的设置。  
   <img src="doc/pn532_i2c.jpg" width="40%">
 
-## 构建 "AIC Pico (PN5180)"
+## 制作 AIC Pico PN5180
 如果你选择 PN5180 NFC 模块，壳子的设计要你自己来了，确保它适合你的要求就好，或者你可以不使用壳子。与 PN532 版本相比，准备好焊接更多的线。
 
 ### 接线
@@ -121,7 +129,7 @@ https://github.com/whowechina/
 
 注意：WS2812B LED 条的接线与 PN532 版本相同。
 
-## 构建 "AIC Key"
+## 制作 AIC Key
 AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico" 更难构建，因为它有许多微小的组件需要焊接。
 
 ### 组件
@@ -153,7 +161,7 @@ AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico"
   <img src="doc/bonito_stickers.png" width="50%">  
   <img src="doc/bonito_action.jpg" width="50%">
 
-* PCB，只需访问 JLCPCB (https://jlcpcb.com/) 并在那里下订单。保持所有设置默认，1.6mm 厚度，你喜欢的任何颜色。PCB gerber 文件在 "Production/PCB" 文件夹。对于 PN532 版本，使用 "aic_key_pn532_v*.zip"，对于 PN5180 版本，使用 "aic_key_pn5180_v*.zip"。  
+* PCB，访问 JLCPCB (https://jlcpcb.com/) 并在那里下订单。保持所有设置默认，1.6mm 厚度，你喜欢的任何颜色。PCB gerber 文件在 "Production/PCB/aic_key_v*.zip"。  
   <img src="doc/pcbs.jpg" width="60%">
 
 ### 3D 打印
@@ -167,6 +175,8 @@ AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico"
   适用于 Panasonic tact 开关的顶部部分。
 * **aic_key_top_tact_ams.3mf**  
   适用于 Panasonic tact 开关的顶部部分，多色打印。
+
+顶部部分需要上下颠倒打印。
 
 ### 组装
 我还是让这些图片来说明。记住在组装之前先将固件上传到树莓派 Pico。
@@ -185,9 +195,11 @@ AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico"
 <img src="doc/key_assemble_4.jpg" width="40%">
 <img src="doc/key_assemble_5.jpg" width="40%">
 
-**注意：** PN532 PCB 上的天线有可能会接触到 USB 插座并导致射频问题。为了防止这种情况，你可以贴上绝缘胶带避免它们互相接触。
+**注意：**
+- PN532 PCB 上的天线有可能会接触到 USB 插座并导致射频问题。为了防止这种情况，你可以贴上绝缘胶带避免它们互相接触。
 
 <img src="doc/key_pn532_tape.jpg" width="60%">
+- 由于制造误差，您手上的 PN532 模块可能无法完美地适应外壳。如有必要，您可以略微修剪 PN532 模块的边缘来调整。
 
 #### PN5180 版本
 你需要切掉原来的天线并使用我们 PCB 中的天线。
@@ -202,6 +214,59 @@ AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico"
 
 <img src="doc/key_assemble_10.jpg" width="46%">
 <img src="doc/pico_assemble_4.jpg" width="40%">
+
+## 构建 AIC Touch
+AIC Touch 是 AIC Pico 的另一种版本，配备了触摸屏。不过它微小的 FPC/FFC 连接器大大增加了焊接和组装的难度。
+
+### 组件
+* 对于 Raspberry Pi Pico、NFC 模块、6x WS2812B 1204 LED 和 R1 电阻部分，请按照 AIC Key 的指南进行操作。
+* C1、C2、C3，0603 0.1uF 电容，它们有助于更稳定的电源供应。
+* R2、R3，I2C 总线的上拉电阻，0603 1Kohm ~ 4.7Kohm。
+* 1.69 英寸 240x280 LCD 触摸屏（ST7789 + CST816）。有几个供应商在销售这个型号，只要看起来完全相同，就应该可以。它看上去长这个样子。
+
+  <img src="doc/touchscreen.jpg" width="30%">
+
+* 触摸屏的 FPC/FFC 翻盖连接器。18P，0.5mm 间距，1.0H（1mm 高度），前翻盖下接。它看起来像这样：
+
+  <img src="doc/fpc_socket.jpg" width="30%">
+
+* PCB 文件 "aic_touch_v*.zip"。  
+  <img src="doc/pcbs.jpg" width="60%">
+
+### 3D 打印
+* **aic_touch_bottom.stl**  
+  底部部分。
+* **aic_touch_top.stl**  
+  顶部部分.
+* **aic_touch_top_ams.3mf**  
+  顶部部分，多色打印。
+
+顶部部分需要上下颠倒打印。
+
+为了获得最佳的外观效果，我建议使用透明 PLA 和黑色 PLA 的组合。其中顶部除了子对象“Top”的最开始两层用黑色外，其他都用透明。    
+  <img src="doc/touch_3d_print.jpg" width="40%">
+
+### 组装
+对于大部分内容，请参考 AIC Key 的制作。
+
+焊接 18P-0.5mm-1.0H FPC/FFC 连接器很有挑战。以下是一些提示：
+* 使用小而尖锐的烙铁头，越小越好。
+* 将你的焊接铁温度设定在较低的温度，大约 280 摄氏度。
+* 使用大量的高质量焊接助剂，以保持引脚在焊接过程中“湿润”。
+* 首先焊接两侧的固定引脚以确保正确的对齐，然后焊接 18 个主引脚。
+* 避免直接将焊锡丝喂到主引脚来焊接。
+* 在焊接主引脚时，只需要在烙铁尖上附着极少量的焊锡。
+* 如果你用了过多的焊锡，可以用吸锡带去除多余的焊锡。
+
+记得贴一层 1mm 厚度的软垫以支撑触摸屏。你可以用 1mm 厚度的 3M VHB 双面胶带，但是不要移除红色的保护层（绝对不要让胶带粘在触摸屏上）。
+
+  <img src="doc/touch_assemble_1.jpg" width="30%">
+  <img src="doc/touch_assemble_2.jpg" width="30%">
+
+搞定了。
+
+  <img src="doc/touch_assemble_3.jpg" width="30%">
+
 
 ## 固件
 * UF2 文件在 `Production\Firmware` 文件夹中。
