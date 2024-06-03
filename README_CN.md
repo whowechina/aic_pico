@@ -215,7 +215,7 @@ AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico"
 <img src="doc/key_assemble_10.jpg" width="46%">
 <img src="doc/pico_assemble_4.jpg" width="40%">
 
-## 构建 AIC Touch
+## 制作 AIC Touch
 AIC Touch 是 AIC Pico 的另一种版本，配备了触摸屏。不过它微小的 FPC/FFC 连接器大大增加了焊接和组装的难度。
 
 ### 组件
@@ -266,7 +266,6 @@ AIC Touch 是 AIC Pico 的另一种版本，配备了触摸屏。不过它微小
 搞定了。
 
   <img src="doc/touch_assemble_3.jpg" width="30%">
-
 
 ## 固件
 * UF2 文件在 `Production\Firmware` 文件夹中。
