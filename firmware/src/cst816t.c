@@ -144,12 +144,26 @@ cst816t_report_t cst816t_read()
 
     if (raw.updated) {
         /* touch related changes */
+        report.gesture = GESTURE_NONE;
         report.x = raw.x;
         report.y = raw.y;
+        report.touched = raw.touched;
+        if (!ctx.old_report.touched && report.touched) {
+            report.touch_x = report.x;
+            report.touch_y = report.y;
+        } else if (ctx.old_report.touched && !report.touched) {
+            report.release_x = report.x;
+            report.release_y = report.y;
+            if (report.release_x - report.touch_x > 30) {
+                report.gesture = GESTURE_SLIDE_RIGHT;
+            } else if (report.release_x - report.touch_x < -30) {
+                report.gesture = GESTURE_SLIDE_LEFT;
+            }
+        }
         report.updated = true;
     }
 
-    if (1) {
+    if (0) {
         /* timing */
         report.updated = true;
     }

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "pico/stdio.h"
 #include "pico/stdlib.h"
@@ -41,15 +42,8 @@ void gui_level(uint8_t level)
     st7789_dimmer(255 - level);
 }
 
-static void run_numpad()
+static void gui_numpad()
 {
-    static uint16_t phase = 0;
-    phase++;
-    for (int i = 0; i < 240; i++) {
-        uint16_t color = st7789_rgb565(rgb32_from_hsv(phase + i, 255, 128));
-        st7789_vline(i, 0, 320, color, 0xff);
-    }
-
     static struct {
         uint16_t x;
         uint16_t y;
@@ -82,15 +76,8 @@ static void status_title(int x, int y, const char *title, uint16_t color)
     st7789_text(x, y, title, &lv_lts16, color, ALIGN_CENTER);
 }
 
-static void run_status()
+static void gui_status()
 {
-    uint16_t patt[14];
-    for (int i = 0; i < 14; i++) {
-        patt[i] = (i % 7) ? 0x4040 : 0x0000;
-    }
-
-    st7789_fill(patt, 14);
-
     st7789_spacing(1, 0);
 
     char buf[32];
@@ -127,17 +114,199 @@ static void run_status()
     st7789_text(120, 234, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 }
 
+static void gui_credits()
+{
+    const char *credits =
+        SET_COLOR(\x80\xff\x80) "AIC Pico (AIC Touch)\n"
+        SET_COLOR(\x80\x80\xff) "https://github.com/whowechina\n\n\n"
+        SET_COLOR(\x80\xff\x80) "THANKS TO\n\n"
+        SET_COLOR(\x80\x80\x80) "CrazyRedMachine\n"
+        "Sucareto    Bottersnike\n"
+        "Gyt4    chujohiroto\n\n"
+        "KiCAD    OnShape    Fritzing\n"
+        "LVGL    .NET IoT\n"
+        "JLCPCB    Raspberry\n\n"
+        SET_COLOR(\x90\x90\x90) "and more...";
+
+    st7789_text(120, 30, credits, &lv_lts14, st7789_rgb565(0xc0c060), ALIGN_CENTER);
+}
+
+static void run_background()
+{
+    st7789_scroll(0, 0);
+    static uint16_t phase = 0;
+    phase++;
+
+    if (1) {
+
+        for (int i = 0; i < 240; i++) {
+            uint16_t color = st7789_rgb565(rgb32_from_hsv(phase + i, 255, 64));
+            st7789_vline(i, 0, 280, color, 0xff);
+        }
+    }
+
+    if (0) {
+        uint16_t patt[14];
+        for (int i = 0; i < 14; i++) {
+            patt[i] = ((i + phase) % 7) ? 0x4040 : 0x0000;
+        }
+        st7789_fill(patt, 14, false);
+    }
+
+    if (0) {
+        st7789_clear(0x0002, true);
+    }
+}
+
+
+typedef struct {
+    void (*render)();
+    bool (*proc)(cst816t_report_t touch);
+} gui_page_t;
+
+static gui_page_t pages[] = {
+    {gui_numpad, NULL},
+    {gui_status, NULL},
+    {gui_credits, NULL},
+};
+
+#define PAGE_NUM (sizeof(pages) / sizeof(pages[0]))
+
+static int curr_page = 0;
+
+typedef enum {
+    SLIDE_LEFT,
+    SLIDE_RIGHT,
+    SLIDE_UP,
+    SLIDE_DOWN,
+    HIT_LEFT,
+    HIT_RIGHT,
+} slide_dir_t;
+
+static struct {
+    bool sliding;
+    slide_dir_t dir;
+    int phase;
+    int prev_page;
+    const uint8_t *curve;
+    size_t curve_len;
+} slide;
+
+static void start_slide(slide_dir_t dir, int new_page, const uint8_t *curve, size_t curve_len)
+{
+    slide.dir = dir;
+    slide.prev_page = curr_page;
+    slide.sliding = true;
+    slide.phase = 0;
+    curr_page = new_page;
+    slide.curve = curve;
+    slide.curve_len = curve_len;
+}
+
+static uint8_t scroll_curve[] = {
+    1, 4, 9, 16, 25, 37, 51, 67, 85, 105, 127, 152, 168, 182,
+    194, 204, 212, 219, 224, 228, 231, 233, 235, 237, 238, 239, 240,
+};
+
+static uint8_t spring_curve[] = {
+    1, 3, 6, 10, 15, 21, 28, 36,
+    28, 21, 15, 10, 6, 3, 1,
+};
+
+static void default_proc(cst816t_report_t touch)
+{
+    if (touch.gesture == GESTURE_SLIDE_LEFT) {
+        if (curr_page > 0) {
+            start_slide(SLIDE_LEFT, curr_page - 1, scroll_curve, sizeof(scroll_curve));
+        } else {
+            start_slide(HIT_LEFT, curr_page, spring_curve, sizeof(spring_curve));
+        }
+    } else if (touch.gesture == GESTURE_SLIDE_RIGHT) {
+        if (curr_page < PAGE_NUM - 1) {
+            start_slide(SLIDE_RIGHT, curr_page + 1, scroll_curve, sizeof(scroll_curve));
+        } else {
+            start_slide(HIT_RIGHT, curr_page, spring_curve, sizeof(spring_curve));
+        }
+    }
+}
+
+static void event_proc()
+{
+    cst816t_report_t touch = cst816t_read();
+    if (!touch.updated) {
+        return;
+    }
+
+    if ((curr_page > 0) && pages[curr_page].proc) {
+        if (pages[curr_page].proc(touch)) {
+            return;
+        }
+    }
+
+    default_proc(touch);
+}
+
+static void sliding_render()
+{
+    if (!slide.sliding) {
+        return;
+    }
+
+
+    int split = slide.curve[slide.phase];
+
+    switch (slide.dir) {
+        case SLIDE_LEFT:
+            st7789_scroll(-split, 0);
+            pages[slide.prev_page].render();
+            st7789_scroll(240 - split, 0);
+            pages[curr_page].render();
+            break;
+        case SLIDE_RIGHT:
+            st7789_scroll(split, 0);
+            pages[slide.prev_page].render();
+            st7789_scroll(split - 240, 0);
+            pages[curr_page].render();
+            break;
+        case SLIDE_UP:
+            st7789_scroll(0, -split);
+            pages[slide.prev_page].render();
+            st7789_scroll(0, 280 - split);
+            pages[curr_page].render();
+            break;
+        case SLIDE_DOWN:
+            st7789_scroll(0, split);
+            pages[slide.prev_page].render();
+            st7789_scroll(0, split - 280);
+            pages[curr_page].render();
+            break;
+        case HIT_LEFT:
+            st7789_scroll(-split, 0);
+            pages[curr_page].render();
+            break;
+        case HIT_RIGHT:
+            st7789_scroll(split, 0);
+            pages[curr_page].render();
+            break;
+    }
+
+    slide.phase++;
+    if (slide.phase >= slide.curve_len) {
+        slide.sliding = false;
+        return;
+    }
+}
+
 void gui_loop()
 {
-    uint8_t page = 1;
+    event_proc();
 
-    switch (page) {
-    case 0:
-        run_numpad();
-        break;
-    case 1:
-        run_status();
-        break;
+    run_background();
+
+    if (slide.sliding) {
+        sliding_render();
+    } else {
+        pages[curr_page].render();
     }
 
     st7789_render(true);
