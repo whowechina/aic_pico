@@ -247,24 +247,30 @@ To achieve the best aesthetic results, I recommend using the combination of clea
 ### Assembly
 For most of the part, just follow the guide of AIC key.
 
-Soldering the 18P-0.5mm-1.0H FPC/FFC connector can be challenging. Here are some tips to make the process easier:
-* Use a small, sharp iron tip, the smaller the better.
-* Set your soldering iron to a lower temperature, below 280 degrees Celsius.
-* Apply a generous amount of high-quality solder flux to keep the pins "wet" during soldering.
-* Use thin low-temperature solder wire (for example, diameter of 0.3mm).
-* Start by soldering the mounting pins on both sides for proper alignment, then proceed with the 18 main pins.
-* Don't feed solder wire directly onto the main pins.
-* When soldering main pins, only apply a very small amount of solder to the iron tip.
-* If you apply too much solder, a solder wick can be used effectively to remove the excess.
+* The touchscreen will block PN532's RF signal so we need to offload the antenna to AIC Touch's PCB just like what we do in PN5180 version.
+  * To build PN5180 version, short the "PN532 ANT" (green mark in the picture). To build PN532 version, short the "PN5180 ANT" (red mark in the picture).     
+    <img src="doc/ant_short.png" width="60%">
+  * Not like the PN5180, the PN532 has 3 pins - it has a center tap. Here's how you offload the antenna from the PN532. Cut (with small knife or chisel) the original 2 traces of the antenna (green marks in the picture) and connect 3 "PN532 ANT" pins to the PN532 module.    
+    <img src="doc/pn532_ant.png" width="60%">
 
-Remember to attach 1mm-thick soft pads to support the touchscreen. You can use 1mm 3M VHB double-sided tape, but do NOT remove the red film liner (don't let the tape stick to the touchscreen).
+* Soldering the 18P-0.5mm-1.0H FPC/FFC connector can be challenging. Here are some tips to make the process easier:
+  * Use a small, sharp iron tip, the smaller the better.
+  * Set your soldering iron to a lower temperature, below 280 degrees Celsius.
+  * Apply a generous amount of high-quality solder flux to keep the pins "wet" during soldering.
+  * Use thin low-temperature solder wire (for example, diameter of 0.3mm).
+  * Start by soldering the mounting pins on both sides for proper alignment, then proceed with the 18 main pins.
+  * Don't feed solder wire directly onto the main pins.
+  * When soldering main pins, only apply a very small amount of solder to the iron tip.
+  * If you apply too much solder, a solder wick can be used effectively to remove the excess.
 
-<img src="doc/touch_assemble_1.jpg" width="30%">
-<img src="doc/touch_assemble_2.jpg" width="30%">
+* Remember to put 1mm-thick soft pads to support the touchscreen. You can use 1mm 3M VHB double-sided tape, but do NOT remove the red film liner (don't let the tape stick to the touchscreen).
 
-It's done.
+  <img src="doc/touch_assemble_1.jpg" width="30%">
+  <img src="doc/touch_assemble_2.jpg" width="30%">
 
-<img src="doc/touch_assemble_3.jpg" width="30%">
+* Done!
+
+  <img src="doc/touch_assemble_3.jpg" width="30%">
 
 ## Firmware
 * UF2 file is in `Production\Firmware` folder.
