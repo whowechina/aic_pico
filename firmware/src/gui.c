@@ -42,7 +42,7 @@ void gui_level(uint8_t level)
     st7789_dimmer(255 - level);
 }
 
-static void gui_numpad()
+static void gui_keypad()
 {
     static struct {
         uint16_t x;
@@ -68,6 +68,43 @@ static void gui_numpad()
         st7789_char(signs[i].x + 2, signs[i].y + 2, signs[i].c, &lv_conthrax, st7789_rgb565(0x101010));
         st7789_char(signs[i].x, signs[i].y, signs[i].c, &lv_conthrax, st7789_rgb565(color));
     }
+}
+
+static int tapped_key = -1;
+uint16_t gui_keypad_read()
+{
+    static int last_tapped = -1;
+    static uint64_t last_active;
+    uint64_t now = time_us_32();
+    const uint8_t map[] = { 6, 7, 8, 3, 4, 5, 0, 1, 2, 9, 10, 11 };
+
+    if ((last_tapped >= 0) && (now - last_active < 10000)) {
+        return 1 << map[last_tapped];
+    }
+    
+    if (tapped_key >= 0) {
+        last_tapped = tapped_key;
+        last_active = now;
+        return 1 << map[tapped_key];
+    }
+
+    return 0;
+}
+
+static bool proc_keypad(cst816t_report_t touch)
+{
+    switch (touch.gesture) {
+        case GESTURE_NONE:
+            tapped_key = -1;
+            break;
+        case GESTURE_TAP:
+            tapped_key = touch.y / 70 * 3 + touch.x / 80;
+            break;
+        default:
+            return false;
+    }
+
+    return true;
 }
 
 static void status_title(int x, int y, const char *title, uint16_t color)
@@ -165,7 +202,7 @@ typedef struct {
 } gui_page_t;
 
 static gui_page_t pages[] = {
-    {gui_numpad, NULL},
+    {gui_keypad, proc_keypad},
     {gui_status, NULL},
     {gui_credits, NULL},
 };
@@ -237,7 +274,7 @@ static void event_proc()
         return;
     }
 
-    if ((curr_page > 0) && pages[curr_page].proc) {
+    if ((curr_page >= 0) && pages[curr_page].proc) {
         if (pages[curr_page].proc(touch)) {
             return;
         }

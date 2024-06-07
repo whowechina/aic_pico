@@ -4,6 +4,8 @@
  * 
  */
 
+#include <stdlib.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -141,10 +143,13 @@ cst816t_report_t cst816t_read()
 
     cst816t_report_t report = ctx.old_report;
     report.updated = false;
+    if (report.gesture != GESTURE_NONE) {
+        report.gesture = GESTURE_NONE;
+        report.updated = true;
+    }
 
     if (raw.updated) {
         /* touch related changes */
-        report.gesture = GESTURE_NONE;
         report.x = raw.x;
         report.y = raw.y;
         report.touched = raw.touched;
@@ -154,9 +159,13 @@ cst816t_report_t cst816t_read()
         } else if (ctx.old_report.touched && !report.touched) {
             report.release_x = report.x;
             report.release_y = report.y;
-            if (report.release_x - report.touch_x > 30) {
+            int dx = report.release_x - report.touch_x;
+            int dy = report.release_y - report.touch_y;
+            if ((abs(dx) < 10) && (abs(dy) < 10)) {
+                report.gesture = GESTURE_TAP;
+            } else if (dx > 30) {
                 report.gesture = GESTURE_SLIDE_RIGHT;
-            } else if (report.release_x - report.touch_x < -30) {
+            } else if (dx < -30) {
                 report.gesture = GESTURE_SLIDE_LEFT;
             }
         }
@@ -169,5 +178,6 @@ cst816t_report_t cst816t_read()
     }
 
     ctx.old_report = report;
+
     return report;
 }

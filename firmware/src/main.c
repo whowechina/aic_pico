@@ -75,7 +75,8 @@ void report_hid_key()
         return;
     }
 
-    uint16_t keys = aic_runtime.touch ? 0 : keypad_read();
+    uint16_t keys = aic_runtime.touch ? gui_keypad_read() : keypad_read();
+
     for (int i = 0; i < keypad_key_num(); i++) {
         uint8_t code = keymap[i];
         uint8_t byte = code / 8;

@@ -14,6 +14,6 @@
 void gui_init();
 void gui_level(uint8_t level);
 void gui_loop();
-
+uint16_t gui_keypad_read();
 
 #endif
