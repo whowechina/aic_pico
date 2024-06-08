@@ -34,6 +34,7 @@ void st7789_clear(uint16_t color, bool raw);
 void st7789_fill(uint16_t *pattern, size_t size, bool raw);
 uint16_t *st7789_vram(uint16_t x, uint16_t y);
 void st7789_vramcpy(uint32_t offset, const void *src, size_t count);
+void st7789_pixel_raw(int x, int y, uint16_t color);
 void st7789_pixel(int x, int y, uint16_t color, uint8_t mix);
 void st7789_hline(int x, int y, uint16_t w, uint16_t color, uint8_t mix);
 void st7789_vline(int x, int y, uint16_t h, uint16_t color, uint8_t mix);

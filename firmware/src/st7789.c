@@ -308,6 +308,11 @@ void static inline mix_pixel(int x, int y, uint16_t color, uint8_t mix, uint8_t 
     vram[y * crop.w + x] = (r << 11) | (g << 5) | b;
 }
 
+void st7789_pixel_raw(int x, int y, uint16_t color)
+{
+    vram[y * crop.w + x] = color;
+}
+
 void st7789_pixel(int x, int y, uint16_t color, uint8_t mix)
 {
     mix_pixel(x, y, color, mix, 8);

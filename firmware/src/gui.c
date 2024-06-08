@@ -25,6 +25,7 @@
 #include "upheaval.h"
 #include "ltsaeada.h"
 #include "light.h"
+#include "bg_anima.h"
 #include "gui.h"
 
 void gui_init()
@@ -168,31 +169,70 @@ static void gui_credits()
     st7789_text(120, 30, credits, &lv_lts14, st7789_rgb565(0xc0c060), ALIGN_CENTER);
 }
 
+uint16_t gif_colors[] = {
+    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+};
+
+static inline void gif_draw_pixel(uint16_t x, uint16_t y, uint16_t color)
+{
+    x *= 2;
+    y *= 2;
+
+    st7789_pixel_raw(x, y, color);
+    st7789_pixel_raw(x + 1, y, color);
+    st7789_pixel_raw(x, y + 1, color);
+    st7789_pixel_raw(x + 1, y + 1, color);
+}
+
+static const uint8_t *compressed_data;
+static int zero_count = 0;
+static inline void decode_start(const uint8_t *data)
+{
+    compressed_data = data;
+    zero_count = 0;
+}
+
+static inline uint8_t decode_byte()
+{
+    if (zero_count) {
+        zero_count--;
+        return 0;
+    }
+
+    uint8_t value = *compressed_data;
+    compressed_data++;
+
+    if (value == 0) {
+        zero_count = *compressed_data - 1;
+        compressed_data++;
+        return 0;
+    }
+
+    return value;
+}
+
+static void draw_gif_frame(const gif_frames_t *gif, uint8_t frame)
+{
+    uint16_t width = gif->width;
+    uint16_t height = gif->height;
+    frame = frame % gif->frames;
+
+    decode_start(gif->data + gif->index[frame]);
+    for (int j = 0; j < height; j++) {
+        for (int i = 0; i < width / 2; i++) {
+            uint8_t value = decode_byte();
+            gif_draw_pixel(i * 2, j, gif_colors[value >> 4]);
+            gif_draw_pixel(i * 2 + 1, j, gif_colors[value & 0x0f]);
+        }
+    }
+}
+
 static void run_background()
 {
-    st7789_scroll(0, 0);
-    static uint16_t phase = 0;
+    static int phase = 0;
     phase++;
-
-    if (1) {
-
-        for (int i = 0; i < 240; i++) {
-            uint16_t color = st7789_rgb565(rgb32_from_hsv(phase + i, 255, 64));
-            st7789_vline(i, 0, 280, color, 0xff);
-        }
-    }
-
-    if (0) {
-        uint16_t patt[14];
-        for (int i = 0; i < 14; i++) {
-            patt[i] = ((i + phase) % 7) ? 0x4040 : 0x0000;
-        }
-        st7789_fill(patt, 14, false);
-    }
-
-    if (0) {
-        st7789_clear(0x0002, true);
-    }
+    draw_gif_frame(&stars_gif, phase);
 }
 
 
