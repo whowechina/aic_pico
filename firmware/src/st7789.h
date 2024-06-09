@@ -20,15 +20,9 @@ void st7789_dimmer(uint8_t level);
 void st7789_vsync();
 void st7789_render(bool vsync);
 
-static inline uint32_t st7789_rgb32(uint8_t r, uint8_t g, uint8_t b)
-{
-    return (r << 16) | (g << 8) | b;
-}
-
-static inline uint16_t st7789_rgb565(uint32_t rgb32)
-{
-    return ((rgb32 >> 8) & 0xf800) | ((rgb32 >> 5) & 0x07e0) | ((rgb32 >> 3) & 0x001f);
-}
+#define st7789_rgb32(r, g, b) ((r << 16) | (g << 8) | b)
+#define st7789_rgb565(rgb32) ((rgb32 >> 8) & 0xf800) | ((rgb32 >> 5) & 0x07e0) | ((rgb32 >> 3) & 0x001f)
+#define st7789_gray(value) ((value >> 3 << 11) | (value >> 2 << 5) | (value >> 3))  
 
 void st7789_clear(uint16_t color, bool raw);
 void st7789_fill(uint16_t *pattern, size_t size, bool raw);

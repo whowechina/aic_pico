@@ -25,7 +25,8 @@
 #include "upheaval.h"
 #include "ltsaeada.h"
 #include "light.h"
-#include "bg_anima.h"
+#include "star_ani.h"
+#include "glow_ani.h"
 #include "gui.h"
 
 void gui_init()
@@ -43,35 +44,38 @@ void gui_level(uint8_t level)
     st7789_dimmer(255 - level);
 }
 
-static void gui_keypad()
+static int tapped_key = -1;
+
+static void draw_keypad()
 {
-    static struct {
-        uint16_t x;
-        uint16_t y;
-        char c;
-    } signs[] = {
-        {24, 26, '7'},
-        {104, 26, '8'},
-        {184, 26, '9'},
-        {24, 96, '4'},
-        {104, 96, '5'},
-        {184, 96, '6'},
-        {24, 166, '1'},
-        {104, 166, '2'},
-        {184, 166, '3'},
-        {24, 236, '0'},
-        {104, 236, ':'},
-        {184, 236, ';'},
-    };
+    static uint8_t glow_frame[12] = { 0 };
+    const char *signs_text = "7894561230:;";
 
     uint32_t color = rgb32_from_hsv(time_us_32() / 100000, 200, 250);
-    for (int i = 0; i < 12; i++) {
-        st7789_char(signs[i].x + 2, signs[i].y + 2, signs[i].c, &lv_conthrax, st7789_rgb565(0x101010));
-        st7789_char(signs[i].x, signs[i].y, signs[i].c, &lv_conthrax, st7789_rgb565(color));
+    for (int row = 0; row < 4; row++) {
+        for (int col = 0; col < 3; col++) {
+            int key = row * 3 + col;
+            int x = col * 80 + 24;
+            int y = row * 70 + 26;
+            if (key == tapped_key) {
+                glow_frame[key] = 1;
+            }
+            if ((glow_frame[key] > 0) && (glow_frame[key] < glow_ani.frames)) {
+                int tail = glow_ani.frames - glow_frame[key];
+                uint16_t glow_color = 0xffff;
+                if (tail < 6) {
+                    glow_color = st7789_gray(tail * 0x30);
+                }
+                anima_mix(&glow_ani, x - 18, y - 20, glow_frame[key], glow_color);
+                glow_frame[key]++;
+            }
+            char c = signs_text[row * 3 + col];
+            st7789_char(x + 2, y + 2, c, &lv_conthrax, st7789_rgb565(0x101010));
+            st7789_char(x, y, c, &lv_conthrax, st7789_rgb565(color));
+        }
     }
 }
 
-static int tapped_key = -1;
 uint16_t gui_keypad_read()
 {
     static int last_tapped = -1;
@@ -79,7 +83,7 @@ uint16_t gui_keypad_read()
     uint64_t now = time_us_32();
     const uint8_t map[] = { 6, 7, 8, 3, 4, 5, 0, 1, 2, 9, 10, 11 };
 
-    if ((last_tapped >= 0) && (now - last_active < 10000)) {
+    if ((last_tapped >= 0) && (now - last_active < 100000)) {
         return 1 << map[last_tapped];
     }
     
@@ -114,7 +118,7 @@ static void status_title(int x, int y, const char *title, uint16_t color)
     st7789_text(x, y, title, &lv_lts16, color, ALIGN_CENTER);
 }
 
-static void gui_status()
+static void draw_status()
 {
     st7789_spacing(1, 0);
 
@@ -152,7 +156,7 @@ static void gui_status()
     st7789_text(120, 234, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 }
 
-static void gui_credits()
+static void draw_credits()
 {
     const char *credits =
         SET_COLOR(\x80\xff\x80) "AIC Pico (AIC Touch)\n"
@@ -169,59 +173,16 @@ static void gui_credits()
     st7789_text(120, 30, credits, &lv_lts14, st7789_rgb565(0xc0c060), ALIGN_CENTER);
 }
 
-uint16_t img_colors[] = {
+uint16_t ani_colors[] = {
     0x00 << 1, 0x01 << 1, 0x02 << 1, 0x03 << 1, 0x04 << 1, 0x05 << 1, 0x06 << 1, 0x07 << 1,
     0x08 << 1, 0x09 << 1, 0x0a << 1, 0x0b << 1, 0x0c << 1, 0x0d << 1, 0x0e << 1, 0x0f << 1
 };
-
-static const uint8_t *compressed_data;
-static int zero_count = 0;
-static inline void decode_start(const uint8_t *data)
-{
-    compressed_data = data;
-    zero_count = 0;
-}
-
-static inline uint8_t decode_byte()
-{
-    if (zero_count) {
-        zero_count--;
-        return 0;
-    }
-
-    uint8_t value = *compressed_data;
-    compressed_data++;
-
-    if (value == 0) {
-        zero_count = *compressed_data - 1;
-        compressed_data++;
-        return 0;
-    }
-
-    return value;
-}
-
-static void draw_img_frame(const img_frames_t *img, int frame)
-{
-    uint16_t width = img->width;
-    uint16_t height = img->height;
-    frame = frame % img->frames;
-
-    decode_start(img->data + img->index[frame]);
-    for (int j = 0; j < height; j++) {
-        for (int i = 0; i < width / 2; i++) {
-            uint8_t value = decode_byte();
-            st7789_pixel_raw(i * 2, j, img_colors[value >> 4]);
-            st7789_pixel_raw(i * 2 + 1, j, img_colors[value & 0x0f]);
-        }
-    }
-}
 
 static void run_background()
 {
     static int phase = 0;
     phase++;
-    draw_img_frame(&images, phase);
+    anima_draw(&star_ani, 0, 0, phase, ani_colors);
 }
 
 
@@ -231,9 +192,9 @@ typedef struct {
 } gui_page_t;
 
 static gui_page_t pages[] = {
-    {gui_keypad, proc_keypad},
-    {gui_status, NULL},
-    {gui_credits, NULL},
+    {draw_keypad, proc_keypad},
+    {draw_status, NULL},
+    {draw_credits, NULL},
 };
 
 #define PAGE_NUM (sizeof(pages) / sizeof(pages[0]))
