@@ -169,21 +169,10 @@ static void gui_credits()
     st7789_text(120, 30, credits, &lv_lts14, st7789_rgb565(0xc0c060), ALIGN_CENTER);
 }
 
-uint16_t gif_colors[] = {
-    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+uint16_t img_colors[] = {
+    0x00 << 1, 0x01 << 1, 0x02 << 1, 0x03 << 1, 0x04 << 1, 0x05 << 1, 0x06 << 1, 0x07 << 1,
+    0x08 << 1, 0x09 << 1, 0x0a << 1, 0x0b << 1, 0x0c << 1, 0x0d << 1, 0x0e << 1, 0x0f << 1
 };
-
-static inline void gif_draw_pixel(uint16_t x, uint16_t y, uint16_t color)
-{
-    x *= 2;
-    y *= 2;
-
-    st7789_pixel_raw(x, y, color);
-    st7789_pixel_raw(x + 1, y, color);
-    st7789_pixel_raw(x, y + 1, color);
-    st7789_pixel_raw(x + 1, y + 1, color);
-}
 
 static const uint8_t *compressed_data;
 static int zero_count = 0;
@@ -212,18 +201,18 @@ static inline uint8_t decode_byte()
     return value;
 }
 
-static void draw_gif_frame(const gif_frames_t *gif, uint8_t frame)
+static void draw_img_frame(const img_frames_t *img, int frame)
 {
-    uint16_t width = gif->width;
-    uint16_t height = gif->height;
-    frame = frame % gif->frames;
+    uint16_t width = img->width;
+    uint16_t height = img->height;
+    frame = frame % img->frames;
 
-    decode_start(gif->data + gif->index[frame]);
+    decode_start(img->data + img->index[frame]);
     for (int j = 0; j < height; j++) {
         for (int i = 0; i < width / 2; i++) {
             uint8_t value = decode_byte();
-            gif_draw_pixel(i * 2, j, gif_colors[value >> 4]);
-            gif_draw_pixel(i * 2 + 1, j, gif_colors[value & 0x0f]);
+            st7789_pixel_raw(i * 2, j, img_colors[value >> 4]);
+            st7789_pixel_raw(i * 2 + 1, j, img_colors[value & 0x0f]);
         }
     }
 }
@@ -232,7 +221,7 @@ static void run_background()
 {
     static int phase = 0;
     phase++;
-    draw_gif_frame(&stars_gif, phase);
+    draw_img_frame(&images, phase);
 }
 
 
