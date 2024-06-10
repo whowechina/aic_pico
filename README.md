@@ -3,7 +3,7 @@
 
 [点这里可以切换到中文版](README_CN.md)
 
-<img src="doc/main.jpg" width="80%">
+<img src="doc/main.gif" width="90%">
 
 **Features:**
 * It's small, smallest as far as I know.
