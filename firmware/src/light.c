@@ -15,6 +15,7 @@
 #include "hardware/pio.h"
 #include "hardware/timer.h"
 #include "hardware/pwm.h"
+#include "hardware/dma.h"
 
 #include "ws2812.pio.h"
 
@@ -26,6 +27,8 @@ static uint8_t led_gpio[] = LED_DEF;
 #define RGB_NUM (sizeof(rgb_buf) / sizeof(rgb_buf[0]))
 #define LED_NUM (sizeof(led_gpio))
 static uint8_t led_buf[LED_NUM];
+static int rgb_dma;
+static dma_channel_config rgb_dma_cfg;
 
 static inline uint32_t rgb32(uint32_t c1, uint32_t c2, uint32_t c3, bool gamma_fix)
 {
@@ -407,13 +410,17 @@ static void rainbow_update(uint32_t delta_ms)
 
 static void drive_led()
 {
-    irq_set_enabled(IO_IRQ_BANK0, false);
+    static uint32_t rgbdma[RGB_NUM];
     for (int i = 0; i < RGB_NUM; i++) {
-        uint32_t color = aic_cfg->light.rgb ? rgb_buf[i] << 8u : 0;
-        pio_sm_put_blocking(pio0, 0, color);
+        rgbdma[i] = aic_cfg->light.rgb ? rgb_buf[i] << 8u : 0;
     }
-    irq_set_enabled(IO_IRQ_BANK0, true);
 
+    dma_channel_configure(rgb_dma, &rgb_dma_cfg,
+                          &pio0_hw->txf[0],
+                          rgbdma,
+                          RGB_NUM,
+                          true);
+                        
     for (int i = 0; i < LED_NUM; i++) {
         uint8_t level = aic_cfg->light.led ? led_buf[i] : 0;
         pwm_set_gpio_level(led_gpio[i], level);
@@ -438,6 +445,12 @@ void light_init()
         pwm_config_set_clkdiv(&cfg, 4.f);
         pwm_init(slice, &cfg, true);
     }
+
+    rgb_dma = dma_claim_unused_channel(true);
+    rgb_dma_cfg = dma_channel_get_default_config(rgb_dma);
+    channel_config_set_transfer_data_size(&rgb_dma_cfg, DMA_SIZE_32);
+    channel_config_set_read_increment(&rgb_dma_cfg, true);
+    channel_config_set_dreq(&rgb_dma_cfg, DREQ_PIO0_TX0);
 
     generate_color_wheel();
 }

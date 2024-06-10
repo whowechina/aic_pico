@@ -134,6 +134,8 @@ static void core1_init()
 static mutex_t core1_io_lock;
 static void core1_loop()
 {
+    uint64_t next_frame = 0;
+
     core1_init();
 
     while (1) {
@@ -146,7 +148,8 @@ static void core1_loop()
         }
         light_mode_update();
         cli_fps_count(1);
-        sleep_us(100); // critical for flash programming
+        sleep_until(next_frame);
+        next_frame = time_us_64() + 999; // no faster than 1000Hz
     }
 }
 
