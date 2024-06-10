@@ -26,7 +26,7 @@ static uint32_t rgb_buf[64];
 static uint8_t led_gpio[] = LED_DEF;
 #define RGB_NUM (sizeof(rgb_buf) / sizeof(rgb_buf[0]))
 #define LED_NUM (sizeof(led_gpio))
-static uint8_t led_buf[LED_NUM];
+static uint16_t led_buf[LED_NUM];
 static int rgb_dma;
 static dma_channel_config rgb_dma_cfg;
 
@@ -99,16 +99,24 @@ static inline uint32_t apply_level(uint32_t color, uint8_t level)
     return c1 << 16 | c2 << 8 | c3;
 }
 
+static inline uint16_t apply_gray_level(uint8_t gray, uint8_t level)
+{
+    return gray * level;
+}
+
 /* 6 segment regular hsv color wheel, better color cycle
  * https://www.arnevogel.com/rgb-rainbow/
  * https://www.instructables.com/How-to-Make-Proper-Rainbow-and-Random-Colors-With-/
  */
 #define COLOR_WHEEL_SIZE 256
 static uint32_t color_wheel[COLOR_WHEEL_SIZE];
+static uint8_t gray_wheel[COLOR_WHEEL_SIZE];
+
 static void generate_color_wheel()
 {
     for (int i = 0; i < COLOR_WHEEL_SIZE; i++) {
         color_wheel[i] = rgb32_from_hsv(i, 208, 255);
+        gray_wheel[i] = i < 128 ? i : (255 - i);
     }
 }
 
@@ -270,13 +278,22 @@ static void fade_render()
 {
     uint32_t color = apply_level(fading.color, aic_cfg->light.level_active);
 
-    for (int i = 0; i < RGB_NUM; i++) {
-        rgb_buf[i] = color;
+    if (aic_cfg->light.rgb) {
+        for (int i = 0; i < RGB_NUM; i++) {
+            rgb_buf[i] = color << 8;
+        }
+    } else {
+        memset(rgb_buf, 0, sizeof(rgb_buf));
     }
 
-    color &= 0xff;
-    for (int i = 0; i < LED_NUM; i++) {
-        led_buf[i] = color;
+    uint16_t gray = (fading.color >> 16) | (fading.color >> 8) | fading.color;
+    gray = apply_gray_level(gray, aic_cfg->light.level_active);
+    if (aic_cfg->light.led) {
+        for (int i = 0; i < LED_NUM; i++) {
+            led_buf[i] = gray;
+        }
+    } else {
+        memset(led_buf, 0, sizeof(led_buf));
     }
 }
 
@@ -385,14 +402,22 @@ static void rainbow_render()
     static uint32_t rotator = 0;
     rotator = (rotator + rainbow.speed.current) % COLOR_WHEEL_SIZE;
 
-    for (int i = 0; i < RGB_NUM; i++) {
-        uint32_t index = (rotator + RAINBOW_PITCH * i) % COLOR_WHEEL_SIZE;
-        rgb_buf[i] = apply_level(color_wheel[index], rainbow.level.current);
+    if (aic_cfg->light.rgb) {
+        for (int i = 0; i < RGB_NUM; i++) {
+            uint32_t index = (rotator + RAINBOW_PITCH * i) % COLOR_WHEEL_SIZE;
+            rgb_buf[i] = apply_level(color_wheel[index], rainbow.level.current) << 8;
+        }
+    } else {
+        memset(rgb_buf, 0, sizeof(rgb_buf));
     }
 
-    for (int i = 0; i < LED_NUM; i++) {
-        uint32_t index = (rotator + RAINBOW_PITCH * 2 * i) % COLOR_WHEEL_SIZE;
-        led_buf[i] = apply_level(color_wheel[index], rainbow.level.current) & 0xff;
+    if (aic_cfg->light.led) {
+        for (int i = 0; i < LED_NUM; i++) {
+            uint32_t index = (rotator + RAINBOW_PITCH * i) % COLOR_WHEEL_SIZE;
+            led_buf[i] = apply_gray_level(gray_wheel[index], rainbow.level.current);
+        }
+    } else {
+        memset(led_buf, 0, sizeof(led_buf));
     }
 }
 
@@ -410,20 +435,14 @@ static void rainbow_update(uint32_t delta_ms)
 
 static void drive_led()
 {
-    static uint32_t rgbdma[RGB_NUM];
-    for (int i = 0; i < RGB_NUM; i++) {
-        rgbdma[i] = aic_cfg->light.rgb ? rgb_buf[i] << 8u : 0;
-    }
-
     dma_channel_configure(rgb_dma, &rgb_dma_cfg,
                           &pio0_hw->txf[0],
-                          rgbdma,
+                          rgb_buf,
                           RGB_NUM,
                           true);
                         
     for (int i = 0; i < LED_NUM; i++) {
-        uint8_t level = aic_cfg->light.led ? led_buf[i] : 0;
-        pwm_set_gpio_level(led_gpio[i], level);
+        pwm_set_gpio_level(led_gpio[i], led_buf[i]);
     }
 }
 
