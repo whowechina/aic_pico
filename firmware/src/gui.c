@@ -178,10 +178,24 @@ uint16_t ani_colors[] = {
     0x08 << 1, 0x09 << 1, 0x0a << 1, 0x0b << 1, 0x0c << 1, 0x0d << 1, 0x0e << 1, 0x0f << 1
 };
 
+static void rotate_colors()
+{
+    uint32_t color = rgb32_from_hsv(time_us_32() / 100000 + 128, 200, 250);
+    uint32_t r = (color >> 16) & 0xff;
+    uint32_t g = (color >> 8) & 0xff;
+    uint32_t b = color & 0xff;
+
+    for (int i = 0; i < 16; i++) {
+        uint32_t mix = st7789_rgb32(r * i / 30, g * i / 30, b * i / 30);
+        ani_colors[i] = st7789_rgb565(mix);
+    }
+}
+
 static void run_background()
 {
     static int phase = 0;
     phase++;
+    rotate_colors();
     anima_draw(&star_ani, 0, 0, phase, ani_colors);
 }
 
