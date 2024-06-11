@@ -199,15 +199,6 @@ static void cardio_run()
     nfc_card_t card = nfc_detect_card();
     nfc_rf_field(false);
 
-    /* Double check ID, some module gives random false data */
-    nfc_rf_field(true);
-    nfc_card_t card_confirm = nfc_detect_card();
-    nfc_rf_field(false);
-
-    if (memcmp(&card, &card_confirm, sizeof(card)) != 0) {
-        return;
-    }
-
     if (memcmp(&old_card, &card, sizeof(old_card)) == 0) {
         return;
     }

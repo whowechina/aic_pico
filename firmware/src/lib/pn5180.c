@@ -364,6 +364,16 @@ bool pn5180_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool
     memcpy(uid, out.idm, 8);
     memcpy(pmm, out.pmm, 8);
     memcpy(syscode, out.syscode, 2);
+
+    /* double check the result */
+	pn5180_send_data(cmd, sizeof(cmd), 0x00);
+    sleep_ms(1);
+    pn5180_read_data((uint8_t *)&out, sizeof(out));
+    if ((out.len != sizeof(out)) || (out.cmd != 0x01) ||
+        (memcmp(uid, out.idm, 8) != 0)) {
+        return false;
+    }
+
     memcpy(idm_cache, uid, 8);
     return true;
 }
