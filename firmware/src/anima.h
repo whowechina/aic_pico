@@ -7,6 +7,7 @@ typedef struct {
     uint16_t width;
     uint16_t height;
     uint32_t frames;
+    uint32_t size;
     const uint32_t *index;
     const uint8_t *data;
 } anima_t;

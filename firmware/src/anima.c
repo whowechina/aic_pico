@@ -1,5 +1,7 @@
 #include <stdint.h>
+
 #include "st7789.h"
+#include "rle.h"
 #include "anima.h"
 
 const uint16_t white_pallete[16] = {
@@ -54,10 +56,12 @@ void anima_draw(const anima_t *ani, int x, int y, int frame, const uint16_t pall
     uint16_t height = ani->height;
     frame = frame % ani->frames;
 
-    decode_start(ani->data + ani->index[frame]);
+    rle_t rle;
+    rle_x_init(&rle, ani->data + ani->index[frame], ani->size, 0);
+
     for (int j = 0; j < height; j++) {
         for (int i = 0; i < width / 2; i++) {
-            uint8_t value = decode_byte();
+            uint8_t value = rle_x_get_uint8(&rle);
             st7789_pixel_raw(x + i * 2, y + j, pallete[value >> 4]);
             st7789_pixel_raw(x + i * 2 + 1, y + j, pallete[value & 0x0f]);
         }
@@ -70,10 +74,11 @@ void anima_mix(const anima_t *ani, int x, int y, int frame, uint16_t color)
     uint16_t height = ani->height;
     frame = frame % ani->frames;
 
-    decode_start(ani->data + ani->index[frame]);
+    rle_t rle;
+    rle_x_init(&rle, ani->data + ani->index[frame], ani->size, 0);
     for (int j = 0; j < height; j++) {
         for (int i = 0; i < width / 2; i++) {
-            uint8_t value = decode_byte();
+            uint8_t value = rle_x_get_uint8(&rle);
             st7789_pixel(x + i * 2, y + j, color, value >> 4 << 4);
             st7789_pixel(x + i * 2 + 1, y + j, color, (value & 0x0f) << 4);
         }
