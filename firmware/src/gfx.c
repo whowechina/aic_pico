@@ -2,7 +2,7 @@
 
 #include "st7789.h"
 #include "rle.h"
-#include "anima.h"
+#include "gfx.h"
 
 const uint16_t white_pallete[16] = {
     st7789_gray(0x00),
@@ -23,34 +23,7 @@ const uint16_t white_pallete[16] = {
     st7789_gray(0xf0),
 };
 
-static const uint8_t *compressed_data;
-static int zero_count = 0;
-static inline void decode_start(const uint8_t *data)
-{
-    compressed_data = data;
-    zero_count = 0;
-}
-
-static inline uint8_t decode_byte()
-{
-    if (zero_count) {
-        zero_count--;
-        return 0;
-    }
-
-    uint8_t value = *compressed_data;
-    compressed_data++;
-
-    if (value == 0) {
-        zero_count = *compressed_data - 1;
-        compressed_data++;
-        return 0;
-    }
-
-    return value;
-}
-
-void anima_draw(const anima_t *ani, int x, int y, int frame, const uint16_t pallete[16])
+void gfx_anima_draw(const anima_t *ani, int x, int y, int frame, const uint16_t pallete[16])
 {
     uint16_t width = ani->width;
     uint16_t height = ani->height;
@@ -68,7 +41,7 @@ void anima_draw(const anima_t *ani, int x, int y, int frame, const uint16_t pall
     }
 }
 
-void anima_mix(const anima_t *ani, int x, int y, int frame, uint16_t color)
+void gfx_anima_mix(const anima_t *ani, int x, int y, int frame, uint16_t color)
 {
     uint16_t width = ani->width;
     uint16_t height = ani->height;
@@ -81,6 +54,41 @@ void anima_mix(const anima_t *ani, int x, int y, int frame, uint16_t color)
             uint8_t value = rle_x_get_uint8(&rle);
             st7789_pixel(x + i * 2, y + j, color, value >> 4 << 4);
             st7789_pixel(x + i * 2 + 1, y + j, color, (value & 0x0f) << 4);
+        }
+    }
+}
+
+static rle_t pixels_rle;
+static rle_t alpha_rle;
+static int pixels_pos;
+static int alpha_pos;
+
+#define INIT_RLE(which) \
+    if (img->which##_rle_x) { \
+        rle_x_init(&which##_rle, img->which, img->width * img->height, img->which##_x); \
+    } else if (img->which##_rle) { \
+        rle_init(&which##_rle, img->which, img->width * img->height); \
+    } else { \
+        which##_pos = 0; \
+    }
+
+#define GET_DATA(which, type) \
+    (img->which##_rle_x ? \
+        rle_x_get_##type(&which##_rle) : \
+        img->which##_rle ? \
+            rle_get_##type(&which##_rle) :\
+            img->which[which##_pos++])
+
+void gfx_img_draw(int x, int y, const image_t *img)
+{
+    INIT_RLE(pixels);
+    INIT_RLE(alpha);
+
+    for (int i = 0; i < img->height; i++) {
+        for (int j = 0; j < img->width; j++) {
+            uint16_t pixel = GET_DATA(pixels, uint16);
+            uint8_t mix = img->alpha ? GET_DATA(alpha, uint8) : 0xff;
+            st7789_pixel(x + j, y + i, pixel, mix);
         }
     }
 }

@@ -66,7 +66,7 @@ static void draw_keypad()
                 if (tail < 6) {
                     glow_color = st7789_gray(tail * 0x30);
                 }
-                anima_mix(&glow_ani, x - 18, y - 20, glow_frame[key], glow_color);
+                gfx_anima_mix(&glow_ani, x - 18, y - 20, glow_frame[key], glow_color);
                 glow_frame[key]++;
             }
             char c = signs_text[row * 3 + col];
@@ -196,7 +196,7 @@ static void run_background()
     static int phase = 0;
     phase++;
     rotate_colors();
-    anima_draw(&star_ani, 0, 0, phase, ani_colors);
+    gfx_anima_draw(&star_ani, 0, 0, phase, ani_colors);
 }
 
 
