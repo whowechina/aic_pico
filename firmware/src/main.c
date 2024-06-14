@@ -426,7 +426,7 @@ static void boot_update_check()
 static void sys_init()
 {
     sleep_ms(50);
-    set_sys_clock_khz(150000, true);
+    set_sys_clock_khz(160000, true);
     board_init();
 }
 
