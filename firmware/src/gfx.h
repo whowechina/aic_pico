@@ -2,6 +2,7 @@
 #define GFX_H
 
 #include <stdint.h>
+#include "rle.h"
 
 typedef struct {
     uint16_t width;
@@ -16,15 +17,9 @@ typedef struct {
     uint16_t width;
     uint16_t height;
 
-    const uint16_t *pixels;
-    bool pixels_rle;
-    bool pixels_rle_x;
-    uint16_t pixels_x;
-
-    const uint8_t *alpha;
-    bool alpha_rle;
-    bool alpha_rle_x;
-    uint8_t alpha_x;
+    rle_src_t pixels;
+    const uint32_t *pallete; // always 256 colors, RGB565 (bits 0..15) + alpha (bits 16..23)
+    rle_src_t alpha; // ignored when pallete exists
 } image_t;
 
 extern const uint16_t white_pallete[16];

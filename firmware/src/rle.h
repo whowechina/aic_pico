@@ -10,25 +10,32 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+typedef enum {
+    RLE_NONE,
+    RLE_RLE,
+    RLE_RLE_X
+} rle_encoding_t;
+
 typedef struct {
-    const void *src;
+    const uint8_t *input;
+    rle_encoding_t encoding;
     size_t size;
-    int pos;
     uint32_t x;
+} rle_src_t;
+
+typedef struct {
+    rle_src_t src;
+    int pos;
     uint32_t value;
     uint32_t counter;
-} rle_t;
+} rle_decoder_t;
 
-void rle_init(rle_t *rle, const void *input, size_t size);
-void rle_x_init(rle_t *rle, const void *input, size_t size, uint32_t x);
+void rle_init(rle_decoder_t *rle, const rle_src_t *src);
 
-bool rle_eof(rle_t *rle);
+bool rle_eof(rle_decoder_t *rle);
 
-uint8_t rle_get_uint8(rle_t *rle);
-uint16_t rle_get_uint16(rle_t *rle);
-
-uint8_t rle_x_get_uint8(rle_t *rle);
-uint16_t rle_x_get_uint16(rle_t *rle);
+uint8_t rle_get_uint8(rle_decoder_t *rle);
+uint16_t rle_get_uint16(rle_decoder_t *rle);
 
 /* No protection, make sure output is large enough */
 size_t rle_encode_uint8(uint8_t *output, const uint8_t *input, size_t size);

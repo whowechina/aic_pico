@@ -7,57 +7,40 @@
 
 #include "rle.h"
 
-void rle_init(rle_t *rle, const void *input, size_t size)
+void rle_init(rle_decoder_t *rle, const rle_src_t *src)
 {
-    rle->src = input;
-    rle->size = size;
+    rle->src = *src;
     rle->pos = 0;
     rle->counter = 0;
 }
 
-void rle_x_init(rle_t *rle, const void *input, size_t size, uint32_t x)
+bool rle_eof(rle_decoder_t *rle)
 {
-    rle->x = x;
-    rle_init(rle, input, size);
+    return (!rle->counter) && (rle->pos >= rle->src.size);
 }
 
-bool rle_eof(rle_t *rle)
-{
-    return (!rle->counter) && (rle->pos >= rle->size);
-}
-
-#define RLE_GET_TEMPLATE(type, condition) \
+#define RLE_GET_TEMPLATE(type) \
+    if (rle->src.encoding == RLE_NONE) { \
+        return ((const type *)rle->src.input)[rle->pos++]; \
+    } \
     if (rle->counter) { \
         rle->counter--; \
-    } else if (rle->pos < rle->size) { \
-        rle->value = ((const type *)rle->src)[rle->pos++]; \
-        if (condition) { \
-            rle->counter = ((const type *)rle->src)[rle->pos++]; \
+    } else if (rle->pos < rle->src.size) { \
+        rle->value = ((const type *)rle->src.input)[rle->pos++]; \
+        if ((rle->src.encoding == RLE_RLE) || (rle->value == rle->src.x)) { \
+            rle->counter = ((const type *)rle->src.input)[rle->pos++]; \
         } \
     } \
     return rle->value;
 
-#define RLE_GET(type) RLE_GET_TEMPLATE(type, true)
-#define RLE_GET_X(type) RLE_GET_TEMPLATE(type, rle->value == rle->x)
-
-uint8_t rle_get_uint8(rle_t *rle)
+uint8_t rle_get_uint8(rle_decoder_t *rle)
 {
-    RLE_GET(uint8_t);
+    RLE_GET_TEMPLATE(uint8_t);
 }
 
-uint16_t rle_get_uint16(rle_t *rle)
+uint16_t rle_get_uint16(rle_decoder_t *rle)
 {
-    RLE_GET(uint16_t);
-}
-
-uint8_t rle_x_get_uint8(rle_t *rle)
-{
-    RLE_GET_X(uint8_t);
-}
-
-uint16_t rle_x_get_uint16(rle_t *rle)
-{
-    RLE_GET_X(uint16_t);
+    RLE_GET_TEMPLATE(uint16_t);
 }
 
 #define PUSH_DATA(data) \
