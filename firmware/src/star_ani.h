@@ -2,7 +2,7 @@
 /* Downloaded from https://www.pinterest.com/pin/12033123975948720/0 */
 
 #include <stdint.h>
-#include "anima.h"
+#include "gfx.h"
 
 const uint8_t star_ani_data[] = {
     // Frame 1 (size: 5114)
