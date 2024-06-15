@@ -18,6 +18,9 @@
 #include "cli.h"
 #include "nfc.h"
 
+#include "aime.h"
+#include "bana.h"
+
 #include "st7789.h"
 #include "cst816t.h"
 
@@ -27,6 +30,8 @@
 #include "light.h"
 #include "star_ani.h"
 #include "glow_ani.h"
+#include "images.h"
+
 #include "gui.h"
 
 void gui_init()
@@ -46,7 +51,7 @@ void gui_level(uint8_t level)
 
 static int tapped_key = -1;
 
-static void draw_keypad()
+static void draw_home_keypad()
 {
     static uint8_t glow_frame[12] = { 0 };
     const char *signs_text = "7894561230:;";
@@ -76,6 +81,32 @@ static void draw_keypad()
     }
 }
 
+static void center_image(const image_t *img)
+{
+    gfx_img_draw(120 - img->width / 2, 140 - img->height / 2, img);
+}
+
+static void draw_home_aime()
+{
+    center_image(&aime_logo);
+}
+
+static void draw_home_bana()
+{
+    center_image(&bana_logo);
+}
+
+static void draw_home()
+{
+    if (aime_is_active()) {
+        draw_home_aime();
+    } else if (bana_is_active()) {
+        draw_home_bana();
+    } else {
+        draw_home_keypad();
+    }
+}
+
 uint16_t gui_keypad_read()
 {
     static int last_tapped = -1;
@@ -96,8 +127,12 @@ uint16_t gui_keypad_read()
     return 0;
 }
 
-static bool proc_keypad(cst816t_report_t touch)
+static bool proc_home(cst816t_report_t touch)
 {
+    if (aime_is_active() || bana_is_active()) {
+        return false;
+    }
+
     switch (touch.gesture) {
         case GESTURE_NONE:
             tapped_key = -1;
@@ -206,7 +241,7 @@ typedef struct {
 } gui_page_t;
 
 static gui_page_t pages[] = {
-    {draw_keypad, proc_keypad},
+    {draw_home, proc_home},
     {draw_status, NULL},
     {draw_credits, NULL},
 };
