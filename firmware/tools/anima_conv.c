@@ -10,12 +10,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "../src/rle.h"
+#include "../src/rle.c"
 #include "../src/gfx.h"
+#include "../src/light_frames.h"
 
 //#include "../src/glow.h"
 
-const char *name = "glow.h";
+const char *name = "light";
 
 static inline uint8_t gs8bto4b(const uint8_t bytes[2])
 {
@@ -27,7 +28,7 @@ static uint8_t frame_buffer[1*1024*1024];
 
 static void print_frame(int frame, int size)
 {
-    printf("\n    Frame %d: %d bytes", frame + 1, size);
+    printf("\n    // Frame %d: %d bytes", frame + 1, size);
     for (int i = 0; i < size; i++) {
         if ((i & 15) == 0) {
             printf("\n   ");
@@ -79,6 +80,7 @@ int main()
     printf("    .frames = %d,\n", frame_count);
     printf("    .index = %s_index,\n", name);
     printf("    .data = %s_data,\n", name);
+    printf("    .size = sizeof(%s_data),\n", name);
     printf("};\n");
 
     fprintf(stderr, "Frame count: %d\n", frame_count);
