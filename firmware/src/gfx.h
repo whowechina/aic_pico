@@ -16,10 +16,9 @@ typedef struct {
 typedef struct {
     uint16_t width;
     uint16_t height;
-
     rle_src_t pixels;
     const uint32_t *pallete; // always 256 colors, RGB565 (bits 0..15) + alpha (bits 16..23)
-    rle_src_t alpha; // ignored when pallete exists
+    rle_src_t alpha; // ignored when pallete exists, always 4bpp
 } image_t;
 
 extern const uint16_t white_pallete[16];

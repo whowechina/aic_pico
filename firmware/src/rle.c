@@ -16,7 +16,7 @@ void rle_init(rle_decoder_t *rle, const rle_src_t *src)
 
 bool rle_eof(rle_decoder_t *rle)
 {
-    return (!rle->counter) && (rle->pos >= rle->src.size);
+    return (!rle->remaining) && (!rle->counter) && (rle->pos >= rle->src.size);
 }
 
 #define RLE_GET_TEMPLATE(type) \
@@ -30,17 +30,41 @@ bool rle_eof(rle_decoder_t *rle)
         if ((rle->src.encoding == RLE_RLE) || (rle->value == rle->src.x)) { \
             rle->counter = ((const type *)rle->src.input)[rle->pos++]; \
         } \
-    } \
-    return rle->value;
+    }
 
 uint8_t rle_get_uint8(rle_decoder_t *rle)
 {
     RLE_GET_TEMPLATE(uint8_t);
+    return rle->value;
 }
 
 uint16_t rle_get_uint16(rle_decoder_t *rle)
 {
     RLE_GET_TEMPLATE(uint16_t);
+    return rle->value;
+}
+
+uint8_t rle_get_uint4(rle_decoder_t *rle)
+{
+    if (rle->remaining) {
+        rle->remaining = false;
+        return rle->value & 0x0f;
+    }
+
+    RLE_GET_TEMPLATE(uint8_t);
+    rle->remaining = true;
+    return rle->value >> 4;
+}
+
+uint32_t rle_get(rle_decoder_t *rle)
+{
+    if (rle->src.bits == 4) {
+        return rle_get_uint4(rle);
+    } else if (rle->src.bits == 8) {
+        return rle_get_uint8(rle);
+    } else {
+        return rle_get_uint16(rle);
+    }
 }
 
 #define PUSH_DATA(data) \
