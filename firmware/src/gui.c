@@ -29,6 +29,7 @@
 #include "ltsaeada.h"
 #include "light.h"
 #include "star_ani.h"
+#include "light_ani.h"
 #include "glow_ani.h"
 #include "images.h"
 
@@ -47,6 +48,22 @@ void gui_init()
 void gui_level(uint8_t level)
 {
     st7789_dimmer(255 - level);
+}
+
+static struct {
+    nfc_card_name card;
+    uint64_t time;
+} card_splash;
+
+static inline bool card_splash_active()
+{
+    return time_us_64() - card_splash.time < 3000000;
+}
+
+void report_card(nfc_card_name card)
+{
+    card_splash.card = card;
+    card_splash.time = time_us_64();
 }
 
 static int tapped_key = -1;
@@ -96,9 +113,25 @@ static void draw_home_bana()
     center_image(&bana_logo);
 }
 
+static void draw_home_card()
+{
+    if (card_splash.card == CARD_AIC_SEGA) {
+        center_image(&aic_sega);
+    } else if (card_splash.card == CARD_AIC_BANA) {
+        center_image(&aic_bana);
+    } else if (card_splash.card == CARD_AIC_KONAMI){
+        center_image(&aic_konami);
+    } else if (card_splash.card == CARD_AIC_NESICA) {
+        center_image(&aic_nesica);
+    }
+}
+
 static void draw_home()
 {
-    if (aime_is_active()) {
+    if (card_splash_active()) {
+        draw_home_card();
+    }
+    else if (aime_is_active()) {
         draw_home_aime();
     } else if (bana_is_active()) {
         draw_home_bana();
@@ -197,7 +230,7 @@ static void draw_credits()
         SET_COLOR(\x80\xff\x80) "AIC Pico (AIC Touch)\n"
         SET_COLOR(\x80\x80\xff) "https://github.com/whowechina\n\n\n"
         SET_COLOR(\x80\xff\x80) "THANKS TO\n\n"
-        SET_COLOR(\x80\x80\x80) "CrazyRedMachine\n"
+        SET_COLOR(\xb0\xb0\xb0) "CrazyRedMachine\n"
         "Sucareto    Bottersnike\n"
         "Gyt4    chujohiroto\n\n"
         "KiCAD    OnShape    Fritzing\n"
@@ -208,30 +241,35 @@ static void draw_credits()
     st7789_text(120, 30, credits, &lv_lts14, st7789_rgb565(0xc0c060), ALIGN_CENTER);
 }
 
-uint16_t ani_colors[] = {
-    0x00 << 1, 0x01 << 1, 0x02 << 1, 0x03 << 1, 0x04 << 1, 0x05 << 1, 0x06 << 1, 0x07 << 1,
-    0x08 << 1, 0x09 << 1, 0x0a << 1, 0x0b << 1, 0x0c << 1, 0x0d << 1, 0x0e << 1, 0x0f << 1
-};
 
-static void rotate_colors()
+static void gen_pallete(uint16_t pallete[16], uint32_t color)
 {
-    uint32_t color = rgb32_from_hsv(time_us_32() / 100000 + 128, 200, 250);
     uint32_t r = (color >> 16) & 0xff;
     uint32_t g = (color >> 8) & 0xff;
     uint32_t b = color & 0xff;
 
     for (int i = 0; i < 16; i++) {
         uint32_t mix = st7789_rgb32(r * i / 30, g * i / 30, b * i / 30);
-        ani_colors[i] = st7789_rgb565(mix);
+        pallete[i] = st7789_rgb565(mix);
     }
 }
+
 
 static void run_background()
 {
     static int phase = 0;
     phase++;
-    rotate_colors();
-    gfx_anima_draw(&star_ani, 0, 0, phase, ani_colors);
+
+    uint16_t pallete[16];
+
+    if (card_splash_active()) {
+        gen_pallete(pallete, 0x0000ff);
+        gfx_anima_draw(&light_ani, 0, 0, phase, pallete);
+    } else {
+        uint32_t color = rgb32_from_hsv(time_us_32() / 100000 + 128, 200, 250);
+        gen_pallete(pallete, color);
+        gfx_anima_draw(&star_ani, 0, 0, phase, pallete);
+    }
 }
 
 

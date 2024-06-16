@@ -106,15 +106,15 @@ static bool hid_is_active()
     return (time_us_64() - last_hid_time) < 2000000;
 }
 
-static bool cardio_is_available()
+static bool reader_is_active()
 {
-    return !(hid_is_active() || aime_is_active() || bana_is_active());
+    return aime_is_active() || bana_is_active();
 }
 
 static void light_mode_update()
 {
     static bool was_cardio = true;
-    bool cardio = cardio_is_available();
+    bool cardio = !reader_is_active() && !hid_is_active();
 
     if (cardio && !was_cardio) {
         light_rainbow(1, 1, aic_cfg->light.level_idle);
@@ -197,6 +197,7 @@ static void cardio_run()
 
     nfc_rf_field(true);
     nfc_card_t card = nfc_detect_card();
+    nfc_identify_last_card();
     nfc_rf_field(false);
 
     if (memcmp(&old_card, &card, sizeof(old_card)) == 0) {
@@ -204,8 +205,9 @@ static void cardio_run()
     }
 
     old_card = card;
+    report_card(nfc_last_card_name());
 
-    if (cardio_is_available()) {
+    if (!reader_is_active() && !hid_is_active()) {
         if (card.card_type != NFC_CARD_NONE) {
             light_rainbow(30, 0, aic_cfg->light.level_active);
         } else {

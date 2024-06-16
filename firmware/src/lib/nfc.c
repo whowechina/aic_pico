@@ -34,19 +34,63 @@ const char *nfc_module_name()
     return nfc_module_names[nfc_module];
 }
 
-static const char *nfc_card_names[] = {
+static const char *card_type_str[] = {
     "None",
     "MIFARE",
     "FeliCa",
     "15693"
 };
 
-const char *nfc_card_name(nfc_card_type card_type)
+const char *nfc_card_type_str(nfc_card_type card_type)
 {
-    if (card_type >= sizeof(nfc_card_names) / sizeof(nfc_card_names[0])) {
+    if (card_type >= sizeof(card_type_str) / sizeof(card_type_str[0])) {
         return "Unknown";
     }
-    return nfc_card_names[card_type];
+    return card_type_str[card_type];
+}
+
+static const char *card_name_str[] = {
+    "None",
+    "Amusement IC Generic",
+    "Amusement IC SEGA",
+    "Amusement IC KONAMI",
+    "Amusement IC Bandai Namco",
+    "Amusement IC NESiCA",
+    "Amusement IC Virtual",
+    "MIFARE Generic",
+    "AIME",
+    "Bandai Namco Passport",
+    "NESiCA",
+    "Vicinity Generic",
+    "E-Amusement Pass",
+};
+
+const char *nfc_card_name_str(nfc_card_name card_name)
+{
+    if (card_name >= sizeof(card_name_str) / sizeof(card_name_str[0])) {
+        return "None";
+    }
+    return card_name_str[card_name];
+}
+
+#define CARD_INFO_TIMEOUT_US (1000 * 1000)
+
+static nfc_card_name last_card_name = CARD_NONE;
+static uint64_t last_card_name_time = 0;
+
+static void update_card_name(nfc_card_name card_name)
+{
+    last_card_name = card_name;
+    last_card_name_time = time_us_64();
+}
+
+nfc_card_name nfc_last_card_name()
+{
+    if (time_us_64() - last_card_name_time > CARD_INFO_TIMEOUT_US) {
+        return CARD_NONE;
+    }
+
+    return last_card_name;
 }
 
 #define func_null NULL
@@ -228,6 +272,15 @@ void nfc_rf_field(bool on)
     }
 }
 
+static nfc_card_t last_card;
+static uint64_t last_card_time = 0;
+
+static void update_last_card(const nfc_card_t *card)
+{
+    last_card = *card;
+    last_card_time = time_us_64();
+}
+
 nfc_card_t nfc_detect_card()
 {
     nfc_card_t card = { 0 };
@@ -235,6 +288,7 @@ nfc_card_t nfc_detect_card()
     if (nfc_detect_mifare(&card) ||
         nfc_detect_felica(&card) ||
         nfc_detect_vicinity(&card)) {
+        update_last_card(&card);
         return card;
     }
 
@@ -249,6 +303,7 @@ nfc_card_t nfc_detect_card_ex(bool mifare, bool felica, bool vicinity)
     if ((mifare && nfc_detect_mifare(&card))
         || (felica && nfc_detect_felica(&card))
         || (vicinity && nfc_detect_vicinity(&card))) {
+        update_last_card(&card);
         return card;
     }
 
@@ -256,10 +311,25 @@ nfc_card_t nfc_detect_card_ex(bool mifare, bool felica, bool vicinity)
     return card;
 }
 
+void nfc_identify_last_card()
+{
+    if (time_us_64() - last_card_time > CARD_INFO_TIMEOUT_US) {
+        return;
+    }
+
+    if (last_card.card_type == NFC_CARD_FELICA) {
+        nfc_felica_read(0x000b, 0x8082, last_card.uid);
+    } else if (last_card.card_type == NFC_CARD_MIFARE) {
+        update_card_name(CARD_MIFARE);
+    } else if (last_card.card_type == NFC_CARD_VICINITY) {
+        update_card_name(CARD_VICINITY);
+    }
+}
+
 void display_card(const nfc_card_t *card)
 {
     if (card->card_type != NFC_CARD_NONE) {
-        printf("\n%s:", nfc_card_name(card->card_type));
+        printf("\n%s:", nfc_card_type_str(card->card_type));
         for (int i = 0; i < card->len; i++) {
             printf(" %02X", card->uid[i]);
         }
@@ -282,12 +352,34 @@ bool nfc_mifare_read(uint8_t block_id, uint8_t block_data[16])
     return api[nfc_module].mifare_read(block_id, block_data);
 }
 
+static void felica_report_name(const uint8_t dfc[2])
+{
+    update_card_name(CARD_AIC);
+
+    if (dfc[1] == 0x78) {
+        update_card_name(CARD_AIC_SEGA);
+    } else if (dfc[1] == 0x68) {
+        update_card_name(CARD_AIC_KONAMI);
+    } else if ((dfc[1] == 0x2a) || (dfc[1] == 0x3a)) {
+        update_card_name(CARD_AIC_BANA);
+    } else if (dfc[1] == 0x79) {
+        update_card_name(CARD_AIC_NESICA);
+    }
+}
+
 bool nfc_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16])
 {
     if (!api[nfc_module].felica_read) {
         return false;
     }
-    return api[nfc_module].felica_read(svc_code, block_id, block_data);
+    
+    bool read_ok = api[nfc_module].felica_read(svc_code, block_id, block_data);
+
+    if (read_ok && (svc_code = 0x000b) && (block_id == 0x8082)) {
+        felica_report_name(block_data + 8); // DFC
+    }
+
+    return read_ok;
 }
 
 void nfc_select(int phase)

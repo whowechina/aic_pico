@@ -19,7 +19,27 @@ typedef enum {
     NFC_CARD_VICINITY,
 } nfc_card_type;
 
-const char *nfc_card_name(nfc_card_type card_type);
+const char *nfc_card_type_str(nfc_card_type card_type);
+
+typedef enum {
+    CARD_NONE,
+    CARD_AIC,
+    CARD_AIC_SEGA,
+    CARD_AIC_KONAMI,
+    CARD_AIC_BANA,
+    CARD_AIC_NESICA,
+    CARD_AIC_VIRTUAL,
+    CARD_MIFARE,
+    CARD_AIME,
+    CARD_BANA,
+    CARD_NESICA,
+    CARD_VICINITY,
+    CARD_EAMUSE,
+} nfc_card_name;
+
+const char *nfc_card_name_str(nfc_card_name card_name);
+nfc_card_name nfc_last_card_name();
+void nfc_identify_last_card();
 
 typedef void (*nfc_wait_loop_t)();
 typedef struct {
@@ -61,7 +81,7 @@ nfc_card_t nfc_detect_card();
 nfc_card_t nfc_detect_card_ex(bool mifare, bool felica, bool vicinity);
 
 void display_card(const nfc_card_t *card);
-
+\
 const char *nfc_module_name();
 const char *nfc_module_version();
 
