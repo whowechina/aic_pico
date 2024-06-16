@@ -21,8 +21,8 @@ void st7789_vsync();
 void st7789_render(bool vsync);
 
 #define st7789_rgb32(r, g, b) ((r << 16) | (g << 8) | b)
-#define st7789_rgb565(rgb32) ((rgb32 >> 8) & 0xf800) | ((rgb32 >> 5) & 0x07e0) | ((rgb32 >> 3) & 0x001f)
-#define st7789_gray(value) ((value >> 3 << 11) | (value >> 2 << 5) | (value >> 3))  
+#define st7789_rgb565(rgb32) ((rgb32 >> 8) & 0xf800) | ((rgb32 >> 5) & 0x0780) | ((rgb32 >> 3) & 0x001f)
+#define st7789_gray(value) ((value >> 3 << 11) | (value >> 3 << 6) | (value >> 3))  
 
 void st7789_clear(uint16_t color, bool raw);
 void st7789_fill(uint16_t *pattern, size_t size, bool raw);
