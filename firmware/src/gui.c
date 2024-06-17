@@ -25,12 +25,8 @@
 #include "st7789.h"
 #include "cst816t.h"
 
-#include "conthrax.h"
-#include "upheaval.h"
-#include "ltsaeada.h"
-
 #include "res/resource.h"
-
+#include "gfx.h"
 #include "gui.h"
 
 void gui_init()
@@ -90,8 +86,8 @@ static void draw_home_keypad()
                 glow_frame[key]++;
             }
             char c = signs_text[row * 3 + col];
-            st7789_char(x + 2, y + 2, c, &lv_conthrax, st7789_rgb565(0x101010));
-            st7789_char(x, y, c, &lv_conthrax, st7789_rgb565(color));
+            gfx_char_draw(x + 2, y + 2, c, &lv_conthrax, st7789_rgb565(0x101010));
+            gfx_char_draw(x, y, c, &lv_conthrax, st7789_rgb565(color));
         }
     }
 }
@@ -180,25 +176,25 @@ static bool proc_home(cst816t_report_t touch)
 
 static void status_title(int x, int y, const char *title, uint16_t color)
 {
-    st7789_text(x + 1, y + 1, title, &lv_lts16, 0x0000, ALIGN_CENTER);
-    st7789_text(x, y, title, &lv_lts16, color, ALIGN_CENTER);
+    gfx_text_draw(x + 1, y + 1, title, &lv_lts16, 0x0000, ALIGN_CENTER);
+    gfx_text_draw(x, y, title, &lv_lts16, color, ALIGN_CENTER);
 }
 
 static void draw_status()
 {
-    st7789_spacing(1, 0);
+    gfx_text_spacing(1, 0);
 
     char buf[32];
     status_title(120, 3, "Serial Number", st7789_rgb565(0x00c000));
     sprintf(buf, "%016llx", board_id_64());
-    st7789_text(120, 22, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
+    gfx_text_draw(120, 22, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 
     status_title(120, 46, "Firmware Timestamp", st7789_rgb565(0x00c000));
-    st7789_text(120, 66, built_time, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
+    gfx_text_draw(120, 66, built_time, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 
     status_title(120, 89, "NFC Module", st7789_rgb565(0x00c000));
     sprintf(buf, "%s (%s)", nfc_module_name(), nfc_module_version());
-    st7789_text(120, 105, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
+    gfx_text_draw(120, 105, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 
     status_title(120, 132, "Light", st7789_rgb565(0x00c000));
     if (aic_cfg->light.rgb) {
@@ -206,11 +202,11 @@ static void draw_status()
     } else {
         sprintf(buf, "RGB: OFF");
     }
-    st7789_text(120, 148, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
+    gfx_text_draw(120, 148, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 
     status_title(120, 175, "LCD", st7789_rgb565(0x00c000));
     sprintf(buf, "Backlight: %d", aic_cfg->lcd.backlight);
-    st7789_text(120, 191, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
+    gfx_text_draw(120, 191, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 
     status_title(120, 218, "Reader", st7789_rgb565(0x00c000));
     int len = sprintf(buf, "Virtual AIC: %s\nMode: %s",
@@ -219,7 +215,7 @@ static void draw_status()
     if (aic_cfg->reader.mode == MODE_AUTO) {
         sprintf(buf + len, " (%s)", mode_name(aic_runtime.mode));
     }
-    st7789_text(120, 234, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
+    gfx_text_draw(120, 234, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 }
 
 static void draw_credits()
@@ -236,7 +232,7 @@ static void draw_credits()
         "JLCPCB    Raspberry\n\n"
         SET_COLOR(\x90\x90\x90) "and more...";
 
-    st7789_text(120, 30, credits, &lv_lts14, st7789_rgb565(0xc0c060), ALIGN_CENTER);
+    gfx_text_draw(120, 30, credits, &lv_lts14, st7789_rgb565(0xc0c060), ALIGN_CENTER);
 }
 
 

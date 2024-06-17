@@ -18,8 +18,6 @@
 #include "hardware/dma.h"
 #include "hardware/pwm.h"
 
-#include "lvgl_font.h"
-
 #include "st7789.h"
 
 #define WIDTH 240
@@ -178,6 +176,16 @@ void st7789_crop(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool absolute)
     update_addr();
 }
 
+uint16_t st7789_get_crop_width()
+{
+    return crop.w;
+}
+
+uint16_t st7789_get_crop_height()
+{
+    return crop.h;
+}
+
 void st7789_dimmer(uint8_t level)
 {
     pwm_set_gpio_level(ctx.ledk, level);
@@ -313,9 +321,9 @@ void st7789_pixel_raw(int x, int y, uint16_t color)
     vram[y * crop.w + x] = color;
 }
 
-void st7789_pixel(int x, int y, uint16_t color, uint8_t mix)
+void st7789_pixel(int x, int y, uint16_t color, uint8_t mix, uint8_t bits)
 {
-    mix_pixel(x, y, color, mix, 8);
+    mix_pixel(x, y, color, mix, bits);
 }
 
 void st7789_hline(int x, int y, uint16_t w, uint16_t color, uint8_t mix)
@@ -361,103 +369,6 @@ void st7789_line(int x0, int y0, int x1, int y1, uint16_t color, uint8_t mix)
             err += dx;
             y0 += sy;
         }
-    }
-}
-
-void st7789_char(int x, int y, char c, const lv_font_t *font, uint16_t color)
-{
-    if (c < font->range_start || c >= font->range_start + font->range_length) {
-        return;
-    }
-
-    const lv_font_dsc_t *dsc = font->dsc + c - font->range_start;
-    const uint8_t *bitmap = font->bitmap + dsc->bitmap_index;
-
-    uint8_t bpp = font->bit_per_pixel;
-    uint8_t mask = (1L << bpp) - 1;
-    uint8_t off_y = font->line_height - font->base_line - dsc->box_h - dsc->ofs_y;
-
-    for (int i = 0; i < dsc->box_h; i++) {
-        int dot_y = y + off_y + i;
-        if ((dot_y < 0) || (dot_y > crop.h)) {
-            continue;
-        }
-        for (int j = 0; j < dsc->box_w; j++) {
-            int dot_x = x + dsc->ofs_x + j;
-            if ((dot_x < 0) || (dot_x > crop.w)) {
-                break;
-            }
-            uint16_t bits = (i * dsc->box_w + j) * bpp;
-            uint8_t mix = (bitmap[bits / 8] >> ((8 - bpp) - (bits % 8))) & mask;
-            mix_pixel(dot_x, dot_y, color, mix, bpp);
-        }
-    }
-}
-
-static int spacing_x = 1, spacing_y = 1;
-
-void st7789_spacing(int dx, int dy)
-{
-    spacing_x = dx;
-    spacing_y = dy;
-}
-
-static uint16_t text_width(const char *text, const lv_font_t *font)
-{
-    uint16_t width = 0;
-    for (; *text && (*text != '\n'); text++) {
-        if (*text == '\x01') {
-            text += 3;
-            continue;
-        } else if (*text == '\x02' || *text == '\x03') {
-            continue;
-        }
-        if (*text - font->range_start < font->range_length) {
-            width += (font->dsc[*text - font->range_start].adv_w >> 4) + spacing_x;
-        }
-    }
-    return width;
-}
-
-void st7789_text(int x, int y, const char *text,
-                 const lv_font_t *font, uint16_t color, alignment_t align)
-{
-    uint16_t old_color = color;
-    uint16_t curr_color = color;
-    bool newline = true;
-    int pos_x = x;
-    for (; *text; text++) {
-        if (*text == '\x01') { // set color
-            old_color = curr_color;
-            curr_color = st7789_rgb565(st7789_rgb32(text[1], text[2], text[3]));
-            text += 3;
-            continue;
-        } else if (*text == '\x02') { // back to previous color
-            uint16_t tmp = curr_color;
-            curr_color = old_color;
-            old_color = tmp;
-            continue;
-        } else if (*text == '\x03') { // reset to default color
-            old_color = curr_color;
-            curr_color = color;
-            continue;
-        } else if (*text == '\n') { // line wrap
-            newline = true;
-            pos_x = x;;
-            y += font->line_height + spacing_y;
-            continue;
-        }
-        if (newline) {
-            int width = text_width(text, font);
-            if (align == ALIGN_CENTER) {
-                pos_x -= width / 2;
-            } else if (align == ALIGN_RIGHT) {
-                pos_x -= width;
-            }
-            newline = false;
-        }
-        st7789_char(pos_x, y, *text, font, curr_color);
-        pos_x += (font->dsc[*text - font->range_start].adv_w >> 4) + spacing_x;
     }
 }
 

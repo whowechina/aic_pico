@@ -6,7 +6,7 @@
  */
 
 #include <stdint.h>
-#include "lvgl_font.h"
+#include "../gfx.h"
 
 static const uint8_t conthrax_bitmap[] = {
     /* U+0030 "0" */

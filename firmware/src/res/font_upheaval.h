@@ -6,7 +6,7 @@
  */
 
 #include <stdint.h>
-#include "lvgl_font.h"
+#include "../gfx.h"
 
 /*Store the image of the glyphs*/
 static const uint8_t upheaval_bitmap[] = {

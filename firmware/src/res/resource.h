@@ -12,4 +12,8 @@
 #include "image_aic_sega.h"
 #include "image_aic_nesica.h"
 
+#include "font_conthrax.h"
+#include "font_ltsaeada.h"
+#include "font_upheaval.h"
+
 #endif
