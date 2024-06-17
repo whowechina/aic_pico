@@ -17,6 +17,7 @@
 #include "save.h"
 #include "cli.h"
 #include "nfc.h"
+#include "light.h"
 
 #include "aime.h"
 #include "bana.h"
@@ -27,11 +28,8 @@
 #include "conthrax.h"
 #include "upheaval.h"
 #include "ltsaeada.h"
-#include "light.h"
-#include "star_ani.h"
-#include "light_ani.h"
-#include "glow_ani.h"
-#include "images.h"
+
+#include "res/resource.h"
 
 #include "gui.h"
 
@@ -82,13 +80,13 @@ static void draw_home_keypad()
             if (key == tapped_key) {
                 glow_frame[key] = 1;
             }
-            if ((glow_frame[key] > 0) && (glow_frame[key] < glow_ani.frames)) {
-                int tail = glow_ani.frames - glow_frame[key];
+            if ((glow_frame[key] > 0) && (glow_frame[key] < anima_glow.frames)) {
+                int tail = anima_glow.frames - glow_frame[key];
                 uint16_t glow_color = 0xffff;
                 if (tail < 6) {
                     glow_color = st7789_gray(tail * 0x30);
                 }
-                gfx_anima_mix(&glow_ani, x - 18, y - 20, glow_frame[key], glow_color);
+                gfx_anima_mix(&anima_glow, x - 18, y - 20, glow_frame[key], glow_color);
                 glow_frame[key]++;
             }
             char c = signs_text[row * 3 + col];
@@ -105,24 +103,24 @@ static void center_image(const image_t *img)
 
 static void draw_home_aime()
 {
-    center_image(&aime_logo);
+    center_image(&image_aime_reader);
 }
 
 static void draw_home_bana()
 {
-    center_image(&bana_logo);
+    center_image(&image_bana_reader);
 }
 
 static void draw_home_card()
 {
     if (card_splash.card == CARD_AIC_SEGA) {
-        center_image(&aic_sega);
+        center_image(&image_aic_sega);
     } else if (card_splash.card == CARD_AIC_BANA) {
-        center_image(&aic_bana);
+        center_image(&image_aic_bana);
     } else if (card_splash.card == CARD_AIC_KONAMI){
-        center_image(&aic_konami);
+        center_image(&image_aic_konami);
     } else if (card_splash.card == CARD_AIC_NESICA) {
-        center_image(&aic_nesica);
+        center_image(&image_aic_nesica);
     }
 }
 
@@ -264,14 +262,13 @@ static void run_background()
 
     if (card_splash_active()) {
         gen_pallete(pallete, 0x0000ff);
-        gfx_anima_draw(&light_ani, 0, 0, phase, pallete);
+        gfx_anima_draw(&anima_light, 0, 0, phase, pallete);
     } else {
         uint32_t color = rgb32_from_hsv(time_us_32() / 100000 + 128, 200, 250);
         gen_pallete(pallete, color);
-        gfx_anima_draw(&star_ani, 0, 0, phase, pallete);
+        gfx_anima_draw(&anima_star, 0, 0, phase, pallete);
     }
 }
-
 
 typedef struct {
     void (*render)();

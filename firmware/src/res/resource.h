@@ -1,0 +1,15 @@
+#ifndef RESOURCE_H
+#define RESOURCE_H
+
+#include "anima_star.h"
+#include "anima_light.h"
+#include "anima_glow.h"
+
+#include "image_aime_reader.h"
+#include "image_bana_reader.h"
+#include "image_aic_bana.h"
+#include "image_aic_konami.h"
+#include "image_aic_sega.h"
+#include "image_aic_nesica.h"
+
+#endif

@@ -2,9 +2,9 @@
 /* Downloaded from https://www.pinterest.com/pin/12033123975948720/0 */
 
 #include <stdint.h>
-#include "gfx.h"
+#include "../gfx.h"
 
-const uint8_t star_ani_data[] = {
+const uint8_t anima_star_data[] = {
     // Frame 1 (size: 5114)
     0x00, 0x16, 0x17, 0xa7, 0x10, 0x00, 0x04, 0x02, 0x10, 0x00, 0x13, 0x02, 0x67, 0x51, 0x00, 0x1f,
     0x01, 0x20, 0x00, 0x17, 0x16, 0x73, 0x00, 0x03, 0x42, 0x00, 0x15, 0x06, 0x85, 0x00, 0x1c, 0x01,
@@ -5732,15 +5732,15 @@ const uint8_t star_ani_data[] = {
     0x75, 0x04, 0x63, 0x00, 0x3c,
 };
 
-const uint32_t star_ani_index[] = {
+const uint32_t anima_star_index[] = {
     0, 5114, 10246, 15476, 20615, 25625, 30517, 35314, 40068, 45080, 50347, 55849, 61567, 66543, 71538, 76521, 81319, 86178,
 };
 
-const anima_t star_ani = {
+const anima_t anima_star = {
     .width = 240,
     .height = 280,
     .frames = 18,
-    .size = sizeof(star_ani_data),
-    .index = star_ani_index,
-    .data = star_ani_data,
+    .size = sizeof(anima_star_data),
+    .index = anima_star_index,
+    .data = anima_star_data,
 };
