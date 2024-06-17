@@ -149,6 +149,32 @@ static void process_cmd()
 
 void cli_run()
 {
+    static bool was_connected = false;
+    static uint64_t connect_time = 0;
+    static bool welcomed = false;
+
+    bool connected = stdio_usb_connected();
+
+    bool just_connected = connected && !was_connected;
+    was_connected = connected;
+
+    if (!connected) {
+        return;
+    }
+
+    if (just_connected) {
+        connect_time = time_us_64();
+        welcomed = false;
+        return;
+    }
+
+    if (!welcomed && (time_us_64() - connect_time > 200000)) {
+        welcomed = true;
+        cmd_len = 0;
+        handle_help(0, NULL);
+        printf("\n%s", cli_prompt);
+    }
+
     int c = getchar_timeout_us(0);
     if (c == EOF) {
         return;
@@ -174,7 +200,7 @@ void cli_run()
         }
         return;
     }
-
+    
     cmd_buf[cmd_len] = '\0';
     cmd_len = 0;
 
