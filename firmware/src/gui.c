@@ -54,7 +54,7 @@ static inline bool card_splash_active()
     return time_us_64() - card_splash.time < 3000000;
 }
 
-void report_card(nfc_card_name card)
+void gui_report_card(nfc_card_name card)
 {
     card_splash.card = card;
     card_splash.time = time_us_64();

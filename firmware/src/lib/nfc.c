@@ -75,18 +75,48 @@ const char *nfc_card_name_str(nfc_card_name card_name)
 
 #define CARD_INFO_TIMEOUT_US (1000 * 1000)
 
-static nfc_card_name last_card_name = CARD_NONE;
-static uint64_t last_card_name_time = 0;
 
-static void update_card_name(nfc_card_name card_name)
+static nfc_card_name last_card_name = CARD_NONE;
+static bool last_name_final;
+static uint64_t last_card_name_time = 0;
+static card_name_listener_func card_name_listener;
+
+static inline bool last_name_expired()
 {
-    last_card_name = card_name;
-    last_card_name_time = time_us_64();
+    return time_us_64() - last_card_name_time > CARD_INFO_TIMEOUT_US;
+}
+
+static void update_card_name(nfc_card_name card_name, bool final)
+{
+    bool accept = last_name_expired();
+
+    if (!accept && !last_name_final) {
+        accept = true;
+    }
+
+    if (!accept && (card_name == last_card_name)) {
+        accept = true;
+    }
+
+    if (accept) {
+        last_card_name = card_name;
+        last_name_final = final;
+
+        last_card_name_time = time_us_64();
+        if (card_name_listener) {
+            card_name_listener(card_name);
+        }
+    }
+}
+
+void nfc_set_card_name_listener(card_name_listener_func listener)
+{
+    card_name_listener = listener;
 }
 
 nfc_card_name nfc_last_card_name()
 {
-    if (time_us_64() - last_card_name_time > CARD_INFO_TIMEOUT_US) {
+    if (last_name_expired()) {
         return CARD_NONE;
     }
 
@@ -288,7 +318,16 @@ nfc_card_t nfc_detect_card()
     if (nfc_detect_mifare(&card) ||
         nfc_detect_felica(&card) ||
         nfc_detect_vicinity(&card)) {
+
         update_last_card(&card);
+        if (card.card_type == NFC_CARD_FELICA) {
+            update_card_name(CARD_AIC, false);
+        } else if (card.card_type == NFC_CARD_MIFARE) {
+            update_card_name(CARD_MIFARE, false);
+        } else if (card.card_type == NFC_CARD_VICINITY) {
+            update_card_name(CARD_EAMUSE, true);
+        }
+
         return card;
     }
 
@@ -319,10 +358,6 @@ void nfc_identify_last_card()
 
     if (last_card.card_type == NFC_CARD_FELICA) {
         nfc_felica_read(0x000b, 0x8082, last_card.uid);
-    } else if (last_card.card_type == NFC_CARD_MIFARE) {
-        update_card_name(CARD_MIFARE);
-    } else if (last_card.card_type == NFC_CARD_VICINITY) {
-        update_card_name(CARD_EAMUSE);
     }
 }
 
@@ -344,26 +379,41 @@ bool nfc_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, con
     return api[nfc_module].mifare_auth(uid, block_id, key_id, key);
 }
 
+static void identify_mifare_card(const uint8_t block_data[16])
+{
+    if (memcmp(block_data + 2, "NBGIC", 5) == 0) {
+        update_card_name(CARD_BANA, true);
+    } else if (memcmp(block_data, "SBSD", 4) == 0) {
+        update_card_name(CARD_AIME, true);
+    }
+}
+
 bool nfc_mifare_read(uint8_t block_id, uint8_t block_data[16])
 {
     if (!api[nfc_module].mifare_read) {
         return false;
     }
-    return api[nfc_module].mifare_read(block_id, block_data);
+    
+    bool read_ok = api[nfc_module].mifare_read(block_id, block_data);
+    if (read_ok && (block_id == 0x01)) {
+        identify_mifare_card(block_data);
+    }
+
+    return read_ok;
 }
 
 static void felica_report_name(const uint8_t dfc[2])
 {
-    update_card_name(CARD_AIC);
+    update_card_name(CARD_AIC, false);
 
     if (dfc[1] == 0x78) {
-        update_card_name(CARD_AIC_SEGA);
+        update_card_name(CARD_AIC_SEGA, true);
     } else if (dfc[1] == 0x68) {
-        update_card_name(CARD_AIC_KONAMI);
+        update_card_name(CARD_AIC_KONAMI, true);
     } else if ((dfc[1] == 0x2a) || (dfc[1] == 0x3a)) {
-        update_card_name(CARD_AIC_BANA);
+        update_card_name(CARD_AIC_BANA, true);
     } else if (dfc[1] == 0x79) {
-        update_card_name(CARD_AIC_NESICA);
+        update_card_name(CARD_AIC_NESICA, true);
     }
 }
 
@@ -375,7 +425,7 @@ bool nfc_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16
     
     bool read_ok = api[nfc_module].felica_read(svc_code, block_id, block_data);
 
-    if (read_ok && (svc_code = 0x000b) && (block_id == 0x8082)) {
+    if (read_ok && (svc_code == 0x000b) && (block_id == 0x8082)) {
         felica_report_name(block_data + 8); // DFC
     }
 

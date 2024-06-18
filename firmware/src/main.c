@@ -156,6 +156,11 @@ static void core1_loop()
     }
 }
 
+void card_name_update_cb(nfc_card_name card_name)
+{
+    gui_report_card(card_name);
+}
+
 static void update_cardio(nfc_card_t *card)
 {
     switch (card->card_type) {
@@ -208,7 +213,6 @@ static void cardio_run()
     }
 
     old_card = card;
-    report_card(nfc_last_card_name());
 
     if (!reader_is_active() && !hid_is_active()) {
         if (card.card_type != NFC_CARD_NONE) {
@@ -392,6 +396,7 @@ void init()
     nfc_init();
     nfc_set_wait_loop(wait_loop);
     nfc_pn5180_tx_tweak(aic_cfg->tweak.pn5180_tx);
+    nfc_set_card_name_listener(card_name_update_cb);
 
     aime_init(cdc_reader_putc);
     aime_virtual_aic(aic_cfg->reader.virtual_aic);

@@ -33,12 +33,16 @@ typedef enum {
     CARD_AIME,
     CARD_BANA,
     CARD_NESICA,
+    CARD_VICINITY,
     CARD_EAMUSE,
 } nfc_card_name;
 
 const char *nfc_card_name_str(nfc_card_name card_name);
 nfc_card_name nfc_last_card_name();
 void nfc_identify_last_card();
+
+typedef void (*card_name_listener_func)(nfc_card_name card_name);
+void nfc_set_card_name_listener(card_name_listener_func listener);
 
 typedef void (*nfc_wait_loop_t)();
 typedef struct {
