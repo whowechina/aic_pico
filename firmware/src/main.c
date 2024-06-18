@@ -115,9 +115,12 @@ static void light_mode_update()
 {
     static bool was_cardio = true;
     bool cardio = !reader_is_active() && !hid_is_active();
+    static uint8_t last_level;
+    bool level_changed = (last_level != aic_cfg->light.level_idle);
 
-    if (cardio && !was_cardio) {
-        light_rainbow(1, 1, aic_cfg->light.level_idle);
+    if (cardio && (!was_cardio || level_changed)) {
+        light_rainbow(1, 1000, aic_cfg->light.level_idle);
+        last_level = aic_cfg->light.level_idle;
     }
 
     was_cardio = cardio;

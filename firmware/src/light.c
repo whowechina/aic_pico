@@ -378,14 +378,15 @@ static void rainbow_control(uint32_t delta_ms)
     }
 
     /* non linear speed change for better visual */
-
     int range = rainbow.speed.to - rainbow.speed.from;
     int progress = fast_sqrt(rainbow.elapsed * 10000 / rainbow.smooth_ms);
     rainbow.speed.current = rainbow.speed.from + range * progress / 100;
 
     range = rainbow.level.to - rainbow.level.from;
-    progress = fast_sqrt(rainbow.elapsed * 10000 / rainbow.smooth_ms);
+    progress = rainbow.elapsed * 100 / rainbow.smooth_ms;
     rainbow.level.current = rainbow.level.from + range * progress / 100;
+
+    printf("\nlevel: %d", rainbow.level.current);
 }
 
 #define RAINBOW_PITCH 37
