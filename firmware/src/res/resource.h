@@ -7,6 +7,7 @@
 
 #include "image_aime_reader.h"
 #include "image_bana_reader.h"
+#include "image_aic_generic.h"
 #include "image_aic_bana.h"
 #include "image_aic_konami.h"
 #include "image_aic_sega.h"

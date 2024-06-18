@@ -117,6 +117,8 @@ static void draw_home_card()
         center_image(&image_aic_konami);
     } else if (card_splash.card == CARD_AIC_NESICA) {
         center_image(&image_aic_nesica);
+    } else if (card_splash.card == CARD_AIC) {
+        center_image(&image_aic_generic);
     }
 }
 
@@ -124,8 +126,7 @@ static void draw_home()
 {
     if (card_splash_active()) {
         draw_home_card();
-    }
-    else if (aime_is_active()) {
+    } else if (aime_is_active()) {
         draw_home_aime();
     } else if (bana_is_active()) {
         draw_home_bana();
@@ -235,7 +236,6 @@ static void draw_credits()
     gfx_text_draw(120, 30, credits, &lv_lts14, st7789_rgb565(0xc0c060), ALIGN_CENTER);
 }
 
-
 static void gen_pallete(uint16_t pallete[16], uint32_t color)
 {
     uint32_t r = (color >> 16) & 0xff;
@@ -248,7 +248,6 @@ static void gen_pallete(uint16_t pallete[16], uint32_t color)
     }
 }
 
-
 static void run_background()
 {
     static int phase = 0;
@@ -258,7 +257,7 @@ static void run_background()
 
     if (card_splash_active()) {
         gen_pallete(pallete, 0x0000ff);
-        gfx_anima_draw(&anima_light, 0, 0, phase, pallete);
+        gfx_anima_draw(&anima_light, 0, 0, phase, gfx_anima_pallete(PALLETE_LIGHTNING));
     } else {
         uint32_t color = rgb32_from_hsv(time_us_32() / 100000 + 128, 200, 250);
         gen_pallete(pallete, color);

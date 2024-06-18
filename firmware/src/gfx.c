@@ -4,25 +4,6 @@
 #include "rle.h"
 #include "gfx.h"
 
-const uint16_t white_pallete[16] = {
-    st7789_gray(0x00),
-    st7789_gray(0x10),
-    st7789_gray(0x20),
-    st7789_gray(0x30),
-    st7789_gray(0x40),
-    st7789_gray(0x50),
-    st7789_gray(0x60),
-    st7789_gray(0x70),
-    st7789_gray(0x80),
-    st7789_gray(0x90),
-    st7789_gray(0xa0),
-    st7789_gray(0xb0),
-    st7789_gray(0xc0),
-    st7789_gray(0xd0),
-    st7789_gray(0xe0),
-    st7789_gray(0xf0),
-};
-
 void gfx_anima_draw(const anima_t *ani, int x, int y, int frame, const uint16_t pallete[16])
 {
     rle_decoder_t rle;
@@ -37,6 +18,35 @@ void gfx_anima_draw(const anima_t *ani, int x, int y, int frame, const uint16_t 
             st7789_pixel_raw(x + i, y + j, pallete[value]);
         }
     }
+}
+
+static uint16_t pallete[2][16];
+
+const uint16_t *gfx_anima_pallete(anima_pallete_t name)
+{
+    if (name == PALLETE_GRAYSCALE) {
+        if (pallete[0][15] == 0) {
+            for (int i = 0; i < 16; i++) {
+                int scale = i * 31 / 15;
+                pallete[0][i] = scale << 11 | scale << 5 | scale;
+            }
+        }
+        return pallete[0];
+    } else if (name == PALLETE_LIGHTNING) {
+        if (pallete[1][15] == 0) {
+            for (int i = 0; i < 8; i++) {
+                int scale = i * 31 / 8;
+                pallete[1][i] = scale;
+            }
+            for (int i = 0; i < 8; i++) {
+                int scale = i * 31 / 7;
+                pallete[1][i + 8] = scale << 11 | scale << 5 | 0xff;
+            }
+        }
+        return pallete[1];
+    }
+
+    return NULL;
 }
 
 void gfx_anima_mix(const anima_t *ani, int x, int y, int frame, uint16_t color)

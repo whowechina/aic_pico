@@ -21,13 +21,18 @@ typedef struct {
     rle_src_t alpha; // ignored when pallete exists, always 4bpp
 } image_t;
 
-extern const uint16_t white_pallete[16];
-
 void gfx_anima_draw(const anima_t *ani, int x, int y, int frame, const uint16_t pallete[16]);
 void gfx_anima_mix(const anima_t *ani, int x, int y, int frame, uint16_t color);
 
 void gfx_img_draw(int x, int y, const image_t *img);
 
+typedef enum {
+    PALLETE_GRAYSCALE,
+    PALLETE_LIGHTNING,
+} anima_pallete_t;
+
+/* lightning, grayscale */
+const uint16_t *gfx_anima_pallete(anima_pallete_t pallete);
 
 /* LV Font is Simplified from LVGL (https://lvgl.io/) Font Structure */
 typedef struct {
