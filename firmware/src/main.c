@@ -470,7 +470,14 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
 
 void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
 {
-    DEBUG("\nCDC Line State: %d %d", dtr, rts);
-    aime_fast_expire();
-    bana_fast_expire();
+    if (itf != reader_intf) {
+        return;
+    }
+
+    DEBUG("\nReader Line State: %d %d", dtr, rts);
+
+    if (!dtr) {
+        aime_fast_expire();
+        bana_fast_expire();
+    }
 }
