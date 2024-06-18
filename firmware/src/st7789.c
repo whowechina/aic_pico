@@ -196,7 +196,7 @@ void st7789_vsync()
     dma_channel_wait_for_finish_blocking(ctx.spi_dma);
 }
 
-void st7789_render(bool vsync)
+void st7789_flush(bool vsync)
 {
     if (dma_channel_is_busy(ctx.spi_dma)) {
         return;

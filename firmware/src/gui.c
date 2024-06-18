@@ -406,8 +406,6 @@ static void sliding_render()
 
 void gui_loop()
 {
-    event_proc();
-
     run_background();
 
     if (slide.sliding) {
@@ -416,5 +414,11 @@ void gui_loop()
         pages[curr_page].render();
     }
 
-    st7789_render(true);
+    st7789_flush(false);
+
+    /* Control things when updating LCD */
+    gui_level(aic_cfg->lcd.backlight);
+    event_proc();
+
+    st7789_vsync();
 }

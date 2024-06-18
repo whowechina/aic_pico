@@ -18,7 +18,7 @@ uint16_t st7789_get_crop_width();
 uint16_t st7789_get_crop_height();
 void st7789_dimmer(uint8_t level);
 void st7789_vsync();
-void st7789_render(bool vsync);
+void st7789_flush(bool vsync);
 
 #define st7789_rgb32(r, g, b) ((r << 16) | (g << 8) | b)
 #define st7789_rgb565(rgb32) ((rgb32 >> 8) & 0xf800) | ((rgb32 >> 5) & 0x0780) | ((rgb32 >> 3) & 0x001f)
