@@ -322,7 +322,7 @@ void nfc_identify_last_card()
     } else if (last_card.card_type == NFC_CARD_MIFARE) {
         update_card_name(CARD_MIFARE);
     } else if (last_card.card_type == NFC_CARD_VICINITY) {
-        update_card_name(CARD_VICINITY);
+        update_card_name(CARD_EAMUSE);
     }
 }
 

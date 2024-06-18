@@ -12,6 +12,7 @@
 #include "image_aic_konami.h"
 #include "image_aic_sega.h"
 #include "image_aic_nesica.h"
+#include "image_eamuse.h"
 
 #include "font_conthrax.h"
 #include "font_ltsaeada.h"

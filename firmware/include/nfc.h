@@ -33,7 +33,6 @@ typedef enum {
     CARD_AIME,
     CARD_BANA,
     CARD_NESICA,
-    CARD_VICINITY,
     CARD_EAMUSE,
 } nfc_card_name;
 
@@ -81,7 +80,7 @@ nfc_card_t nfc_detect_card();
 nfc_card_t nfc_detect_card_ex(bool mifare, bool felica, bool vicinity);
 
 void display_card(const nfc_card_t *card);
-\
+
 const char *nfc_module_name();
 const char *nfc_module_version();
 
