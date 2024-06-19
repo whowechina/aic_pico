@@ -468,27 +468,33 @@ bool pn5180_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, 
     }
 
     uint8_t ignored[16];
-    if (!pn5180_mifare_read(block_id & 0xfc, ignored)) {
+    if (!pn5180_mifare_read((block_id & 0xfc) + 1, ignored)) {
         DEBUG("\nPN5180 Mifare auth check bad");
         return false;
     }
 
     cache.result = true;
+
     return true;
 }
 
 bool pn5180_mifare_read(uint8_t block_id, uint8_t block_data[16])
 {
     static struct {
+        uint8_t block_id;
         uint32_t time;
         uint8_t data[16];
-    } cache = { 0 };
+    } cache[3] = { 0 };
 
     uint32_t now = time_us_32();
-    if ((now < cache.time + 1000000) && (block_id == 0)) {
-        memcpy(block_data, cache.data, 16);
-        cache.time = now;
-        return true;
+
+    if (block_id < 3) {
+        if ((cache[block_id].block_id == block_id) &&
+            (now < cache[block_id].time + 1000000)) {
+            memcpy(block_data, cache[block_id].data, 16);
+            cache[block_id].time = now;
+            return true;
+        }
     }
 
     uint8_t cmd[] = { CMD_MIFARE_READ, block_id };
@@ -504,9 +510,10 @@ bool pn5180_mifare_read(uint8_t block_id, uint8_t block_data[16])
 
     pn5180_read_data(block_data, 16);
 
-    if (block_id == 0) {
-        memcpy(cache.data, block_data, 16);
-        cache.time = time_us_32();
+    if (block_id < 3) {
+        memcpy(cache[block_id].data, block_data, 16);
+        cache[block_id].block_id = block_id;
+        cache[block_id].time = time_us_32();
     }
 
     return true;
