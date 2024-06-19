@@ -350,6 +350,25 @@ nfc_card_t nfc_detect_card_ex(bool mifare, bool felica, bool vicinity)
     return card;
 }
 
+static void identify_felica()
+{
+    nfc_felica_read(0x000b, 0x8082, last_card.uid);
+}
+
+static void identify_mifare()
+{
+    uint8_t buf_ignored[16];
+    if (nfc_mifare_auth(last_card.uid, 0x03, 0, 
+                        (const uint8_t *)"\x60\x90\xD0\x06\x32\xF5")) {
+        nfc_mifare_read(0x01, buf_ignored);
+    } else {
+        nfc_detect_card_ex(true, false, false);
+        nfc_mifare_auth(last_card.uid, 0x03, 1,
+                        (const uint8_t *)"WCCFv2");
+        nfc_mifare_read(0x01, buf_ignored);
+    }
+}
+
 void nfc_identify_last_card()
 {
     if (time_us_64() - last_card_time > CARD_INFO_TIMEOUT_US) {
@@ -357,7 +376,9 @@ void nfc_identify_last_card()
     }
 
     if (last_card.card_type == NFC_CARD_FELICA) {
-        nfc_felica_read(0x000b, 0x8082, last_card.uid);
+        identify_felica();
+    } else if (last_card.card_type == NFC_CARD_MIFARE) {
+        identify_mifare();
     }
 }
 
@@ -379,7 +400,7 @@ bool nfc_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, con
     return api[nfc_module].mifare_auth(uid, block_id, key_id, key);
 }
 
-static void identify_mifare_card(const uint8_t block_data[16])
+static void mifare_report_name(const uint8_t block_data[16])
 {
     if (memcmp(block_data + 2, "NBGIC", 5) == 0) {
         update_card_name(CARD_BANA, true);
@@ -396,7 +417,7 @@ bool nfc_mifare_read(uint8_t block_id, uint8_t block_data[16])
     
     bool read_ok = api[nfc_module].mifare_read(block_id, block_data);
     if (read_ok && (block_id == 0x01)) {
-        identify_mifare_card(block_data);
+        mifare_report_name(block_data);
     }
 
     return read_ok;

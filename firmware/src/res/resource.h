@@ -13,6 +13,9 @@
 #include "image_aic_sega.h"
 #include "image_aic_nesica.h"
 #include "image_eamuse.h"
+#include "image_mifare.h"
+#include "image_bana.h"
+#include "image_aime.h"
 
 #include "font_conthrax.h"
 #include "font_ltsaeada.h"

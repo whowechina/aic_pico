@@ -111,16 +111,22 @@ static void draw_home_card()
 {
     if (card_splash.card == CARD_AIC_SEGA) {
         center_image(&image_aic_sega);
-    } else if (card_splash.card == CARD_AIC_BANA) {
-        center_image(&image_aic_bana);
     } else if (card_splash.card == CARD_AIC_KONAMI){
         center_image(&image_aic_konami);
+    } else if (card_splash.card == CARD_AIC_BANA) {
+        center_image(&image_aic_bana);
     } else if (card_splash.card == CARD_AIC_NESICA) {
         center_image(&image_aic_nesica);
     } else if (card_splash.card == CARD_AIC) {
         center_image(&image_aic_generic);
     } else if (card_splash.card == CARD_EAMUSE) {
         center_image(&image_eamuse);
+    } else if (card_splash.card == CARD_MIFARE) {
+        center_image(&image_mifare);
+    } else if (card_splash.card == CARD_AIME) {
+        center_image(&image_aime);
+    } else if (card_splash.card == CARD_BANA) {
+        center_image(&image_bana);
     }
 }
 
