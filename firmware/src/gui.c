@@ -127,6 +127,8 @@ static void draw_home_card()
         center_image(&image_aime);
     } else if (card_splash.card == CARD_BANA) {
         center_image(&image_bana);
+    } else if (card_splash.card == CARD_NESICA) {
+        center_image(&image_nesica);
     }
 }
 

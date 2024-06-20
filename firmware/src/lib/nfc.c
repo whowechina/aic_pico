@@ -358,7 +358,9 @@ static void identify_felica()
 static void identify_mifare()
 {
     uint8_t buf_ignored[16];
-    if (nfc_mifare_auth(last_card.uid, 0x03, 0, 
+    if (nfc_mifare_read(0x00, buf_ignored)) {
+        // could be a NESiCA
+    } else if (nfc_mifare_auth(last_card.uid, 0x03, 0, 
                         (const uint8_t *)"\x60\x90\xD0\x06\x32\xF5")) {
         nfc_mifare_read(0x01, buf_ignored);
     } else {
@@ -397,15 +399,26 @@ bool nfc_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, con
     if (!api[nfc_module].mifare_auth) {
         return false;
     }
+    printf("\nAuth block %d key %d %.6s [", block_id, key_id, key);
+    for (int i = 0; i < 6; i++) {
+        printf(" %02X", key[i]);
+    }
+    printf(" ]");
     return api[nfc_module].mifare_auth(uid, block_id, key_id, key);
 }
 
-static void mifare_report_name(const uint8_t block_data[16])
+static void mifare_report_name(uint8_t block_id, const uint8_t block_data[16])
 {
-    if (memcmp(block_data + 2, "NBGIC", 5) == 0) {
-        update_card_name(CARD_BANA, true);
-    } else if (memcmp(block_data, "SBSD", 4) == 0) {
-        update_card_name(CARD_AIME, true);
+    if (block_id == 0) {
+        if (memcmp(block_data + 10, "\xf8\x01", 2) == 0) {
+            update_card_name(CARD_NESICA, true);
+        }
+    } else if (block_id == 1) {
+        if (memcmp(block_data + 2, "NBGIC", 5) == 0) {
+            update_card_name(CARD_BANA, true);
+        } else if (memcmp(block_data, "SBSD", 4) == 0) {
+            update_card_name(CARD_AIME, true);
+        }
     }
 }
 
@@ -416,11 +429,14 @@ bool nfc_mifare_read(uint8_t block_id, uint8_t block_data[16])
     }
     
     bool read_ok = api[nfc_module].mifare_read(block_id, block_data);
-    if (read_ok && (block_id == 0x01)) {
-        mifare_report_name(block_data);
+
+    if (!read_ok) {
+        return false;
     }
 
-    return read_ok;
+    mifare_report_name(block_id, block_data);
+
+    return true;
 }
 
 static void felica_report_name(const uint8_t dfc[2])

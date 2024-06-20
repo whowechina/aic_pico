@@ -16,6 +16,7 @@
 #include "image_mifare.h"
 #include "image_bana.h"
 #include "image_aime.h"
+#include "image_nesica.h"
 
 #include "font_conthrax.h"
 #include "font_ltsaeada.h"
