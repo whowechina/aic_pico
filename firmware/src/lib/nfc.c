@@ -136,6 +136,7 @@ struct {
     void (*set_wait_loop)(nfc_wait_loop_t loop);
     void (*select)(int phase);
     void (*deselect)();
+    bool (*iso15693_read)(const uint8_t uid[8], uint8_t block_id, uint8_t block_data[4]);
 } api[3] = {
     {
         pn532_firmware_ver,
@@ -146,6 +147,7 @@ struct {
         pn532_set_wait_loop,
         pn532_select,
         pn532_deselect,
+        func_null,
     },
     {
         pn5180_firmware_ver,
@@ -156,6 +158,7 @@ struct {
         pn5180_set_wait_loop,
         pn5180_select,
         pn5180_deselect,
+        pn5180_15693_read,
     },
     { 0 },
 };
@@ -325,7 +328,7 @@ nfc_card_t nfc_detect_card()
         } else if (card.card_type == NFC_CARD_MIFARE) {
             update_card_name(CARD_MIFARE, false);
         } else if (card.card_type == NFC_CARD_VICINITY) {
-            update_card_name(CARD_EAMUSE, true);
+            update_card_name(CARD_VICINITY, false);
         }
 
         return card;
@@ -371,6 +374,12 @@ static void identify_mifare()
     }
 }
 
+static void identify_15693()
+{
+    uint8_t buf_ignored[16];
+    nfc_15693_read(last_card.uid, 0x1b, buf_ignored);
+}
+
 void nfc_identify_last_card()
 {
     if (time_us_64() - last_card_time > CARD_INFO_TIMEOUT_US) {
@@ -381,6 +390,8 @@ void nfc_identify_last_card()
         identify_felica();
     } else if (last_card.card_type == NFC_CARD_MIFARE) {
         identify_mifare();
+    } else if (last_card.card_type == NFC_CARD_VICINITY) {
+        identify_15693();
     }
 }
 
@@ -481,4 +492,25 @@ void nfc_deselect()
     if (api[nfc_module].deselect) {
         api[nfc_module].deselect();
     }
+}
+
+static void vicinity_report_name(uint8_t block_id, const uint8_t block_data[4])
+{
+    if ((block_id == 0x1b) && (memcmp(block_data, "W_OK", 4) == 0)) {
+        update_card_name(CARD_EAMUSE, true);
+    }
+}
+
+bool nfc_15693_read(const uint8_t uid[8], uint8_t block_id, uint8_t block_data[4])
+{
+    if (!api[nfc_module].iso15693_read) {
+        return false;
+    }
+    
+    bool read_ok = api[nfc_module].iso15693_read(uid, block_id, block_data);
+    if (read_ok) {
+        vicinity_report_name(block_id, block_data);
+    }
+
+    return read_ok;
 }

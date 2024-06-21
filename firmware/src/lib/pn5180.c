@@ -565,3 +565,39 @@ void pn5180_deselect()
 {
     poll_mifare_2();
 }
+
+bool pn5180_15693_read(const uint8_t uid[8], uint8_t block_id, uint8_t block_data[4])
+{
+    uint8_t cmd[] = { 0x22, 0x20, uid[7], uid[6], uid[5], uid[4],
+                      uid[3], uid[2], uid[1], uid[0], block_id } ;
+    pn5180_send_data(cmd, sizeof(cmd), 0);
+
+    sleep_ms_with_loop(5);
+
+    uint32_t status = pn5180_get_irq();
+    if (0 == (status & 0x4000)) {
+        return false;
+    }
+
+    while (0 == (status & 0x01)) {
+        sleep_ms_with_loop(5);
+        status = pn5180_get_irq();
+    }
+  
+    uint16_t len = pn5180_get_rx() & 0x1ff;
+
+    uint8_t buf[5] = { 0 };
+
+    if (len > sizeof(buf)) {
+        return false;
+    }
+
+    pn5180_read_data(buf, len);
+    if ((buf[0] & 0x01) != 0) {
+        return false;
+    }
+
+    memcpy(block_data, buf + 1, 4);
+
+    return true;
+}
