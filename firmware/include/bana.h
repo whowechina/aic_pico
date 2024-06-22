@@ -19,8 +19,7 @@ bool bana_feed(int c);
 /* if bana is currently active */
 bool bana_is_active();
 
-/* force fast expire */
-void bana_fast_expire();
+void bana_dtr_off();
 
 const char *bana_get_led_pattern();
 

@@ -485,7 +485,7 @@ void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
     DEBUG("\nReader Line State: %d %d", dtr, rts);
 
     if (!dtr) {
-        aime_fast_expire();
-        bana_fast_expire();
+        aime_dtr_off();
+        bana_dtr_off();
     }
 }

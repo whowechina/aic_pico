@@ -20,8 +20,8 @@
 static bool debug = false;
 #define DEBUG(...) if (nfc_runtime.debug) printf(__VA_ARGS__)
 
-#define AIME_EXPIRE_SEC 7200 
-#define AIME_FAST_EXPIRE_SEC 10
+#define AIME_EXPIRE_US (1200 * 1000000ULL)
+#define AIME_FAST_EXPIRE_US (3 * 1000000ULL)
 
 enum {
     CMD_GET_FW_VERSION = 0x30,
@@ -68,6 +68,8 @@ const char *fw_version[] = { "TN32MSEC003S F/W Ver1.2", "\x94" };
 const char *hw_version[] = { "TN32MSEC003S H/W Ver3.0", "837-15396" };
 const char *led_info[] = { "15084\xFF\x10\x00\x12", "000-00000\xFF\x11\x40" };
 static int ver_mode = 1;
+static bool expecting_dtr_off = false;
+static uint64_t expected_dtr_off_time = 0;
 
 static struct {
     bool enabled;
@@ -362,16 +364,24 @@ static void cmd_mifare_halt()
 static void cmd_felica()
 {
     send_simple_response(STATUS_INVALID_COMMAND);
-    return;
+    expecting_dtr_off = true;
+    expected_dtr_off_time = time_us_64() + 50000ULL;
 }
 
 static uint32_t led_color;
 
 static void cmd_led_rgb()
 {
-    led_color = request.payload[0] << 16 | request.payload[1] << 8 | request.payload[2];
+    uint8_t r = request.payload[0];
+    uint8_t g = request.payload[1];
+    uint8_t b = request.payload[2];
+    led_color = r << 16 | g << 8 | b;
+
     build_response(0);
     send_response();
+
+    expecting_dtr_off = true;
+    expected_dtr_off_time = time_us_64() + 400000ULL;
 }
 
 static void handle_frame()
@@ -502,7 +512,7 @@ bool aime_feed(int c)
         if (req_ctx.check_sum == c) {
             handle_frame();
             req_ctx.active = false;
-            expire_time = time_us_64() + AIME_EXPIRE_SEC * 1000000ULL;
+            expire_time = time_us_64() + AIME_EXPIRE_US;
         }
         return true;
     }
@@ -519,12 +529,20 @@ bool aime_is_active()
     return time_us_64() < expire_time;
 }
 
-void aime_fast_expire()
+void aime_dtr_off()
 {
+    if ((expecting_dtr_off) &&
+        (abs(time_us_64() - expected_dtr_off_time) < 70000ULL)) {
+        expecting_dtr_off = false;
+        return;
+    }
+
     if (!aime_is_active()) {
         return;
     }
-    expire_time = time_us_64() + AIME_FAST_EXPIRE_SEC * 1000000ULL;
+
+    DEBUG("\nAIME: DTR_OFF delta: %lld", time_us_64() - expected_dtr_off_time);
+    expire_time = time_us_64() + AIME_FAST_EXPIRE_US;
 }
 
 uint32_t aime_led_color()
