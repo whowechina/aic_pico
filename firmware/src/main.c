@@ -205,7 +205,9 @@ static void cardio_run()
 
     nfc_rf_field(true);
     nfc_card_t card = nfc_detect_card();
-    nfc_identify_last_card();
+    if (card.card_type != NFC_CARD_NONE) {
+        nfc_identify_last_card();
+    }
     nfc_rf_field(false);
 
     if (memcmp(&old_card, &card, sizeof(old_card)) == 0) {

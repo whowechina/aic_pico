@@ -15,6 +15,8 @@
 #include "pn532.h"
 #include "pn5180.h"
 
+#define DEBUG(...) { if (nfc_runtime.debug) printf(__VA_ARGS__); }
+
 nfc_runtime_t nfc_runtime;
 
 static enum {
@@ -383,6 +385,7 @@ static void identify_15693()
 void nfc_identify_last_card()
 {
     if (time_us_64() - last_card_time > CARD_INFO_TIMEOUT_US) {
+        DEBUG("\nLast card expired, no identification");
         return;
     }
 

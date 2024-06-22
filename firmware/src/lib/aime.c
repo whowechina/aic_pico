@@ -333,6 +333,9 @@ static void cmd_detect_card()
     }
 
     send_response();
+    if (card.card_type != NFC_CARD_NONE) {
+        nfc_identify_last_card();
+    }
 }
 
 static void cmd_card_select()
