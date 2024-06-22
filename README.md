@@ -1,4 +1,4 @@
-# AIC Pico and AIC Key
+# AIC Pico, AIC Key and AIC Touch
   **AIME Reader & Bandai Namco Reader & Cardio Emulator**
 
 [点这里可以切换到中文版](README_CN.md)
@@ -27,6 +27,7 @@
 **Notes:**
 1. So one can integrate "AIC Pico" into other Raspberry Pi Pico based projects. See my Chu Pico project and see how it works.  
   <img src="doc/aic_pico_lib.jpg" width="25%">
+
 2. PN532 supports only 14443A (Mifare) and FeliCa cards, while PN5180 also supports 15693 cards (old e-Amusement cards).
 
 ## Thanks
