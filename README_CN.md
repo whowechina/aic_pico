@@ -150,7 +150,7 @@ AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico"
 * C1, C2, C3 电容, 0603 0.1uF。它们提供更好的供电稳定性。
 
 * 对于开关，你有 2 个选项：
-  * 选项 1：12x ALPS SKRRAAE010 低调 TACT 开关。  
+  * 选项 1：12x ALPS SKRRAAE010 超薄轻触 开关。  
     https://www.mouser.com/ProductDetail/Alps-Alpine/SKRRAAE010?qs=m0BA540hBPeKhAe3239t1w%3D%3D
   * 选项 2：12x Panasonic EVQP1K05M 6mm 方形触摸开关。  
     https://www3.panasonic.biz/ac/e/dl/catalog/index.jsp?series_cd=3473&part_no=EVQP1K05M
