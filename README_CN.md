@@ -50,17 +50,10 @@
 * 严重依赖于3D打印，Bambu AMS系统能够提供很大的帮助。
 * 需要有焊接微小组件和线路的技能。
 
-## 查看我的其他项目
+## 其他项目
 你也可以查看我其他的酷炫项目。
 
-<img src="https://github.com/whowechina/popn_pico/raw/main/doc/main.jpg" height="100px">
-<img src="https://github.com/whowechina/iidx_pico/raw/main/doc/main.jpg" height="100px">
-<img src="https://github.com/whowechina/iidx_teeny/raw/main/doc/main.jpg" height="100px">
-<img src="https://github.com/whowechina/chu_pico/raw/main/doc/main.jpg" height="100px">
-<img src="https://github.com/whowechina/mai_pico/raw/main/doc/main.jpg" height="100px">
-<img src="https://github.com/whowechina/diva_pico/raw/main/doc/main.jpg" height="100px">
-<img src="https://github.com/whowechina/aic_pico/raw/main/doc/main.gif" height="100px">
-<img src="https://github.com/whowechina/groove_pico/raw/main/doc/main.gif" height="100px">
+<img src="https://github.com/whowechina/popn_pico/raw/main/doc/main.jpg" height="100px"> <img src="https://github.com/whowechina/iidx_pico/raw/main/doc/main.jpg" height="100px"> <img src="https://github.com/whowechina/iidx_teeny/raw/main/doc/main.jpg" height="100px"> <img src="https://github.com/whowechina/chu_pico/raw/main/doc/main.jpg" height="100px"> <img src="https://github.com/whowechina/mai_pico/raw/main/doc/main.jpg" height="100px"> <img src="https://github.com/whowechina/diva_pico/raw/main/doc/main.jpg" height="100px"> <img src="https://github.com/whowechina/aic_pico/raw/main/doc/main.gif" height="100px"> <img src="https://github.com/whowechina/groove_pico/raw/main/doc/main.gif" height="100px"> <img src="https://github.com/whowechina/musec_pico/raw/main/doc/main.jpg" height="100px">
 
 * Popn Pico: https://github.com/whowechina/popn_pico
 * IIDX Pico: https://github.com/whowechina/iidx_pico
@@ -70,16 +63,18 @@
 * Diva Pico: https://github.com/whowechina/diva_pico
 * AIC Pico: https://github.com/whowechina/aic_pico
 * Groove Pico: https://github.com/whowechina/groove_pico
-* Geki Pico: https://github.com/whowechina/geki_pico
+* Musec Pico: https://github.com/whowechina/musec_pico
 
 ## **声明** ##
 我在个人时间内制作了这个项目，没有任何经济利益或赞助。我将继续改进这个项目。我已尽我所能确保所有内容的准确性和功能性，但总有可能出现错误。如果你因使用这个开源项目而造成时间或金钱的损失，我不能负责。感谢你的理解。
 
-查看我 GitHub 主页，上面有很多其他项目。
-https://github.com/whowechina/
-
 ## 关于许可证
-它是 CC-NC 授权。所以你只能给自己和你的朋友 DIY，不能利用这个项目赚钱，连源作者都不敢提的抄袭或者稍微改改换个名字就更不可以了。
+它是 CC-NC 授权。所以你只能给自己和你的朋友 DIY，不能利用这个项目赚钱，比如收费的代做，出售整机等，连源作者都不敢提的抄袭或者稍微改改换个名字来打擦边球就更不可以了。注意团购和拼单订购原始元器件是合理的，非盈利的方式卖掉剩余的元器件也是可以接受的。
+
+如果希望商用授权或者购买成品（可能较慢），请联系我（Discord，QQ 群，微信群或者在 issue 区留下你的联系方式）。
+
+## 我的 Discord 服务器邀请
+https://discord.gg/M8f2PPQFEA
 
 ## 多种制作版本选择
 - [AIC Pico PN532](#制作-AIC-Pico-PN532)
