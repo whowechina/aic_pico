@@ -243,8 +243,8 @@ AIC Touch 是 AIC Pico 的另一种版本，配备了触摸屏。不过它微小
   底部部分。
 * **aic_touch_top.stl**  
   顶部部分.
-* **aic_touch_top_ams.3mf**  
-  顶部部分，多色打印。
+* **aic_touch_top.3mf** or **aic_touch_top_ams.3mf**  
+  顶部部分用于多色打印。后者用于 Bambu Studio，需要配合 AMS 系统，耗材 1 用黑色，耗材 2 用无色透明。
 
 顶部部分需要上下颠倒打印。
 

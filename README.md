@@ -242,8 +242,8 @@ AIC Touch, another variant of AIC Pico, comes with an integrated touchscreen. Ho
   Bottom part.
 * **aic_touch_top.stl**  
   Top part.
-* **aic_touch_top_ams.3mf**  
-  Top part for multi-color printing.
+* **aic_touch_top.3mf** or **aic_touch_top_ams.3mf**  
+  Top part for multi-color printing. The latter is for Bambu Studio with AMS system. Filament 1 is black, Filament 2 is clear transparent.
 
 Top parts should be printed upside-down.
 
