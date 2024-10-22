@@ -93,7 +93,7 @@ https://discord.gg/M8f2PPQFEA
 * 小巧的 WS2812B LED 灯条。
 * 4x M2*8mm 螺丝。
   
-*AIC Pico+PN532
+* AIC Pico+PN532
 
 | 型号、规格、误差       | 类型  | 位置 | 封装 | 数目 | 备注  |
 |:--------------:|:---:|:---:|:---:|:---:|:---:|
@@ -129,7 +129,7 @@ https://discord.gg/M8f2PPQFEA
 <img src="doc/pico_assemble_4.jpg" width="40%">
 
 ### 组件
-*AIC Pico+PN532
+* AIC Pico+PN532
 
 | 型号、规格、误差       | 类型  | 位置 | 封装 | 数目 | 备注  |
 |:--------------:|:---:|:---:|:---:|:---:|:---:|
