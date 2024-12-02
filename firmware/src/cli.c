@@ -176,10 +176,7 @@ void cli_run()
     }
 
     int c = getchar_timeout_us(0);
-    if (c == EOF) {
-        return;
-    }
-    if (c == 0) {
+    if (c < 0) {
         return;
     }
 
