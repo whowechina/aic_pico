@@ -413,11 +413,11 @@ bool nfc_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, con
     if (!api[nfc_module].mifare_auth) {
         return false;
     }
-    printf("\nAuth block %d key %d %.6s [", block_id, key_id, key);
+    DEBUG("\nAuth block %d key %d %.6s [", block_id, key_id, key);
     for (int i = 0; i < 6; i++) {
-        printf(" %02X", key[i]);
+        DEBUG(" %02X", key[i]);
     }
-    printf(" ]");
+    DEBUG(" ]");
     return api[nfc_module].mifare_auth(uid, block_id, key_id, key);
 }
 
