@@ -136,48 +136,57 @@ static void draw_home_bana()
 static void draw_home_card()
 {
     if (card_splash.card == CARD_AIC_SEGA) {
-        center_image(&image_aic_sega, -16);
+        center_image(&image_aic_sega, -24);
     } else if (card_splash.card == CARD_AIC_KONAMI){
-        center_image(&image_aic_konami, -16);
+        center_image(&image_aic_konami, -24);
     } else if (card_splash.card == CARD_AIC_BANA) {
-        center_image(&image_aic_bana, -16);
+        center_image(&image_aic_bana, -24);
     } else if (card_splash.card == CARD_AIC_NESICA) {
-        center_image(&image_aic_nesica, -16);
+        center_image(&image_aic_nesica, -24);
     } else if (card_splash.card == CARD_AIC) {
-        center_image(&image_aic_generic, -16);
+        center_image(&image_aic_generic, -24);
     } else if (card_splash.card == CARD_MIFARE) {
-        center_image(&image_mifare, -16);
+        center_image(&image_mifare, -24);
     } else if (card_splash.card == CARD_AIME) {
-        center_image(&image_aime, -16);
+        center_image(&image_aime, -24);
     } else if (card_splash.card == CARD_BANA) {
-        center_image(&image_bana, -16);
+        center_image(&image_bana, -24);
     } else if (card_splash.card == CARD_NESICA) {
-        center_image(&image_nesica, -16);
+        center_image(&image_nesica, -24);
     } else if (card_splash.card == CARD_VICINITY) {
-        center_image(&image_vicinity, -16);
+        center_image(&image_vicinity, -24);
     } else if (card_splash.card == CARD_EAMUSE) {
-        center_image(&image_eamuse, -16);
+        center_image(&image_eamuse, -24);
     }
 }
 
 static void draw_card_id()
 {
     char idstr[40];
-    int pos = 0;
-    idstr[0] = '\0';
-    for (int i = 0; i < card_splash.real.len; i++) {
-        pos += sprintf(idstr + pos, " %02X", card_splash.real.octects[i]);
+
+    if (card_splash.real.len > 0) {
+        int pos = 0;
+        idstr[0] = '\0';
+        for (int i = 0; i < card_splash.real.len; i++) {
+            pos += sprintf(idstr + pos, " %02X", card_splash.real.octects[i]);
+        }
+
+        const lv_font_t *font = card_splash.real.len > 6 ? &lv_lts18 : &lv_lts20;
+        const char *id_title = "UID";
+        gfx_text_draw(120, 196, id_title, &lv_lts13, st7789_rgb565(0xc0c000), ALIGN_CENTER);
+        gfx_text_draw(118, 210, idstr, font, st7789_rgb565(0xffff00), ALIGN_CENTER);
     }
 
-    const lv_font_t *font = card_splash.real.len > 6 ? &lv_lts18 : &lv_lts20;
-    gfx_text_draw(118, 210, idstr, font, st7789_rgb565(0xffff00), ALIGN_CENTER);
-
-    pos = 0;
-    idstr[0] = '\0';
-    for (int i = 0; i < card_splash.virtual.len; i++) {
-        pos += sprintf(idstr + pos, "%02X", card_splash.virtual.octects[i]);
+    if (card_splash.virtual.len > 0) {
+        int pos = 0;
+        idstr[0] = '\0';
+        for (int i = 0; i < card_splash.virtual.len; i++) {
+            pos += sprintf(idstr + pos, "%02X", card_splash.virtual.octects[i]);
+        }
+        const char *cardio_title = "CardIO";
+        gfx_text_draw(120, 236, cardio_title, &lv_lts13, st7789_rgb565(0x00c0c0), ALIGN_CENTER);
+        gfx_text_draw(120, 250, idstr, &lv_lts18, st7789_rgb565(0x00ffff), ALIGN_CENTER);
     }
-    gfx_text_draw(120, 234, idstr, &lv_lts18, st7789_rgb565(0x00ffff), ALIGN_CENTER);
 }
 
 static void draw_home()

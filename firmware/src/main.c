@@ -188,7 +188,7 @@ static void update_cardio(nfc_card_t *card)
             return;
     }
 
-    gui_report_card_id(hid_cardio.current, 9, true);
+    gui_report_card_id(hid_cardio.current + 1, 8, true);
     printf(" -> CardIO ");
     for (int i = 1; i < 9; i++) {
         printf("%02X", hid_cardio.current[i]);
