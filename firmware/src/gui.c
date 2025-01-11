@@ -45,8 +45,12 @@ void gui_level(uint8_t level)
 }
 
 static struct {
-    nfc_card_name card;
     uint64_t time;
+    nfc_card_name card;
+    struct {
+        uint8_t len;
+        uint8_t octects[15];
+    } real, virtual;
 } card_splash;
 
 static inline bool card_splash_active()
@@ -54,10 +58,32 @@ static inline bool card_splash_active()
     return time_us_64() - card_splash.time < 3000000;
 }
 
-void gui_report_card(nfc_card_name card)
+void gui_report_card_name(nfc_card_name card)
 {
     card_splash.card = card;
     card_splash.time = time_us_64();
+}
+
+void gui_report_card_id(const uint8_t *id, int len, bool virtual)
+{
+    if (len > sizeof(card_splash.real.octects)) {
+        len = sizeof(card_splash.real.octects);
+    }
+
+    if (virtual) {
+        card_splash.virtual.len = len;
+        memcpy(card_splash.virtual.octects, id, len);
+        return;
+    }
+    
+    if ((card_splash.real.len == len) && 
+        (memcmp(card_splash.real.octects, id, len) == 0)) {
+        return;
+    }
+
+    card_splash.real.len = len;
+    memcpy(card_splash.real.octects, id, len);
+    card_splash.virtual.len = 0;
 }
 
 static int tapped_key = -1;
@@ -92,52 +118,73 @@ static void draw_home_keypad()
     }
 }
 
-static void center_image(const image_t *img)
+static void center_image(const image_t *img, int v_offset)
 {
-    gfx_img_draw(120 - img->width / 2, 140 - img->height / 2, img);
+    gfx_img_draw(120 - img->width / 2, 140 + v_offset - img->height / 2, img);
 }
 
 static void draw_home_aime()
 {
-    center_image(&image_aime_reader);
+    center_image(&image_aime_reader, 0);
 }
 
 static void draw_home_bana()
 {
-    center_image(&image_bana_reader);
+    center_image(&image_bana_reader, 0);
 }
 
 static void draw_home_card()
 {
     if (card_splash.card == CARD_AIC_SEGA) {
-        center_image(&image_aic_sega);
+        center_image(&image_aic_sega, -16);
     } else if (card_splash.card == CARD_AIC_KONAMI){
-        center_image(&image_aic_konami);
+        center_image(&image_aic_konami, -16);
     } else if (card_splash.card == CARD_AIC_BANA) {
-        center_image(&image_aic_bana);
+        center_image(&image_aic_bana, -16);
     } else if (card_splash.card == CARD_AIC_NESICA) {
-        center_image(&image_aic_nesica);
+        center_image(&image_aic_nesica, -16);
     } else if (card_splash.card == CARD_AIC) {
-        center_image(&image_aic_generic);
+        center_image(&image_aic_generic, -16);
     } else if (card_splash.card == CARD_MIFARE) {
-        center_image(&image_mifare);
+        center_image(&image_mifare, -16);
     } else if (card_splash.card == CARD_AIME) {
-        center_image(&image_aime);
+        center_image(&image_aime, -16);
     } else if (card_splash.card == CARD_BANA) {
-        center_image(&image_bana);
+        center_image(&image_bana, -16);
     } else if (card_splash.card == CARD_NESICA) {
-        center_image(&image_nesica);
+        center_image(&image_nesica, -16);
     } else if (card_splash.card == CARD_VICINITY) {
-        center_image(&image_vicinity);
+        center_image(&image_vicinity, -16);
     } else if (card_splash.card == CARD_EAMUSE) {
-        center_image(&image_eamuse);
+        center_image(&image_eamuse, -16);
     }
+}
+
+static void draw_card_id()
+{
+    char idstr[40];
+    int pos = 0;
+    idstr[0] = '\0';
+    for (int i = 0; i < card_splash.real.len; i++) {
+        pos += sprintf(idstr + pos, " %02X", card_splash.real.octects[i]);
+    }
+
+    const lv_font_t *font = card_splash.real.len > 6 ? &lv_lts18 : &lv_lts20;
+    gfx_text_draw(118, 210, idstr, font, st7789_rgb565(0xffff00), ALIGN_CENTER);
+
+    pos = 0;
+    idstr[0] = '\0';
+    for (int i = 0; i < card_splash.virtual.len; i++) {
+        pos += sprintf(idstr + pos, "%02X", card_splash.virtual.octects[i]);
+    }
+    gfx_text_draw(120, 234, idstr, &lv_lts18, st7789_rgb565(0x00ffff), ALIGN_CENTER);
 }
 
 static void draw_home()
 {
     if (card_splash_active()) {
         draw_home_card();
+        draw_card_id();
     } else if (aime_is_active()) {
         draw_home_aime();
     } else if (bana_is_active()) {

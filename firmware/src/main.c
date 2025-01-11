@@ -158,7 +158,7 @@ static void core1_loop()
 
 void card_name_update_cb(nfc_card_name card_name)
 {
-    gui_report_card(card_name);
+    gui_report_card_name(card_name);
 }
 
 static void update_cardio(nfc_card_t *card)
@@ -188,6 +188,7 @@ static void update_cardio(nfc_card_t *card)
             return;
     }
 
+    gui_report_card_id(hid_cardio.current, 9, true);
     printf(" -> CardIO ");
     for (int i = 1; i < 9; i++) {
         printf("%02X", hid_cardio.current[i]);
@@ -207,6 +208,7 @@ static void cardio_run()
     nfc_card_t card = nfc_detect_card();
     if (card.card_type != NFC_CARD_NONE) {
         nfc_identify_last_card();
+        gui_report_card_id(card.uid, card.len, false);
     }
     nfc_rf_field(false);
 
