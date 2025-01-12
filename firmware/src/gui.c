@@ -171,10 +171,10 @@ static void draw_card_id()
             pos += sprintf(idstr + pos, " %02X", card_splash.real.octects[i]);
         }
 
-        const lv_font_t *font = card_splash.real.len > 6 ? &lv_lts18 : &lv_lts20;
+        const lv_font_t *font = card_splash.real.len > 6 ? &lv_dejavu16 : &lv_dejavu18;
         const char *id_title = "UID";
-        gfx_text_draw(120, 196, id_title, &lv_lts13, st7789_rgb565(0xc0c000), ALIGN_CENTER);
-        gfx_text_draw(118, 210, idstr, font, st7789_rgb565(0xffff00), ALIGN_CENTER);
+        gfx_text_draw(120, 196, id_title, &lv_lts13, st7789_rgb565(0xb0b000), ALIGN_CENTER);
+        gfx_text_draw(118, 210, idstr, font, st7789_rgb565(0xe0e000), ALIGN_CENTER);
     }
 
     if (card_splash.virtual.len > 0) {
@@ -184,8 +184,8 @@ static void draw_card_id()
             pos += sprintf(idstr + pos, "%02X", card_splash.virtual.octects[i]);
         }
         const char *cardio_title = "CardIO";
-        gfx_text_draw(120, 236, cardio_title, &lv_lts13, st7789_rgb565(0x00c0c0), ALIGN_CENTER);
-        gfx_text_draw(120, 250, idstr, &lv_lts18, st7789_rgb565(0x00ffff), ALIGN_CENTER);
+        gfx_text_draw(120, 236, cardio_title, &lv_lts13, st7789_rgb565(0x00b0b0), ALIGN_CENTER);
+        gfx_text_draw(120, 250, idstr, &lv_dejavu16, st7789_rgb565(0x00e0e0), ALIGN_CENTER);
     }
 }
 

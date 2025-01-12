@@ -22,5 +22,6 @@
 #include "font_conthrax.h"
 #include "font_ltsaeada.h"
 #include "font_upheaval.h"
+#include "font_dejavu.h"
 
 #endif
