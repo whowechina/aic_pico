@@ -17,6 +17,8 @@
 #include "bana.h"
 #include "nfc.h"
 
+#include "cardio.h"
+
 static int fps[2];
 void fps_count(int core)
 {
@@ -71,6 +73,30 @@ static void display_reader()
     }
 }
 
+static void disp_list()
+{
+    for (int i = 0; i < 4; i++) {
+        printf("    SLOT %d:", i);
+        if (aic_cfg->autopin.entries[i].uidlen == 0) {
+            printf(" Empty\n");
+            continue;
+        }
+        printf(" UID: ");
+        for (int j = 0; j < aic_cfg->autopin.entries[i].uidlen; j++) {
+            printf("%02x", aic_cfg->autopin.entries[i].uid[j]);
+        }
+        printf(" PIN: %.15s", aic_cfg->autopin.entries[i].pin);
+        printf(" Delay: %ds\n", aic_cfg->autopin.entries[i].delay);
+    }
+}
+
+static void display_autopin()
+{
+    printf("[AUTO PIN-Entry]\n");
+    printf("    Status: %s\n", aic_cfg->autopin.enabled ? "ON" : "OFF");
+    disp_list();
+}
+
 static void display_warning()
 {
     if (keypad_is_stuck()) {
@@ -84,6 +110,7 @@ static void handle_display()
     display_light();
     display_lcd();
     display_reader();
+    display_autopin();
     display_warning();
 }
 
@@ -253,6 +280,137 @@ static void handle_lcd(int argc, char *argv[])
     display_lcd();
 }
 
+static void autopin_onoff(bool on)
+{
+    aic_cfg->autopin.enabled = on;
+    config_changed();
+    printf("Auto Pin-entry: %s\n", on ? "ON" : "OFF");
+}
+
+static void autopin_delete(int argc, char *argv[])
+{
+    const char *usage = "Usage: autopin delete <SLOT>\n"
+                        "  SLOT: [0..3], all";
+    if (argc != 1) {
+        printf("%s", usage);
+        return;
+    }
+
+    const char *slots[] = { "0", "1", "2", "3", "all" };
+    int match = cli_match_prefix(slots, 5, argv[0]);
+    if (match < 0) {
+        printf("%s", usage);
+        return;
+    }
+    if (match == 4) {
+        memset(&aic_cfg->autopin.entries, 0, sizeof(aic_cfg->autopin.entries));
+        printf("All slots cleared.\n");
+    } else {
+        memset(&aic_cfg->autopin.entries[match], 0,
+               sizeof(aic_cfg->autopin.entries[match]));
+        printf("Slot %d cleared.\n", match);
+    }
+    config_changed();
+}
+
+static int find_slot(const uint8_t uid[8], uint8_t uidlen)
+{
+    int slot = -1;
+    for (int i = 0; i < 4; i++) {
+        if ((aic_cfg->autopin.entries[i].uidlen == uidlen) &&
+            (memcmp(aic_cfg->autopin.entries[i].uid, uid, uidlen) == 0)) {
+            return i;
+        }
+        if ((slot < 0) && (aic_cfg->autopin.entries[i].uidlen == 0)) {
+            slot = i;
+        }
+    }
+    return slot;
+}
+
+static void autopin_add(int argc, char *argv[])
+{
+    const char *usage = "Usage: autopin add <PIN> <DELAY>\n"
+                        "  PIN: 4 digits\n"
+                        "  DELAY: [0..99] seconds\n";
+    if (argc != 2) {
+        printf("%s", usage);
+        return;
+    }
+
+    uint8_t uid[8];
+    uint8_t uidlen;    
+    if (!cardio_get_last(uid, &uidlen)) {
+        printf("No card detected.\n");
+        return;
+    }
+
+    int slot = find_slot(uid, uidlen);
+    if (slot < 0) {
+        printf("No empty slots available.\n");
+        return;
+    }
+
+    int delay = cli_extract_non_neg_int(argv[1], 0);
+    if (delay < 0 || delay > 99) {
+        printf("%s", usage);
+        return;
+    }
+
+    if (strlen(argv[0]) != 4) {
+        printf("PIN must be 4 digits.\n");
+        return;
+    }
+
+    for (int i = 0; i < 4; i++) {
+        if (isdigit((int)argv[0][i]) == 0) {
+            printf("PIN must be 4 digits.\n");
+            return;
+        }
+    }
+
+    strcpy(aic_cfg->autopin.entries[slot].pin, argv[0]);
+    aic_cfg->autopin.entries[slot].delay = delay;
+
+    config_changed();
+    printf("Added to slot %d.\n", slot);
+    disp_list();
+}
+
+static void handle_autopin(int argc, char *argv[])
+{
+    const char *usage = "Usage: autopin <on|off>\n"
+                        "       autopin list\n"
+                        "       autopin delete <SLOT>\n"
+                        "       autopin add <PIN> <DELAY>\n";
+    if (argc < 1) {
+        printf("%s", usage);
+        return;
+    }
+
+    const char *commands[] = { "on", "off", "list", "delete", "add" };
+    int match = cli_match_prefix(commands, 5, argv[0]);
+    if ((match == 0) || (match == 1)) {
+        if (argc == 1) {
+            autopin_onoff(match == 0);
+            return;
+        }
+    } else if (match == 2) {
+        if (argc == 1) {
+            disp_list();
+            return;
+        }
+    } else if (match == 3) {
+        autopin_delete(argc - 1, argv + 1);
+        return;
+    } else if (match == 4) {
+        autopin_add(argc - 1, argv + 1);
+        return;
+    }
+
+    printf("%s", usage);
+}
+
 static void handle_pn5180_tweak(int argc, char *argv[])
 {
     const char *usage = "Usage: pn5180_tweak <on|off>\n";
@@ -290,6 +448,7 @@ void commands_init()
     cli_register("light", handle_light, "Turn on/off lights.");
     cli_register("level", handle_level, "Set light level.");
     cli_register("lcd", handle_lcd, "Touch LCD settings.");
+    cli_register("autopin", handle_autopin, "Auto pin-entry.");
     cli_register("pn5180_tweak", handle_pn5180_tweak, "PN5180 TX tweak.");
     cli_register("debug", handle_debug, "Toggle debug.");
 }

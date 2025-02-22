@@ -27,7 +27,17 @@ typedef struct __attribute__((packed)) {
     } lcd;
     struct {
         bool pn5180_tx;
+        uint8_t reserved[7];
     } tweak;
+    struct {
+        struct {
+            uint8_t uidlen;
+            uint8_t delay;
+            uint8_t uid[8];
+            char pin[16];
+        } entries[4];
+        bool enabled;
+    } autopin;
     uint32_t reserved;
 } aic_cfg_t;
 

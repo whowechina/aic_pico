@@ -33,34 +33,12 @@
 #include "config.h"
 #include "cli.h"
 #include "commands.h"
+#include "cardio.h"
 #include "light.h"
 #include "keypad.h"
 #include "gui.h"
 
 #define DEBUG(...) if (aic_runtime.debug) printf(__VA_ARGS__)
-
-static struct {
-    uint8_t current[9];
-    uint8_t reported[9];
-    uint64_t report_time;
-} hid_cardio;
-
-void report_hid_cardio()
-{
-    if (!tud_hid_ready()) {
-        return;
-    }
-
-    uint64_t now = time_us_64();
-
-    if ((memcmp(hid_cardio.current, hid_cardio.reported, 9) != 0) &&
-        (now - hid_cardio.report_time > 1000000)) {
-
-        tud_hid_n_report(0x00, hid_cardio.current[0], hid_cardio.current + 1, 8);
-        memcpy(hid_cardio.reported, hid_cardio.current, 9);
-        hid_cardio.report_time = now;
-    }
-}
 
 struct __attribute__((packed)) {
     uint8_t modifier;
@@ -68,6 +46,11 @@ struct __attribute__((packed)) {
 } hid_nkro;
 
 static const char keymap[12] = KEYPAD_NKRO_MAP;
+
+static inline void set_nkro_bit(uint8_t code)
+{
+    hid_nkro.keymap[code / 8] |= (1 << (code % 8));
+}
 
 void report_hid_key()
 {
@@ -77,28 +60,30 @@ void report_hid_key()
 
     uint16_t keys = aic_runtime.touch ? gui_keypad_read() : keypad_read();
 
+    memset(&hid_nkro, 0, sizeof(hid_nkro));
     for (int i = 0; i < keypad_key_num(); i++) {
-        uint8_t code = keymap[i];
-        uint8_t byte = code / 8;
-        uint8_t bit = code % 8;
-        if (keys & (1 << i)) {
-            hid_nkro.keymap[byte] |= (1 << bit);
-        } else {
-            hid_nkro.keymap[byte] &= ~(1 << bit);
+       if (keys & (1 << i)) {
+            set_nkro_bit(keymap[i]);
         }
     }
+
+    int auto_pin_key = cardio_get_pin_key();
+    if (auto_pin_key > 0) {
+        set_nkro_bit(auto_pin_key);
+    }
+
     tud_hid_n_report(1, 0, &hid_nkro, sizeof(hid_nkro));
 }
 
 void report_usb_hid()
 {
-    report_hid_cardio();
+    cardio_report_cardio();
     report_hid_key();
 }
 
 static uint64_t last_hid_time = 0;
 
-static bool hid_is_active()
+static bool hid_light_is_active()
 {
     if (last_hid_time == 0) {
         return false;
@@ -114,7 +99,7 @@ static bool reader_is_active()
 static void light_mode_update()
 {
     static bool was_cardio = true;
-    bool cardio = !reader_is_active() && !hid_is_active();
+    bool cardio = !reader_is_active() && !hid_light_is_active();
     static uint8_t last_level;
     bool level_changed = (last_level != aic_cfg->light.level_idle);
 
@@ -159,75 +144,6 @@ static void core1_loop()
 void card_name_update_cb(nfc_card_name card_name)
 {
     gui_report_card_name(card_name);
-}
-
-static void update_cardio(nfc_card_t *card)
-{
-    switch (card->card_type) {
-        case NFC_CARD_MIFARE:
-            hid_cardio.current[0] = REPORT_ID_EAMU;
-            hid_cardio.current[1] = 0xe0;
-            hid_cardio.current[2] = 0x04;
-            if (card->len == 4) {
-                memcpy(hid_cardio.current + 3, card->uid, 4);
-                memcpy(hid_cardio.current + 7, card->uid, 2);
-            } else if (card->len == 7) {
-                memcpy(hid_cardio.current + 3, card->uid + 1, 6);
-            }
-            break;
-        case NFC_CARD_FELICA:
-            hid_cardio.current[0] = REPORT_ID_FELICA;
-            memcpy(hid_cardio.current + 1, card->uid, 8);
-           break;
-        case NFC_CARD_VICINITY:
-            hid_cardio.current[0] = REPORT_ID_EAMU;
-            memcpy(hid_cardio.current + 1, card->uid, 8);
-            break;
-        default:
-            memset(hid_cardio.current, 0, 9);
-            return;
-    }
-
-    gui_report_card_id(hid_cardio.current + 1, 8, true);
-    printf(" -> CardIO ");
-    for (int i = 1; i < 9; i++) {
-        printf("%02X", hid_cardio.current[i]);
-    }
-}
-
-static void cardio_run()
-{
-    if (aime_is_active() || bana_is_active()) {
-        memset(hid_cardio.current, 0, 9);
-        return;
-    }
-
-    static nfc_card_t old_card = { 0 };
-
-    nfc_rf_field(true);
-    nfc_card_t card = nfc_detect_card();
-    if (card.card_type != NFC_CARD_NONE) {
-        nfc_identify_last_card();
-        gui_report_card_id(card.uid, card.len, false);
-    }
-    nfc_rf_field(false);
-
-    if (memcmp(&old_card, &card, sizeof(old_card)) == 0) {
-        return;
-    }
-
-    old_card = card;
-
-    if (!reader_is_active() && !hid_is_active()) {
-        if (card.card_type != NFC_CARD_NONE) {
-            light_rainbow(30, 0, aic_cfg->light.level_active);
-        } else {
-            light_rainbow(1, 3000, aic_cfg->light.level_idle);
-        }
-    }
-
-    display_card(&card);
-    update_cardio(&card);
 }
 
 const int reader_intf = 1;
@@ -348,8 +264,14 @@ static void core0_loop()
 
         cli_run();
         reader_run();
-        cardio_run();
 
+        if (reader_is_active()) {
+            cardio_clear();
+        }
+        else {
+            cardio_run(hid_light_is_active());
+        }
+        
         keypad_update();
         report_usb_hid();
     
