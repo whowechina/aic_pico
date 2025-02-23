@@ -70,11 +70,11 @@ static void start_autopin(const char *pin, uint8_t delay)
         int key = pin[i] - '0';
         int code = (key > 0) ? keymap[key - 1] : keymap[9];
         autopin_ctx.seq[i].key = code;
-        autopin_ctx.seq[i].duration = 150;
+        autopin_ctx.seq[i].duration = 100;
     }
 }
 
-static void check_autopin()
+static void check_autopin(bool new_card)
 {
     if (!aic_cfg->autopin.enabled) {
         return;
@@ -89,9 +89,15 @@ static void check_autopin()
             continue;
         }
 
-        printf(" (Auto PIN-entry)");
-        start_autopin(aic_cfg->autopin.entries[i].pin, aic_cfg->autopin.entries[i].delay);
-
+        if (aic_cfg->autopin.entries[i].swipe && !new_card) {
+            printf("\nPIN-entry launched.");
+            start_autopin(aic_cfg->autopin.entries[i].pin, 0);
+        } else {
+            if (aic_cfg->autopin.entries[i].delay < 100) {
+                printf("\nPIN-entry scheduled.");
+                start_autopin(aic_cfg->autopin.entries[i].pin, aic_cfg->autopin.entries[i].delay);
+            }
+        }   
         break;
     }
 }
@@ -148,9 +154,16 @@ static void update_cardio(nfc_card_t *card)
             return;
     }
 
+    bool is_new_card = false;
+    if ((card->len != last_card.uid_len) ||
+        (memcmp(card->uid, last_card.uid, card->len) != 0) ||
+        (time_us_64() - last_card.time > LAST_CARD_TIMEOUT_US))
+    {
+        is_new_card = true;
+        last_card.uid_len = card->len;
+        memcpy(last_card.uid, card->uid, 8);
+    }
     last_card.time = time_us_64();
-    last_card.uid_len = card->len;
-    memcpy(last_card.uid, card->uid, 8);
 
     gui_report_card_id(hid_cardio.current + 1, 8, true);
     printf(" -> CardIO ");
@@ -158,7 +171,7 @@ static void update_cardio(nfc_card_t *card)
         printf("%02X", hid_cardio.current[i]);
     }
 
-    check_autopin();
+    check_autopin(is_new_card);
 }
 
 void cardio_run(bool hid_light)

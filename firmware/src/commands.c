@@ -86,7 +86,13 @@ static void disp_list()
             printf("%02x", aic_cfg->autopin.entries[i].uid[j]);
         }
         printf(" PIN: %.15s", aic_cfg->autopin.entries[i].pin);
-        printf(" Delay: %ds\n", aic_cfg->autopin.entries[i].delay);
+        if (aic_cfg->autopin.entries[i].swipe) {
+            printf(" [Swipe]");
+        }
+        if (aic_cfg->autopin.entries[i].delay < 100) {
+            printf(" [Delay: %ds]", aic_cfg->autopin.entries[i].delay);
+        }
+        printf("\n");
     }
 }
 
@@ -330,10 +336,14 @@ static int find_slot(const uint8_t uid[8], uint8_t uidlen)
 
 static void autopin_add(int argc, char *argv[])
 {
-    const char *usage = "Usage: autopin add <PIN> <DELAY>\n"
+    const char *usage = "Usage: autopin add <PIN> swipe\n"
+                        "       autopin add <PIN> <delay|both> [DELAY]\n"
                         "  PIN: 4 digits\n"
-                        "  DELAY: [0..99] seconds\n";
-    if (argc != 2) {
+                        "  DELAY: [0..99] seconds\n"
+                        "\"swipe\": swipe-triggered PIN-entry (not the first swipe);\n"
+                        "\"delay\": delayed auto PIN-entry;\n"
+                        "\"both\": both two methods.\n";
+    if (argc < 2) {
         printf("%s", usage);
         return;
     }
@@ -351,26 +361,46 @@ static void autopin_add(int argc, char *argv[])
         return;
     }
 
-    int delay = cli_extract_non_neg_int(argv[1], 0);
-    if (delay < 0 || delay > 99) {
-        printf("%s", usage);
-        return;
-    }
-
     if (strlen(argv[0]) != 4) {
         printf("PIN must be 4 digits.\n");
         return;
     }
 
     for (int i = 0; i < 4; i++) {
-        if (isdigit((int)argv[0][i]) == 0) {
+        if (!isdigit((unsigned char)argv[0][i])) {
             printf("PIN must be 4 digits.\n");
             return;
         }
     }
 
     strcpy(aic_cfg->autopin.entries[slot].pin, argv[0]);
-    aic_cfg->autopin.entries[slot].delay = delay;
+
+    const char *commands[] = { "swipe", "delay", "both" };
+    int match = cli_match_prefix(commands, count_of(commands), argv[1]);
+    if (match < 0) {
+        printf("%s", usage);
+        return;
+    }
+    if (match == 0) {
+        if (argc != 2) {
+            printf("%s", usage);
+            return;
+        }
+        aic_cfg->autopin.entries[slot].delay = 127; // disable delayed entry
+        aic_cfg->autopin.entries[slot].swipe = true;
+    } else {
+        if (argc != 3) {
+            printf("%s", usage);
+            return;
+        }
+        int delay = cli_extract_non_neg_int(argv[2], 0);
+        if ((delay < 0) || (delay > 99)) {
+            printf("%s", usage);
+            return;
+        }
+        aic_cfg->autopin.entries[slot].swipe = (match == 2);
+        aic_cfg->autopin.entries[slot].delay = delay;
+    }
 
     config_changed();
     printf("Added to slot %d.\n", slot);
@@ -382,7 +412,7 @@ static void handle_autopin(int argc, char *argv[])
     const char *usage = "Usage: autopin <on|off>\n"
                         "       autopin list\n"
                         "       autopin delete <SLOT>\n"
-                        "       autopin add <PIN> <DELAY>\n";
+                        "       autopin add <PIN> [delay <DELAY>] [swipe]\n";
     if (argc < 1) {
         printf("%s", usage);
         return;

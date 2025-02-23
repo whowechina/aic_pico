@@ -32,11 +32,13 @@ typedef struct __attribute__((packed)) {
     struct {
         struct {
             uint8_t uidlen;
-            uint8_t delay;
+            uint8_t swipe : 1;
+            uint8_t delay : 7;
             uint8_t uid[8];
             char pin[16];
         } entries[4];
         bool enabled;
+        uint8_t reserved[3];
     } autopin;
     uint32_t reserved;
 } aic_cfg_t;
