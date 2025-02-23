@@ -412,7 +412,8 @@ static void handle_autopin(int argc, char *argv[])
     const char *usage = "Usage: autopin <on|off>\n"
                         "       autopin list\n"
                         "       autopin delete <SLOT>\n"
-                        "       autopin add <PIN> [delay <DELAY>] [swipe]\n";
+                        "       autopin add <PIN> swipe\n"
+                        "       autopin add <PIN> <delay|both> [DELAY]\n";
     if (argc < 1) {
         printf("%s", usage);
         return;
