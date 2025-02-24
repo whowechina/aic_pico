@@ -16,7 +16,7 @@
 #include "gui.h"
 #include "light.h"
 
-#define LAST_CARD_TIMEOUT_US 30000000
+#define LAST_CARD_TIMEOUT_US 60000000
 
 static struct {
     uint8_t current[9];
@@ -94,7 +94,7 @@ static void check_autopin(bool new_card)
             start_autopin(aic_cfg->autopin.entries[i].pin, 0);
         } else {
             if (aic_cfg->autopin.entries[i].delay < 100) {
-                printf("\nPIN-entry scheduled.");
+                printf("\nDelayed PIN-entry scheduled.");
                 start_autopin(aic_cfg->autopin.entries[i].pin, aic_cfg->autopin.entries[i].delay);
             }
         }   
@@ -154,24 +154,22 @@ static void update_cardio(nfc_card_t *card)
             return;
     }
 
-    bool is_new_card = false;
-    if ((card->len != last_card.uid_len) ||
-        (memcmp(card->uid, last_card.uid, card->len) != 0) ||
-        (time_us_64() - last_card.time > LAST_CARD_TIMEOUT_US))
-    {
-        is_new_card = true;
-        last_card.uid_len = card->len;
-        memcpy(last_card.uid, card->uid, 8);
-    }
-    last_card.time = time_us_64();
-
     gui_report_card_id(hid_cardio.current + 1, 8, true);
     printf(" -> CardIO ");
     for (int i = 1; i < 9; i++) {
         printf("%02X", hid_cardio.current[i]);
     }
 
-    check_autopin(is_new_card);
+    bool new_card = false;
+    if ((card->len != last_card.uid_len) ||
+        (memcmp(card->uid, last_card.uid, card->len) != 0)) {
+        last_card.uid_len = card->len;
+        memcpy(last_card.uid, card->uid, 8);
+        new_card = true;
+    }
+    last_card.time = time_us_64();
+    
+    check_autopin(new_card);
 }
 
 void cardio_run(bool hid_light)

@@ -373,8 +373,6 @@ static void autopin_add(int argc, char *argv[])
         }
     }
 
-    strcpy(aic_cfg->autopin.entries[slot].pin, argv[0]);
-
     const char *commands[] = { "swipe", "delay", "both" };
     int match = cli_match_prefix(commands, count_of(commands), argv[1]);
     if (match < 0) {
@@ -401,6 +399,10 @@ static void autopin_add(int argc, char *argv[])
         aic_cfg->autopin.entries[slot].swipe = (match == 2);
         aic_cfg->autopin.entries[slot].delay = delay;
     }
+
+    aic_cfg->autopin.entries[slot].uidlen = uidlen;
+    memcpy(aic_cfg->autopin.entries[slot].uid, uid, uidlen);
+    strcpy(aic_cfg->autopin.entries[slot].pin, argv[0]);
 
     config_changed();
     printf("Added to slot %d.\n", slot);
