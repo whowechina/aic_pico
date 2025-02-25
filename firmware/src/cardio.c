@@ -161,14 +161,19 @@ static void update_cardio(nfc_card_t *card)
     }
 
     bool new_card = false;
-    if ((card->len != last_card.uid_len) ||
-        (memcmp(card->uid, last_card.uid, card->len) != 0)) {
+    if ((card->len == last_card.uid_len) &&
+        (memcmp(card->uid, last_card.uid, card->len) == 0)) {
+        if (time_us_64() - last_card.time > LAST_CARD_TIMEOUT_US) {
+            new_card = true;
+        }
+    } else {
         last_card.uid_len = card->len;
         memcpy(last_card.uid, card->uid, 8);
         new_card = true;
     }
+
     last_card.time = time_us_64();
-    
+  
     check_autopin(new_card);
 }
 
