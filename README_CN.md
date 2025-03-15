@@ -114,6 +114,12 @@ https://discord.gg/M8f2PPQFEA
 ### 接线
 <img src="doc/pico_pn532_wiring.png" width="70%">
 
+提醒：最新固件下，你也可以使用这些替代的 I2C 端口（SCL，SDA）。
+* GPIO 21, GPIO 20
+* GPIO 19, GPIO 18
+* GPIO 17, GPIO 16
+* GPIO 27, GPIO 26
+
 ### 组装
 我会让这些图片来说明。
 

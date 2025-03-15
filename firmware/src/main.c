@@ -297,6 +297,29 @@ static void identify_touch()
     aic_runtime.touch = !gpio_get(AIC_TOUCH_EN);
 }
 
+static void find_nfc_module()
+{
+    if (nfc_init_spi(SPI_PORT, SPI_MISO, SPI_SCK, SPI_MOSI,
+                     SPI_RST, SPI_NSS, SPI_BUSY)) {
+        return;
+    }
+
+    static struct {
+        i2c_inst_t *port;
+        uint8_t scl;
+        uint8_t sda;
+    } i2c[] = I2C_PORT_LIST;
+    
+    for (int retry = 0; retry < 3; retry++) {
+        for (int i = 0; i < count_of(i2c); i++) {
+            if (nfc_init_i2c(i2c[i].port, i2c[i].scl, i2c[i].sda, I2C_FREQ)) {
+                return;
+            }
+        }
+        sleep_ms(200);
+    }
+}
+
 void init()
 {
     tusb_init();
@@ -317,9 +340,8 @@ void init()
 
     spi_overclock();
 
-    nfc_init_i2c(I2C_PORT, I2C_SCL, I2C_SDA, I2C_FREQ);
-    nfc_init_spi(SPI_PORT, SPI_MISO, SPI_SCK, SPI_MOSI, SPI_RST, SPI_NSS, SPI_BUSY);
-    nfc_init();
+    find_nfc_module();
+
     nfc_set_wait_loop(wait_loop);
     nfc_pn5180_tx_tweak(aic_cfg->tweak.pn5180_tx);
     nfc_set_card_name_listener(card_name_update_cb);

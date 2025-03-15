@@ -111,6 +111,12 @@ Top parts should be printed upside-down.
 ### Wiring
 <img src="doc/pico_pn532_wiring.png" width="70%">
 
+NOTE: With latest firmware, you can also use these alternative I2C ports (SCL, SDA).
+* GPIO 21, GPIO 20
+* GPIO 19, GPIO 18
+* GPIO 17, GPIO 16
+* GPIO 27, GPIO 26
+
 ### Assembly
 I'll let these images do the talk.
 

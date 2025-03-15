@@ -63,15 +63,16 @@ typedef struct {
 
 extern nfc_runtime_t nfc_runtime;
 
-/* should init or attach i2c and spi port before init */
+bool nfc_init_i2c(i2c_inst_t *port, uint8_t scl, uint8_t sda, uint32_t freq);
+bool nfc_init_spi(spi_inst_t *port, uint8_t miso, uint8_t sck, uint8_t mosi,
+                  uint8_t rst, uint8_t nss, uint8_t busy);
+
+/* port and gpio should be initialized before attach */
 void nfc_attach_i2c(i2c_inst_t *port);
 void nfc_attach_spi(spi_inst_t *port, uint8_t rst, uint8_t nss, uint8_t busy);
+/* should attach i2c or spi port before nfc_init() */
+bool nfc_init();
 
-void nfc_init_i2c(i2c_inst_t *port, uint8_t scl, uint8_t sda, uint32_t freq);
-void nfc_init_spi(spi_inst_t *port, uint8_t miso, uint8_t sck, uint8_t mosi,
-                 uint8_t rst, uint8_t nss, uint8_t busy);
-
-void nfc_init();
 
 /* should be called only after init */
 void nfc_set_wait_loop(nfc_wait_loop_t loop);

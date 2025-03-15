@@ -41,6 +41,13 @@ static uint8_t gpio_nss;
 static uint8_t gpio_busy;
 static uint8_t version[2];
 
+static void gpio_uninit(uint8_t pin)
+{
+    gpio_set_function(pin, GPIO_FUNC_NULL);
+    gpio_set_dir(pin, GPIO_IN);
+    gpio_disable_pulls(pin);
+}
+
 bool pn5180_init(spi_inst_t *port, uint8_t rst, uint8_t nss, uint8_t busy)
 {
     gpio_init(nss);
@@ -53,13 +60,25 @@ bool pn5180_init(spi_inst_t *port, uint8_t rst, uint8_t nss, uint8_t busy)
     gpio_pull_up(rst);
     gpio_put(rst, 1);
 
+    gpio_init(busy);
+    gpio_set_dir(busy, GPIO_IN);
+    gpio_pull_down(busy);
+
     spi_port = port;
     gpio_rst = rst;
     gpio_nss = nss;
     gpio_busy = busy;
 
     pn5180_read_eeprom(0x12, version, sizeof(version));
-    return (version[0] <= 15) && (version[1] >= 2) && (version[1] <= 15);
+
+    if ((version[0] <= 15) && (version[1] >= 2) && (version[1] <= 15)) {
+        return true;
+    }
+
+    gpio_uninit(nss);
+    gpio_uninit(rst);
+    gpio_uninit(busy);
+    return false;
 }
 
 const char *pn5180_firmware_ver()
