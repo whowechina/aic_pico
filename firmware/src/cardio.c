@@ -35,7 +35,7 @@ static struct {
     uint8_t seq_len; // not pin length
     uint8_t index;
     struct {
-        uint8_t key;
+        uint8_t key; // 0xff for empty
         uint8_t duration; // in cycles, most cases 1 cycle = 1ms
     } seq[32];
     uint64_t pin_time;
@@ -63,15 +63,24 @@ static void start_autopin(const char *pin, uint8_t delay)
     const char *keymap = KEYPAD_NKRO_MAP;
     autopin_ctx.active = true;
     autopin_ctx.index = 0;
-    autopin_ctx.seq_len = strlen(pin);
     autopin_ctx.pin_time = time_us_64() + delay * 1000000;
 
-    for (int i = 0; i < autopin_ctx.seq_len; i++) {
+    int len = 0;
+    for (int i = 0; i < strlen(pin); i++) {
         int key = pin[i] - '0';
         int code = (key > 0) ? keymap[key - 1] : keymap[9];
-        autopin_ctx.seq[i].key = code;
-        autopin_ctx.seq[i].duration = 100;
+
+        if ((i > 0) && (pin[i] == pin[i - 1])) {
+            autopin_ctx.seq[len].key = 0xff; // release previous key
+            autopin_ctx.seq[len].duration = 30;
+            len++;
+        }
+        autopin_ctx.seq[len].key = code;
+        autopin_ctx.seq[len].duration = 50;
+        len++;
     }
+
+    autopin_ctx.seq_len = len;
 }
 
 static void check_autopin(bool new_card)

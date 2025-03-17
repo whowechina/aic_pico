@@ -49,7 +49,11 @@ static const char keymap[12] = KEYPAD_NKRO_MAP;
 
 static inline void set_nkro_bit(uint8_t code)
 {
-    hid_nkro.keymap[code / 8] |= (1 << (code % 8));
+    int byte = code / 8;
+    if (byte < sizeof(hid_nkro.keymap)) {
+        int bit = code % 8;
+        hid_nkro.keymap[byte] |= (1 << (bit));
+    }
 }
 
 void report_hid_key()
