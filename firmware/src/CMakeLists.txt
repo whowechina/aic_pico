@@ -15,7 +15,10 @@ function(make_firmware board board_def)
                    main.c save.c config.c commands.c light.c keypad.c cardio.c
                    cst816t.c st7789.c gui.c gfx.c rle.c
                    cli.c usb_descriptors.c)
-    target_compile_definitions(${board} PUBLIC ${board_def})
+
+    target_compile_definitions(${board} PUBLIC ${board_def}
+                               PICO_XOSC_STARTUP_DELAY_MULTIPLIER=20)
+
     pico_enable_stdio_usb(${board} 1)
 
     pico_generate_pio_header(${board} ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio)
