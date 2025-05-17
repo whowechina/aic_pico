@@ -29,6 +29,7 @@ typedef enum {
     CARD_AIC_BANA,
     CARD_AIC_NESICA,
     CARD_AIC_VIRTUAL,
+    CARD_SUICA,
     CARD_MIFARE,
     CARD_AIME,
     CARD_BANA,

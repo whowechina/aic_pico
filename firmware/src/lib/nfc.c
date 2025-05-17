@@ -375,7 +375,11 @@ nfc_card_t nfc_detect_card()
 
         update_last_card(&card);
         if (card.card_type == NFC_CARD_FELICA) {
-            update_card_name(CARD_AIC, false);
+            if (memcmp(card.syscode, "\x88\xB4", 2) == 0) {
+                update_card_name(CARD_AIC, false);
+            } else if (memcmp(card.syscode, "\x00\x03", 2) == 0) {
+                update_card_name(CARD_SUICA, true);
+            }
         } else if (card.card_type == NFC_CARD_MIFARE) {
             update_card_name(CARD_MIFARE, false);
         } else if (card.card_type == NFC_CARD_VICINITY) {
@@ -522,7 +526,7 @@ bool nfc_felica_read(uint16_t svc_code, uint16_t block_id, uint8_t block_data[16
     if (!api[nfc_module].felica_read) {
         return false;
     }
-    
+
     bool read_ok = api[nfc_module].felica_read(svc_code, block_id, block_data);
 
     if (read_ok && (svc_code == 0x000b) && (block_id == 0x8082)) {

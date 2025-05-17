@@ -145,6 +145,8 @@ static void draw_home_card()
         center_image(&image_aic_nesica, -24);
     } else if (card_splash.card == CARD_AIC) {
         center_image(&image_aic_generic, -24);
+    } else if (card_splash.card == CARD_SUICA) {
+        center_image(&image_suica, -24);
     } else if (card_splash.card == CARD_MIFARE) {
         center_image(&image_mifare, -24);
     } else if (card_splash.card == CARD_AIME) {

@@ -3,6 +3,10 @@
  * RLE or RLE X can be used.
  * ENCODE and ENCODE_X are for compression.
  * ENCODE_PAL converts a 256-color pallete) from 32bit RGBA to RGB565A8.
+ *
+ * Transparent PNG is converted by https://lvgl.io/tools/imageconverter,
+ *   Use indexed 8bit or 4bit.
+ *   Even if the image is in 4bit, you can still use RLE 8bit compression.
  */
 
 #include <stdlib.h>
@@ -10,8 +14,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include "../src/rle.h"
-#include "../src/images.h"
+#include "../src/rle.c"
+#include "suica_220.c"
 
 uint16_t buf[2*1024*1024];
 uint8_t *output8 = (uint8_t *)buf;
@@ -96,31 +100,37 @@ void print_array(size_t size)
 }
 
 /* Work only for arrays */
-#define DO_ENCODE(bits, input, print) \
+#define DO_ENCODE(bits, input, size, name) \
     do { \
-        size_t size = sizeof(input); \
         size_t len = rle_encode_uint##bits(output##bits, (const uint##bits##_t *)input, size); \
+        printf("const uint8_t %s[] = {\n", #name); \
         printf("    // %s (%zd -> RLE %zd)", #input, size * bits / 8, len * bits / 8); \
-        print ? print_array(len * bits / 8) : printf("\n"); \
+        print_array(len * bits / 8); \
+        printf("};\n\n"); \
     } while (0);
 
 /* Work only for arrays */
-#define DO_ENCODE_X(bits, input, x, print) \
+#define DO_ENCODE_X(bits, input, x, size, name) \
     do { \
-        size_t size = sizeof(input); \
         size_t len = rle_x_encode_uint##bits(output##bits, (const uint##bits##_t *)input, size, x); \
+        printf("const uint8_t %s[] = {\n", #name); \
         printf("    // %s (%zd -> RLE(%x) %zd)", #input, size * bits / 8, x, len * bits / 8); \
-        print ? print_array(len * bits / 8) : printf("\n"); \
+        print_array(len * bits / 8); \
+        printf("};\n\n"); \
     } while (0);
 
-#define ENCODE(bits, input) DO_ENCODE(bits, input, true)
-#define ENCODE_X(bits, input, x) DO_ENCODE_X(bits, input, x, true)
-#define TEST_ENCODE(bits, input) DO_ENCODE(bits, input, false)
-#define TEST_ENCODE_X(bits, input, x) DO_ENCODE_X(bits, input, x, false)
+#define ENCODE(bits, input) DO_ENCODE(bits, input, sizeof(input), input)
+#define ENCODE_X(bits, input, x) DO_ENCODE_X(bits, input, x, sizeof(input), input)
+#define ENCODE_ALPHA(alpha) \
+    to_4bpp(alpha, sizeof(alpha)); \
+    DO_ENCODE(8, buf, sizeof(alpha) / 2, alpha);
+#define ENCODE_X_ALPHA(alpha, x) \
+    to_4bpp(alpha, sizeof(alpha)); \
+    DO_ENCODE_X(8, buf, x, sizeof(alpha) / 2, alpha);
 
-void encode_pallette(const uint8_t pallete[256 * 4])
+void encode_pallette(const uint8_t *pallete, size_t size)
 {
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < size / 4; i++) {
         if (i % 4 == 0) {
             printf("\n   ");
         }
@@ -135,17 +145,22 @@ void encode_pallette(const uint8_t pallete[256 * 4])
     }
 }
 
-#define ENCODE_PAL(pallete) \
-    if (sizeof(pallete) != 256 * 4) { \
-        printf("    // Error\n"); \
-    } else { \
-        printf("    // %s Pallete (RGB565A8*256)", #pallete); \
-        encode_pallette(pallete); \
+void to_4bpp(const uint8_t *alpha, size_t size)
+{
+    for (int i = 0; i < size / 2; i++) {
+        buf[i] = (alpha[i * 2] << 8) | alpha[i * 2 + 1];
     }
+}
+
+#define ENCODE_PAL(pallete) \
+    printf("const uint32_t %s[] = {\n", #pallete); \
+    printf("    // %s Pallete (RGB565A8*%ld)", #pallete, sizeof(pallete) / 4); \
+    encode_pallette(pallete, sizeof(pallete)); \
+    printf("\n};\n\n");
 
 int main()
 {
-    ENCODE(8, bana_logo_pixels);
-    ENCODE_PAL(bana_logo_pal);
+    ENCODE(8, image_suica_pixels);
+    ENCODE_PAL(image_suica_pal);
     return 0;
 }

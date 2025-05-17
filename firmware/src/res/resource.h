@@ -12,6 +12,7 @@
 #include "image_aic_konami.h"
 #include "image_aic_sega.h"
 #include "image_aic_nesica.h"
+#include "image_suica.h"
 #include "image_mifare.h"
 #include "image_bana.h"
 #include "image_aime.h"
