@@ -64,6 +64,7 @@ static void display_reader()
 {
     printf("[Reader]\n");
     printf("    Virtual AIC: %s\n", aic_cfg->reader.virtual_aic ? "ON" : "OFF");
+    printf("    Real access code: %s\n", aic_cfg->reader.real_access_code ? "ON" : "OFF");
     printf("    Mode: %s\n", mode_name(aic_cfg->reader.mode));
     if (aic_cfg->reader.mode == MODE_AUTO) {
         printf("    Detected: %s\n", mode_name(aic_runtime.mode));
@@ -164,6 +165,28 @@ static void handle_virtual(int argc, char *argv[])
     aic_cfg->reader.virtual_aic = (match == 0);
 
     aime_virtual_aic(aic_cfg->reader.virtual_aic);
+    config_changed();
+    display_reader();
+}
+
+static void handle_real_access_code(int argc, char *argv[])
+{
+    const char *usage = "Usage: real_access_code <on|off>\n";
+    if (argc != 1) {
+        printf("%s", usage);
+        return;
+    }
+
+    const char *commands[] = { "on", "off" };
+    int match = cli_match_prefix(commands, 2, argv[0]);
+    if (match < 0) {
+        printf("%s", usage);
+        return;
+    }
+
+    aic_cfg->reader.real_access_code = (match == 0);
+
+    aime_real_access_code(aic_cfg->reader.real_access_code);
     config_changed();
     display_reader();
 }
@@ -477,6 +500,7 @@ void commands_init()
     cli_register("factory", handle_factory_reset, "Reset everything to default.");
     cli_register("nfc", handle_nfc, "NFC module.");
     cli_register("virtual", handle_virtual, "Virtual AIC card.");
+    cli_register("real_access_code", handle_real_access_code, "Real Access code.");
     cli_register("mode", handle_mode, "Reader mode/protocol.");
     cli_register("light", handle_light, "Turn on/off lights.");
     cli_register("level", handle_level, "Set light level.");

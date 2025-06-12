@@ -15,6 +15,7 @@ typedef void (*aime_putc_func)(uint8_t byte);
 void aime_init(aime_putc_func putc_func);
 
 void aime_virtual_aic(bool enable);
+void aime_real_access_code(bool enable);
 void aime_sub_mode(int sub_mode);
 const char *aime_get_mode_string();
 

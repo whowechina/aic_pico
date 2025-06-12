@@ -16,6 +16,7 @@
 
 #include "nfc.h"
 #include "aime.h"
+#include "spad0.h"
 
 static bool debug = false;
 #define DEBUG(...) if (nfc_runtime.debug) printf(__VA_ARGS__)
@@ -77,8 +78,23 @@ static struct {
     uint8_t idm[8];
     const uint8_t pmm[8];
     const uint8_t syscode[2];
-} virtual_aic = { false, false, 
-                  "", "\x00\xf1\x00\x00\x00\x01\x43\x00", "\x88\xb4" };
+} virtual_aic = {
+    false, 
+    false, 
+    "", 
+    "\x00\xf1\x00\x00\x00\x01\x43\x00", 
+    "\x88\xb4" 
+};
+
+static struct {
+    bool enabled;
+    bool active; // currently active
+    uint8_t block2[16];
+} real_access_code = {
+    false,
+    false,
+    ""
+};
 
 static void putc_trap(uint8_t byte)
 {
@@ -104,6 +120,11 @@ void aime_init(aime_putc_func putc_func)
 void aime_virtual_aic(bool enable)
 {
     virtual_aic.enabled = enable;
+}
+
+void aime_real_access_code(bool enable)
+{
+    real_access_code.enabled = enable;
 }
 
 static uint8_t mifare_keys[2][6]; // 'KeyA' and 'KeyB'
@@ -291,6 +312,9 @@ static void cmd_detect_card()
         display_card(&card);
     }
 
+    virtual_aic.active = false;
+    real_access_code.active = false;
+
     switch (card.card_type) {
         case NFC_CARD_MIFARE:
             if (virtual_aic.enabled) {
@@ -314,9 +338,20 @@ static void cmd_detect_card()
                 virtual_aic.active = true;
                 memcpy(virtual_aic.idm, card.uid, 8);
                 fake_felica_card();
-            } else {
-                handle_felica_card(card.uid, card.pmm);
+                break;
             }
+            // TODO 真实卡号
+            if(real_access_code.enabled) {
+                uint8_t spad0[16];
+                if(nfc_felica_read(0x000b, 0x8000, spad0))
+                {
+                    real_access_code.active = true;
+                    spad0_decrypt(spad0, real_access_code.block2, 16);
+                    handle_mifare_card(card.uid, 4);
+                    break;
+                }
+            }
+            handle_felica_card(card.uid, card.pmm);
             break;
         case NFC_CARD_VICINITY:
             if (virtual_aic.enabled) {
@@ -345,9 +380,10 @@ static void cmd_card_select()
 
 static void cmd_mifare_auth(int type)
 {
-    const uint8_t *key = mifare_keys[type];
-    nfc_mifare_auth(request.mifare.uid, request.mifare.block_id,
-                    type, key);
+    if(real_access_code.active) {
+        const uint8_t *key = mifare_keys[type];
+        nfc_mifare_auth(request.mifare.uid, request.mifare.block_id, type, key);
+    }
     send_simple_response(STATUS_OK);
 }
 
@@ -355,7 +391,13 @@ static void cmd_mifare_read()
 {
     build_response(16);
     memset(response.payload, 0, 16);
-    nfc_mifare_read(request.mifare.block_id, response.payload);
+    if(real_access_code.active) {
+        if(request.mifare.block_id == 2) {
+            memcpy(response.payload, real_access_code.block2, 16);
+        }
+    } else {
+        nfc_mifare_read(request.mifare.block_id, response.payload);
+    }
     send_response();
 }
 

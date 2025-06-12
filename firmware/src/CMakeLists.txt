@@ -28,12 +28,23 @@ function(make_firmware board board_def)
 
     pico_add_extra_outputs(${board})
 
-    add_custom_command(TARGET ${board} PRE_BUILD
-    COMMAND touch ${CMAKE_CURRENT_SOURCE_DIR}/cli.c)
+    if(CMAKE_HOST_WIN32)
+        add_custom_command(TARGET ${board} PRE_BUILD
+            COMMAND powershell -Command "(Get-Item '${CMAKE_CURRENT_SOURCE_DIR}/cli.c').LastWriteTime = Get-Date"
+        )
+        add_custom_command(TARGET ${board} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy ${board}.uf2 ${CMAKE_CURRENT_LIST_DIR}/..
+        )
+    else()
+        add_custom_command(TARGET ${board} PRE_BUILD
+            COMMAND touch ${CMAKE_CURRENT_SOURCE_DIR}/cli.c
+        )
+        add_custom_command(TARGET ${board} POST_BUILD
+            COMMAND cp ${board}.uf2 ${CMAKE_CURRENT_LIST_DIR}/..
+        )
+    endif()
 
-    add_custom_command(TARGET ${board} POST_BUILD
-                       COMMAND cp ${board}.uf2 ${CMAKE_CURRENT_LIST_DIR}/..)
 endfunction()
 
-add_library(aic lib/aime.c lib/bana.c lib/pn532.c lib/pn5180.c lib/nfc.c lib/mode.c)
+add_library(aic lib/aime.c lib/bana.c lib/pn532.c lib/pn5180.c lib/nfc.c lib/mode.c lib/spad0.c)
 make_firmware(aic_pico BOARD_AIC_PICO)

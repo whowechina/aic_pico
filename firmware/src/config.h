@@ -20,6 +20,7 @@ typedef struct __attribute__((packed)) {
     } light;
     struct {
         bool virtual_aic;
+        bool real_access_code;
         uint8_t mode;
     } reader;
     struct {
