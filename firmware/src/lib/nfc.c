@@ -83,31 +83,25 @@ static bool last_name_final;
 static uint64_t last_card_name_time = 0;
 static card_name_listener_func card_name_listener;
 
-static inline bool last_name_expired()
+static inline bool last_name_active()
 {
-    return time_us_64() - last_card_name_time > CARD_INFO_TIMEOUT_US;
+    return time_us_64() - last_card_name_time <= CARD_INFO_TIMEOUT_US;
 }
 
 static void update_card_name(nfc_card_name card_name, bool final)
 {
-    bool accept = last_name_expired();
+    if (last_name_active() && last_name_final && (last_card_name != card_name)) {
+        // If the last name was final and different, we don't accept the new one
+        return;
 
-    if (!accept && !last_name_final) {
-        accept = true;
     }
 
-    if (!accept && (card_name == last_card_name)) {
-        accept = true;
-    }
+    last_card_name = card_name;
+    last_name_final = final;
 
-    if (accept) {
-        last_card_name = card_name;
-        last_name_final = final;
-
-        last_card_name_time = time_us_64();
-        if (card_name_listener) {
-            card_name_listener(card_name);
-        }
+    last_card_name_time = time_us_64();
+    if (card_name_listener) {
+        card_name_listener(card_name);
     }
 }
 
@@ -118,7 +112,7 @@ void nfc_set_card_name_listener(card_name_listener_func listener)
 
 nfc_card_name nfc_last_card_name()
 {
-    if (last_name_expired()) {
+    if (!last_name_active()) {
         return CARD_NONE;
     }
 
