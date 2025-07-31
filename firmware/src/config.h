@@ -15,7 +15,9 @@ typedef struct __attribute__((packed)) {
     struct {
         uint8_t level_idle;
         uint8_t level_active;
-        bool rgb;
+        uint8_t rgb_en:1;
+        uint8_t rgb_order:3;
+        uint8_t rgb_reserved:4;
         bool led;
     } light;
     struct {

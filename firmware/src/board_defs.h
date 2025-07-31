@@ -17,7 +17,7 @@
 #define SPI_BUSY 26
 
 #define RGB_PIN 12
-#define RGB_ORDER GRB // or RGB
+#define DEFAULT_RGB_ORDER GRB
 #define LED_DEF { 25, 22, 13, 15 }
 
 #define KEYPAD_DEF { 6, 7, 8, 3, 4, 5, 0, 1, 2, 9, 10, 11 }

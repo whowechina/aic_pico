@@ -12,6 +12,7 @@
 #include "cli.h"
 
 #include "keypad.h"
+#include "light.h"
 
 #include "aime.h"
 #include "bana.h"
@@ -48,8 +49,9 @@ static void display_nfc()
 static void display_light()
 {
     printf("[Light]\n");
-    printf("    RGB-%s, LED-%s\n",
-            aic_cfg->light.rgb ? "ON" : "OFF",
+    printf("    RGB-%s (%s), LED-%s\n",
+            aic_cfg->light.rgb_en ? "ON" : "OFF",
+            light_get_rgb_order_string(aic_cfg->light.rgb_order),
             aic_cfg->light.led ? "ON" : "OFF");
     printf("    Level: Idle-%d, Active-%d\n", aic_cfg->light.level_idle, aic_cfg->light.level_active);
 }
@@ -219,19 +221,19 @@ static void handle_light(int argc, char *argv[])
     int match = cli_match_prefix(commands, 4, argv[0]);
     switch (match) {
         case 0:
-            aic_cfg->light.rgb = true;
+            aic_cfg->light.rgb_en = true;
             aic_cfg->light.led = false;
             break;
         case 1:
-            aic_cfg->light.rgb = false;
+            aic_cfg->light.rgb_en = false;
             aic_cfg->light.led = true;
             break;
         case 2:
-            aic_cfg->light.rgb = true;
+            aic_cfg->light.rgb_en = true;
             aic_cfg->light.led = true;
             break;
         case 3:
-            aic_cfg->light.rgb = false;
+            aic_cfg->light.rgb_en = false;
             aic_cfg->light.led = false;
             break;
         default:
@@ -240,6 +242,27 @@ static void handle_light(int argc, char *argv[])
     }
     config_changed();
     display_light();
+}
+
+static void handle_rgb_order(int argc, char *argv[])
+{
+    const char *usage = "Usage: rgb-order <grb|brg|rgb|rbg>\n";
+    if (argc != 1) {
+        printf("%s", usage);
+        return;
+    }
+
+    const char *commands[] = { "grb", "brg", "rgb", "rbg" };
+    int match = cli_match_prefix(commands, 4, argv[0]);
+    if (match < 0) {
+        printf("%s", usage);
+        return;
+    }
+
+    aic_cfg->light.rgb_order = match;
+    light_set_rgb_order(aic_cfg->light.rgb_order);
+    config_changed();
+    printf("RGB order set to %s.\n", commands[match]);
 }
 
 static void handle_level(int argc, char *argv[])
@@ -479,6 +502,7 @@ void commands_init()
     cli_register("virtual", handle_virtual, "Virtual AIC card.");
     cli_register("mode", handle_mode, "Reader mode/protocol.");
     cli_register("light", handle_light, "Turn on/off lights.");
+    cli_register("rgb-order", handle_rgb_order, "Set RGB order.");
     cli_register("level", handle_level, "Set light level.");
     cli_register("lcd", handle_lcd, "Touch LCD settings.");
     cli_register("autopin", handle_autopin, "Auto pin-entry.");

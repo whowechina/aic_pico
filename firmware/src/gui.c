@@ -268,7 +268,7 @@ static void draw_status()
     gfx_text_draw(120, 105, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
 
     status_title(120, 132, "Light", st7789_rgb565(0x00c000));
-    if (aic_cfg->light.rgb) {
+    if (aic_cfg->light.rgb_en) {
         sprintf(buf, "RGB: %d ~ %d", aic_cfg->light.level_idle, aic_cfg->light.level_active);
     } else {
         sprintf(buf, "RGB: OFF");

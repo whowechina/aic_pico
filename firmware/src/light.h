@@ -12,8 +12,17 @@
 
 #include "config.h"
 
+typedef enum {
+    GRB = 0,
+    BRG = 1,
+    RGB = 2,
+    RBG = 3,
+} rgb_order_t;
+
 void light_init();
 void light_update();
+void light_set_rgb_order(rgb_order_t order);
+const char *light_get_rgb_order_string(rgb_order_t order);
 
 uint32_t rgb32_from_hsv(uint8_t h, uint8_t s, uint8_t v);
 

@@ -13,7 +13,7 @@
 aic_cfg_t *aic_cfg;
 
 static aic_cfg_t default_cfg = {
-    .light = { .level_idle = 24, .level_active = 128, .rgb = true, .led = true },
+    .light = { .level_idle = 24, .level_active = 128, .rgb_en = true, .led = true },
     .reader = { .virtual_aic = true, .mode = MODE_AUTO },
     .lcd = { .backlight = 200, },
     .tweak = { .pn5180_tx = false },

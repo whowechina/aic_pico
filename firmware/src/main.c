@@ -336,6 +336,7 @@ void init()
     identify_touch();
 
     light_init();
+    light_set_rgb_order(aic_cfg->light.rgb_order);
     light_rainbow(1, 0, aic_cfg->light.level_idle);
 
     if (!aic_runtime.touch) {

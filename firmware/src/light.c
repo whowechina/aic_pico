@@ -20,7 +20,8 @@
 #include "ws2812.pio.h"
 
 #include "board_defs.h"
-#include "config.h"
+
+static rgb_order_t rgb_order = DEFAULT_RGB_ORDER;
 
 static uint32_t rgb_buf[64];
 static uint8_t led_gpio[] = LED_DEF;
@@ -48,11 +49,18 @@ static inline uint32_t rgb2local(uint32_t color, bool gamma_fix)
     uint8_t g = (color >> 8) & 0xff;
     uint8_t b = color & 0xff;
 
-#if BUTTON_RGB_ORDER == GRB
-    return rgb32(g, r, b, gamma_fix);
-#else
-    return rgb32(r, g, b, gamma_fix);
-#endif
+    switch (rgb_order) {
+        case GRB:
+            return rgb32(g, r, b, gamma_fix);
+        case BRG:
+            return rgb32(b, r, g, gamma_fix);
+        case RGB:
+            return rgb32(r, g, b, gamma_fix);
+        case RBG:
+            return rgb32(r, b, g, gamma_fix);
+        default:
+            return rgb32(g, r, b, gamma_fix);
+    }
 }
 
 uint32_t rgb32_from_hsv(uint8_t h, uint8_t s, uint8_t v)
@@ -278,7 +286,7 @@ static void fade_render()
 {
     uint32_t color = apply_level(fading.color, aic_cfg->light.level_active);
 
-    if (aic_cfg->light.rgb) {
+    if (aic_cfg->light.rgb_en) {
         for (int i = 0; i < RGB_NUM; i++) {
             rgb_buf[i] = color << 8;
         }
@@ -401,7 +409,7 @@ static void rainbow_render()
     static uint32_t rotator = 0;
     rotator = (rotator + rainbow.speed.current) % COLOR_WHEEL_SIZE;
 
-    if (aic_cfg->light.rgb) {
+    if (aic_cfg->light.rgb_en) {
         for (int i = 0; i < RGB_NUM; i++) {
             uint32_t index = (rotator + RAINBOW_PITCH * i) % COLOR_WHEEL_SIZE;
             rgb_buf[i] = apply_level(color_wheel[index], rainbow.level.current) << 8;
@@ -471,6 +479,22 @@ void light_init()
     channel_config_set_dreq(&rgb_dma_cfg, DREQ_PIO0_TX0);
 
     generate_color_wheel();
+}
+
+void light_set_rgb_order(rgb_order_t order)
+{
+    rgb_order = order;
+}
+
+const char *light_get_rgb_order_string(rgb_order_t order)
+{
+    switch (order) {
+        case GRB: return "GRB";
+        case BRG: return "BRG";
+        case RGB: return "RGB";
+        case RBG: return "RBG";
+        default: return "Unknown";
+    }
 }
 
 void light_update()
