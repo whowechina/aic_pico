@@ -72,6 +72,13 @@
             color: white;
         }
 
+        .btn-secondary:disabled,
+        .btn-secondary.saved {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
         .btn-success {
             background: #27ae60;
             color: white;
@@ -252,6 +259,49 @@
             margin: 20px;
             text-align: center;
         }
+
+        .checkbox-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0;
+            cursor: pointer;
+            gap: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin: 0;
+        }
+
+        /* 新增样式：禁用状态 */
+        .card.disabled {
+            opacity: 0.6;
+            pointer-events: none;
+            background: rgba(200, 200, 200, 0.95);
+        }
+
+        .card.disabled h2 {
+            color: #7f8c8d;
+            border-bottom-color: #bdc3c7;
+        }
+
+        .card.disabled input,
+        .card.disabled select,
+        .card.disabled button {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* 新增样式：加载指示器 */
+        .loading-indicator {
+            color: #95a5a6;
+            font-style: italic;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -279,11 +329,9 @@
                     <h2>Light Settings</h2>
                     <div class="setting-group">
                         <label>Light Mode:</label>
-                        <div class="radio-group">
-                            <label><input type="radio" name="lightMode" value="rgb"> RGB Only</label>
-                            <label><input type="radio" name="lightMode" value="led"> LED Only</label>
-                            <label><input type="radio" name="lightMode" value="both"> Both</label>
-                            <label><input type="radio" name="lightMode" value="off"> Off</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" id="rgbEnabled"> RGB</label>
+                            <label><input type="checkbox" id="ledEnabled"> LED</label>
                         </div>
                     </div>
                     
@@ -356,9 +404,12 @@
                 <section class="card">
                     <h2>Actions</h2>
                     <div class="button-group">
-                        <button id="refreshBtn" class="btn btn-secondary">Refresh Settings</button>
+                        <button id="refreshBtn" class="btn btn-success">Refresh</button>
                         <button id="saveBtn" class="btn btn-success">Save to Flash</button>
+                    </div>
+                    <div class="button-group" style="margin-top: 10px;">
                         <button id="factoryResetBtn" class="btn btn-danger">Factory Reset</button>
+                        <button id="updateBtn" class="btn btn-danger">Update Firmware</button>
                     </div>
                 </section>
             </main>
@@ -391,6 +442,10 @@
                     this.reader = null;
                     this.writer = null;
                     this.connected = false;
+                    this.hasUnsavedChanges = false;
+                    this.configParseRetries = 0;
+                    this.maxConfigRetries = 3;
+                    this.configLoaded = false;
                     
                     this.initializeElements();
                     this.attachEventListeners();
@@ -421,13 +476,18 @@
                     // Action buttons
                     this.refreshBtn = document.getElementById('refreshBtn');
                     this.saveBtn = document.getElementById('saveBtn');
+                    this.updateBtn = document.getElementById('updateBtn');
                     this.factoryResetBtn = document.getElementById('factoryResetBtn');
                     
                     // Debug console
                     this.debugOutput = document.getElementById('debugOutput');
                     this.commandInput = document.getElementById('commandInput');
                     this.sendBtn = document.getElementById('sendBtn');
-                    this.clearBtn = document.getElementById('clearBtn');  // 添加这行
+                    this.clearBtn = document.getElementById('clearBtn');
+                    
+                    // Light mode checkboxes
+                    this.rgbEnabled = document.getElementById('rgbEnabled');
+                    this.ledEnabled = document.getElementById('ledEnabled');
                 }
 
                 attachEventListeners() {
@@ -467,14 +527,19 @@
                     // Action buttons
                     this.refreshBtn.addEventListener('click', () => this.refreshSettings());
                     this.saveBtn.addEventListener('click', () => this.saveSettings());
+                    this.updateBtn.addEventListener('click', () => this.enterUpdateMode());
                     this.factoryResetBtn.addEventListener('click', () => this.factoryReset());
                     
                     // Debug console
                     this.sendBtn.addEventListener('click', () => this.sendCommand());
-                    this.clearBtn.addEventListener('click', () => this.clearConsole());  // 添加这行
+                    this.clearBtn.addEventListener('click', () => this.clearConsole());
                     this.commandInput.addEventListener('keypress', (e) => {
                         if (e.key === 'Enter') this.sendCommand();
                     });
+                    
+                    // Light mode checkboxes
+                    this.rgbEnabled.addEventListener('change', () => this.updateLightMode());
+                    this.ledEnabled.addEventListener('change', () => this.updateLightMode());
                 }
 
                 async toggleConnection() {
@@ -500,8 +565,14 @@
                         // Start reading responses
                         this.startReading();
                         
-                        // Refresh settings after connection
-                        setTimeout(() => this.refreshSettings(), 1000);
+                        // 增加延迟并确保配置获取成功
+                        setTimeout(async () => {
+                            await this.refreshSettings();
+                            // 如果2秒后仍未正确解析配置，再次尝试
+                            setTimeout(() => {
+                                this.retryConfigIfNeeded();
+                            }, 2000);
+                        }, 1000);
                         
                     } catch (error) {
                         this.log(`Connection failed: ${error.message}`);
@@ -535,11 +606,72 @@
                         this.connectionStatus.textContent = 'Connected';
                         this.connectionStatus.className = 'status connected';
                         this.configPanel.classList.remove('hidden');
+                        
+                        // 连接后先禁用所有面板
+                        this.setConfigPanelsState(false);
+                        this.updateSaveButtonState();
                     } else {
                         this.connectBtn.textContent = 'CONNECT';
                         this.connectionStatus.textContent = 'Disconnected';
                         this.connectionStatus.className = 'status disconnected';
                         this.configPanel.classList.add('hidden');
+                        this.configLoaded = false;
+                    }
+                }
+
+                setConfigPanelsState(enabled) {
+                    const cards = document.querySelectorAll('.card');
+                    cards.forEach(card => {
+                        if (enabled) {
+                            card.classList.remove('disabled');
+                        } else {
+                            card.classList.add('disabled');
+                        }
+                    });
+                    
+                    if (!enabled && this.connected) {
+                        this.addLoadingIndicator();
+                    } else {
+                        this.removeLoadingIndicator();
+                    }
+                }
+
+                addLoadingIndicator() {
+                    const cards = document.querySelectorAll('.card h2');
+                    cards.forEach(h2 => {
+                        if (!h2.querySelector('.loading-indicator')) {
+                            const indicator = document.createElement('span');
+                            indicator.className = 'loading-indicator';
+                            indicator.textContent = ' (Loading...)';
+                            h2.appendChild(indicator);
+                        }
+                    });
+                }
+
+                removeLoadingIndicator() {
+                    const indicators = document.querySelectorAll('.loading-indicator');
+                    indicators.forEach(indicator => indicator.remove());
+                }
+
+                markConfigChanged() {
+                    this.hasUnsavedChanges = true;
+                    this.updateSaveButtonState();
+                }
+
+                markConfigSaved() {
+                    this.hasUnsavedChanges = false;
+                    this.updateSaveButtonState();
+                }
+
+                updateSaveButtonState() {
+                    if (this.hasUnsavedChanges) {
+                        this.saveBtn.textContent = 'Save to Flash';
+                        this.saveBtn.className = 'btn btn-success';
+                        this.saveBtn.disabled = false;
+                    } else {
+                        this.saveBtn.textContent = 'Saved';
+                        this.saveBtn.className = 'btn btn-secondary saved';
+                        this.saveBtn.disabled = true;
                     }
                 }
 
@@ -568,7 +700,6 @@
                     try {
                         const data = new TextEncoder().encode(cmd + '\n');
                         await this.writer.write(data);
-                        // 移除本地回显 - 不再调用 this.log
                         
                         if (!command) {
                             this.commandInput.value = '';
@@ -578,7 +709,83 @@
                     }
                 }
 
+                parseAndUpdateConfig(message) {
+                    let configParsed = false;
+                    
+                    if (message.includes('RGB-')) {
+                        const rgbMatch = message.match(/RGB-(\w+) \((\w+)\), LED-(\w+)/);
+                        if (rgbMatch) {
+                            this.rgbEnabled.checked = rgbMatch[1] === 'ON';
+                            this.rgbOrderSelect.value = rgbMatch[2].toLowerCase();
+                            this.ledEnabled.checked = rgbMatch[3] === 'ON';
+                            configParsed = true;
+                        }
+                    }
+                    
+                    if (message.includes('Level:')) {
+                        const levelMatch = message.match(/Level: Idle-(\d+), Active-(\d+)/);
+                        if (levelMatch) {
+                            this.idleSlider.value = levelMatch[1];
+                            this.idleValue.textContent = levelMatch[1];
+                            this.activeSlider.value = levelMatch[2];
+                            this.activeValue.textContent = levelMatch[2];
+                        }
+                    }
+                    
+                    if (message.includes('Virtual AIC:')) {
+                        const virtualMatch = message.match(/Virtual AIC: (ON|OFF)/);
+                        if (virtualMatch) {
+                            this.virtualAicCheck.checked = virtualMatch[1] === 'ON';
+                            configParsed = true;
+                        }
+                    }
+                    
+                    if (message.includes('Mode:')) {
+                        const modeMatch = message.match(/Mode: (\w+)/);
+                        if (modeMatch) {
+                            const mode = modeMatch[1].toLowerCase();
+                            if (['auto', 'aime0', 'aime1', 'bana'].includes(mode)) {
+                                this.readerModeSelect.value = mode;
+                            }
+                        }
+                    }
+                    
+                    if (message.includes('Detected:')) {
+                        const detectedMatch = message.match(/Detected: (\w+)/);
+                        if (detectedMatch) {
+                            this.detectedMode.textContent = detectedMatch[1];
+                        }
+                    }
+                    
+                    if (message.includes('Backlight:')) {
+                        const backlightMatch = message.match(/Backlight: (\d+)/);
+                        if (backlightMatch) {
+                            this.lcdSlider.value = backlightMatch[1];
+                            this.lcdValue.textContent = backlightMatch[1];
+                            configParsed = true;
+                        }
+                    }
+                    
+                    if (configParsed && !this.configLoaded) {
+                        this.configLoaded = true;
+                        this.setConfigPanelsState(true);
+                    }
+                }
+
                 log(message, type = 'info') {
+                    // 检测保存完成消息
+                    if (message.includes('Program Flash')) {
+                        this.markConfigSaved();
+                    }
+
+                    // 简化配置解析触发条件 - 严格检测4个空格开头的配置行
+                    if (message.includes('    RGB-') || message.includes('    Virtual AIC:') || 
+                        message.includes('    Mode:') || message.includes('    Level:') ||
+                        message.includes('    Backlight:') || message.includes('    Detected:') ||
+                        message.includes('PN532') || message.includes('PN5180')) {
+                        this.parseAndUpdateConfig(message);
+                    }
+                    
                     // 对消息进行色彩处理
                     const coloredMessage = this.colorizeMessage(message);
                     this.debugOutput.innerHTML += coloredMessage;
@@ -613,51 +820,127 @@
                     const idle = this.idleSlider.value;
                     const active = this.activeSlider.value;
                     await this.sendCommand(`level ${idle} ${active}`);
+                    this.markConfigChanged();
                 }
 
                 async updateLcdBacklight() {
                     const backlight = this.lcdSlider.value;
                     await this.sendCommand(`lcd ${backlight}`);
+                    this.markConfigChanged();
                 }
 
                 async updateLightMode() {
-                    const selected = document.querySelector('input[name="lightMode"]:checked');
-                    if (selected) {
-                        await this.sendCommand(`light ${selected.value}`);
+                    const rgbOn = this.rgbEnabled.checked;
+                    const ledOn = this.ledEnabled.checked;
+                    
+                    let mode;
+                    if (rgbOn && ledOn) {
+                        mode = 'both';
+                    } else if (rgbOn) {
+                        mode = 'rgb';
+                    } else if (ledOn) {
+                        mode = 'led';
+                    } else {
+                        mode = 'off';
                     }
+                    
+                    await this.sendCommand(`light ${mode}`);
+                    this.markConfigChanged();
                 }
 
                 async updateRgbOrder() {
                     const order = this.rgbOrderSelect.value;
                     await this.sendCommand(`rgb-order ${order}`);
+                    this.markConfigChanged();
                 }
 
                 async updateVirtualAic() {
                     const enabled = this.virtualAicCheck.checked ? 'on' : 'off';
                     await this.sendCommand(`virtual ${enabled}`);
+                    this.markConfigChanged();
                 }
 
                 async updateReaderMode() {
                     const mode = this.readerModeSelect.value;
                     await this.sendCommand(`mode ${mode}`);
+                    this.markConfigChanged();
                 }
 
                 async refreshSettings() {
+                    this.configParseRetries = 0;
+                    this.configLoaded = false;  // 重置配置加载状态
+                    this.setConfigPanelsState(false);  // 禁用面板
+                    
                     await this.sendCommand('display');
+                    // 初始加载配置时标记为已保存状态
+                    setTimeout(() => {
+                        this.markConfigSaved();
+                    }, 1000);
+                }
+
+                retryConfigIfNeeded() {
+                    // 检查关键配置是否已加载
+                    const hasLightConfig = this.rgbEnabled.checked || this.ledEnabled.checked || 
+                                          this.idleSlider.value !== '24' || this.activeSlider.value !== '100';
+                    const hasReaderConfig = this.virtualAicCheck.checked || this.readerModeSelect.value !== 'auto';
+                    const hasLcdConfig = this.lcdSlider.value !== '200';
+                    
+                    // 如果配置看起来还是默认值，重新获取
+                    if (!hasLightConfig && !hasReaderConfig && !hasLcdConfig) {
+                        this.log('Configuration not loaded, retrying...');
+                        this.refreshSettings();
+                    }
                 }
 
                 async saveSettings() {
                     await this.sendCommand('save');
+                    // 不要立即标记为已保存，等待设备确认
                 }
 
-                async factoryReset() {
-                    if (confirm('Are you sure you want to factory reset? This will erase all settings.')) {
-                        await this.sendCommand('factory');
+                async enterUpdateMode() {
+                    const confirmMessage = 'This will disconnect the device and enter update mode.\n\n' +
+                                          'You will need to manually copy the firmware file (.uf2) to the RPI-RP2 drive that appears.\n\n' +
+                                          'Do you want to proceed?';
+                    
+                    if (confirm(confirmMessage)) {
+                        try {
+                            await this.sendCommand('update');
+                            // 设备会自动断开连接进入bootloader模式
+                            setTimeout(() => {
+                                this.log('Device entered update mode. Look for RPI-RP2 drive and copy firmware file.');
+                            }, 1000);
+                        } catch (error) {
+                            this.log(`Update mode failed: ${error.message}`);
+                        }
                     }
                 }
 
                 clearConsole() {
                     this.debugOutput.innerHTML = '';
+                }
+
+                async factoryReset() {
+                    const confirmMessage = 'This will reset all settings to factory defaults.\n\n' +
+                                          'All your custom configurations will be lost permanently.\n\n' +
+                                          'Are you sure you want to proceed?';
+                    
+                    if (confirm(confirmMessage)) {
+                        try {
+                            await this.sendCommand('factory');
+                            this.log('Factory reset initiated. Device will restart with default settings.');
+                            // 重置后标记配置已保存（因为会恢复到默认值）
+                            this.markConfigSaved();
+                            
+                            // 等待设备重启后自动刷新配置显示
+                            setTimeout(() => {
+                                this.refreshSettings();
+                                this.log('Refreshing settings after factory reset...');
+                            }, 2000);  // 等待2秒让设备完成重启
+                            
+                        } catch (error) {
+                            this.log(`Factory reset failed: ${error.message}`);
+                        }
+                    }
                 }
             }
 
