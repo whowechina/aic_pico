@@ -25,6 +25,7 @@
   * ISO/IEC 14443 类型 A (BanaPassport, Mifare, Amiibo, 一些 IC Tag 和 ID Tag 卡, 等等.)
   * ISO/IEC 15693 (旧的 E-Amusement 卡)，仅 PN5180 支持 (参见下面的注释 2)
 * 从任何 Mifare 卡模拟虚拟 AIC（暂不支持 Bandai Namco I/O 外）。
+* [在线配置器](https://whowechina.github.io/aic_pico/Configurator/index.html)
 * 所有源文件开放。
 
 **注释：**

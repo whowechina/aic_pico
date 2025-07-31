@@ -22,6 +22,7 @@
   * ISO/IEC 14443 Type A (BanaPassport, Mifare, Amiibo, some IC tags, some ID tags, etc.)
   * ISO/IEC 15693 (Old E-Amusement cards), only with PN5180 (see notes 2 below)
 * Emulates virtual AIC from any Mifare cards (not for Bandai Namco I/O).
+* [Configurator](https://whowechina.github.io/aic_pico/Configurator/index.html)
 * All source files open.
 
 **Notes:**
