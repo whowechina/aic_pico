@@ -90,40 +90,53 @@ const char *pn5180_firmware_ver()
 
 static pn5180_wait_loop_t wait_loop = NULL;
 
-static inline void wait_not_busy()
+static inline bool _wait_until(bool when_not_busy, uint32_t timeout_ms)
 {
-    int count = 0;
-    while (gpio_get(gpio_busy)) {
+    uint64_t now = time_us_64();
+    uint64_t timeout = now + (timeout_ms * 1000);
+    uint64_t next_waitloop_time = now + 1000;
+
+    while (time_us_64() <= timeout) {
+        if (when_not_busy) {
+            if (!gpio_get(gpio_busy)) {
+                return true;
+            }
+        }
         sleep_us(10);
-        count += 10;
-        if ((count > 1000) && wait_loop) {
-            wait_loop();
-            count = 0;
+        if (time_us_64() >= next_waitloop_time) {
+            if (wait_loop) {
+                wait_loop();
+            }
+            next_waitloop_time += 1000;
         }
     }
+    return false;
 }
 
-static void sleep_ms_with_loop(uint32_t ms)
+static inline bool wait_not_busy()
 {
-    for (uint32_t i = 0; i < ms; i++) {
-        sleep_ms(1);
-        if (wait_loop) {
-            wait_loop();
-        }
+    return _wait_until(true, 100);
+}
+
+static inline void wait_ms(uint32_t time_ms)
+{
+    _wait_until(false, time_ms);
+}
+
+static inline bool begin_transmission()
+{
+    if (!wait_not_busy()) {
+        return false;
     }
-}
-
-static inline void begin_transmission()
-{
-    wait_not_busy();
     gpio_put(gpio_nss, 0);
-    sleep_ms_with_loop(2);
+    wait_ms(2);
+    return true;
 }
 
 static inline void end_transmission()
 {
     gpio_put(gpio_nss, 1);
-    sleep_ms_with_loop(3);
+    wait_ms(3);
 }
 
 void pn5180_set_wait_loop(pn5180_wait_loop_t loop)
@@ -133,7 +146,10 @@ void pn5180_set_wait_loop(pn5180_wait_loop_t loop)
 
 static bool read_write(const void *data, uint8_t len, uint8_t *buf, uint8_t buf_len)
 {
-    begin_transmission();
+    if (!begin_transmission()) {
+        return false;
+    }
+
     spi_write_blocking(spi_port, data, len);
     end_transmission();
 
@@ -141,7 +157,10 @@ static bool read_write(const void *data, uint8_t len, uint8_t *buf, uint8_t buf_
         return true;
     }
 
-    begin_transmission();
+    if (!begin_transmission()) {
+        return false;
+    }
+
     spi_read_blocking(spi_port, 0, buf, buf_len);
     end_transmission();
 
@@ -519,7 +538,7 @@ bool pn5180_mifare_read(uint8_t block_id, uint8_t block_data[16])
     uint8_t cmd[] = { CMD_MIFARE_READ, block_id };
     pn5180_send_data(cmd, sizeof(cmd), 0);
 
-    sleep_ms_with_loop(5);
+    wait_ms(5);
 
     uint16_t len = pn5180_get_rx() & 0x1ff;
     if (len != 16) {
@@ -591,7 +610,7 @@ bool pn5180_15693_read(const uint8_t uid[8], uint8_t block_id, uint8_t block_dat
                       uid[3], uid[2], uid[1], uid[0], block_id } ;
     pn5180_send_data(cmd, sizeof(cmd), 0);
 
-    sleep_ms_with_loop(5);
+    wait_ms(5);
 
     uint32_t status = pn5180_get_irq();
     if (0 == (status & 0x4000)) {
@@ -599,7 +618,7 @@ bool pn5180_15693_read(const uint8_t uid[8], uint8_t block_id, uint8_t block_dat
     }
 
     while (0 == (status & 0x01)) {
-        sleep_ms_with_loop(5);
+        wait_ms(5);
         status = pn5180_get_irq();
     }
   
