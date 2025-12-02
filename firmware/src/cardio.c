@@ -111,13 +111,22 @@ static void check_autopin(bool new_card)
     }
 }
 
-int cardio_get_pin_key()
+bool cardio_autopin_rolling()
 {
     if (!aic_cfg->autopin.enabled || !autopin_ctx.active) {
-        return -1;
+        return false;
     }
 
     if (time_us_64() < autopin_ctx.pin_time) {
+        return false;
+    }
+
+    return true;
+}
+
+int cardio_get_pin_key()
+{
+    if (!cardio_autopin_rolling()) {
         return -1;
     }
 

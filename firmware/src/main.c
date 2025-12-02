@@ -65,15 +65,18 @@ void report_hid_key()
     uint16_t keys = aic_runtime.touch ? gui_keypad_read() : keypad_read();
 
     memset(&hid_nkro, 0, sizeof(hid_nkro));
-    for (int i = 0; i < keypad_key_num(); i++) {
-       if (keys & (1 << i)) {
-            set_nkro_bit(keymap[i]);
-        }
-    }
 
-    int auto_pin_key = cardio_get_pin_key();
-    if (auto_pin_key > 0) {
-        set_nkro_bit(auto_pin_key);
+    if (cardio_autopin_rolling()) {
+        int auto_pin_key = cardio_get_pin_key();
+        if (auto_pin_key > 0) {
+            set_nkro_bit(auto_pin_key);
+        }
+    } else {
+        for (int i = 0; i < keypad_key_num(); i++) {
+            if (keys & (1 << i)) {
+                set_nkro_bit(keymap[i]);
+            }
+        }
     }
 
     tud_hid_n_report(1, 0, &hid_nkro, sizeof(hid_nkro));
