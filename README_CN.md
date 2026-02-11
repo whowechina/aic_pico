@@ -307,6 +307,15 @@ AIC Touch 是 AIC Pico 的另一种版本，配备了触摸屏。不过它微小
   * "update" 重启进入固件更新模式。
 * 鉴于我的业余时间有限，固件可能没有完全测试。请报告任何异常。
 
+## 使用
+* 连接到 PC 时，AIC Pico 会注册 2 个 COM 端口。你可以用这个工具来识别它们。  
+  https://whowechina.github.io/iidx_pico/Tools/cli_tool.html
+  * `AIC Pico CLI Port` 用于命令行控制台。
+  * `AIC Pico AIME Port` 与游戏通信。
+* Spicetools 或 Spice2x 使用 CardIO。请在 `Advanced` 选项卡中启用 `CardIO HID Reader Support` 即可。
+* 对于 Segatools，请在 ini 文件的 `[aime]` 段落下设置 `enable=0`，并确保将 `AIC Pico AIME Port` 的 COM 端口号设置为游戏所期望的值。
+* 对于 Bandai Namco 游戏，请确保将 `AIC Pico AIME Port` 的 COM 端口号设置为游戏所期望的值。
+
 ## 卡的 ID 生成逻辑
 为了支持许多不同的 NFC 卡和标签，卡 ID 按照以下规则进行转换。
 ### AIME

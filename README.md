@@ -306,6 +306,15 @@ For most of the part, just follow the guide of AIC key.
   * "update" reboot into firmware update mode.
 * Given my limited hobby time, the firmware may not be fully tested. Please report any anomalies.
 
+## Usage
+* When connected to a PC, AIC Pico registers 2 COM ports. You can use this tool to identify them.  
+  https://whowechina.github.io/iidx_pico/Tools/cli_tool.html
+  * `AIC Pico CLI Port` is for the command line console.
+  * `AIC Pico AIME Port` communicates with the game.
+* Spicetools or Spice2x uses CardIO. Enable `CardIO HID Reader Support` in `Advanced` tab and you're good to go.
+* For Segatools, put `enable=0` under `[aime]` section in the ini file and make sure you set the `AIC Pico AIME Port` COM port number to the one your game expects.
+* For Bandai Namco games, make sure you set the `AIC Pico AIME Port` COM port number to the one your game expects.
+
 ## Card ID Logic
 To support many different NFC cards and tags, card IDs are transformed following these rules.
 ### AIME
