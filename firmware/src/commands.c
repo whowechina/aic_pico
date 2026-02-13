@@ -467,25 +467,6 @@ static void handle_autopin(int argc, char *argv[])
     printf("%s", usage);
 }
 
-static void handle_pn5180_tweak(int argc, char *argv[])
-{
-    const char *usage = "Usage: pn5180_tweak <on|off>\n";
-    if (argc != 1) {
-        printf("%s", usage);
-        return;
-    }
-
-    const char *commands[] = { "on", "off" };
-    int match = cli_match_prefix(commands, 4, argv[0]);
-    if (match < 0) {
-        return;
-    }
-    aic_cfg->tweak.pn5180_tx = (match == 0);
-    printf("PN5180 TX Tweak: %s\n", aic_cfg->tweak.pn5180_tx ? "ON" : "OFF");
-    nfc_pn5180_tx_tweak(aic_cfg->tweak.pn5180_tx);
-    config_changed();
-}
-
 static void handle_debug()
 {
     aic_runtime.debug = !aic_runtime.debug;
@@ -506,6 +487,5 @@ void commands_init()
     cli_register("level", handle_level, "Set light level.");
     cli_register("lcd", handle_lcd, "Touch LCD settings.");
     cli_register("autopin", handle_autopin, "Auto pin-entry.");
-    cli_register("pn5180_tweak", handle_pn5180_tweak, "PN5180 TX tweak.");
     cli_register("debug", handle_debug, "Toggle debug.");
 }

@@ -351,7 +351,6 @@ void init()
     find_nfc_module();
 
     nfc_set_wait_loop(wait_loop);
-    nfc_pn5180_tx_tweak(aic_cfg->tweak.pn5180_tx);
     nfc_set_card_name_listener(card_name_update_cb);
 
     aime_init(cdc_reader_putc);
