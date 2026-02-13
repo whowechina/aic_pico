@@ -140,6 +140,9 @@ https://discord.gg/M8f2PPQFEA
 ## 制作 AIC Pico PN5180
 如果你选择 PN5180 NFC 模块，壳子的设计要你自己来了，确保它适合你的要求就好，或者你可以不使用壳子。与 PN532 版本相比，准备好焊接更多的线。
 
+### 特别注意
+感谢 FDS (Disheng Fan, https://github.com/nonefffds) 及 kormax (https://github.com/kormax/apple-enhanced-contactless-polling/blob/main/examples/README.md) 发现的市场主流 PN5180 模块的致命缺陷 - 它的晶振错误的使用了 27MHz 振荡频率，但是对于 NFC 来说，它必须是 27.12MHz，这样才能正确分频得到 13.56MHz 的 NFC 载波。所以，如果你买到了这样的不良模块，请自行更换为 27.12MHz 的晶振，它的封装是 2520（2.5mm\*2.0mm）。
+
 ### 接线
 <img src="doc/pico_pn5180_wiring.png" width="70%">
 

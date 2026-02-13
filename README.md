@@ -137,6 +137,9 @@ I'll let these images do the talk.
 ## Building AIC Pico PN5180
 If you opt for the PN5180 NFC module, note that the housing design is up to you. Ensure it fits your design or you can use it without a case. Be prepared to solder more wires compared to the PN532 version.
 
+### Special Attention
+Thanks to FDS (Disheng Fan, https://github.com/nonefffds) and kormax (https://github.com/kormax/apple-enhanced-contactless-polling/blob/main/examples/README.md) for discovering a fatal flaw in the mainstream PN5180 modules on the market - they incorrectly use a 27MHz oscillation frequency, but for NFC it must be 27.12MHz so that it can be properly divided to obtain the 13.56MHz NFC carrier wave. So, if you purchase such a defective module, please replace the crystal yourself with a 27.12MHz one. Its package is 2520 (2.5mm × 2.0mm).
+
 ### Wiring
 <img src="doc/pico_pn5180_wiring.png" width="70%">
 
