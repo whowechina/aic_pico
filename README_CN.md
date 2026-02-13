@@ -28,11 +28,13 @@
 * [在线配置器](https://whowechina.github.io/aic_pico/Configurator/index.html)
 * 所有源文件开放。
 
-**注释：**
+**说明**
 1. 这样就可以把 "AIC Pico" 集成到基于 Raspberry Pi Pico 的其他项目中。可以参考我的 Chu Pico 项目里的用法。  
   <img src="doc/aic_pico_lib.jpg" width="25%">
 
 2. PN532 只支持 14443A (Mifare) 和 FeliCa 卡，而 PN5180 还支持 15693 卡（旧的 e-Amusement 卡）。
+
+3. **警告**: 市场主流 PN5180 模块的致命缺陷 - 它们错误地使用了 27MHz 晶振，但 NFC 需要 27.12MHz 才能正确分频到 13.56MHz 载波频率。如果你有这样的缺陷模块，请将晶振更换为 27.12MHz 的（2520 封装：2.5mm × 2.0mm）。感谢 FDS (Disheng Fan, https://github.com/nonefffds) 的提醒以及 kormax (https://github.com/kormax/apple-enhanced-contactless-polling/blob/main/examples/README.md) 发现了这个问题。
 
 ## 感谢
 感谢许多尊敬的爱好者和公司将他们的工具或材料免费或开源（KiCad, OnShape, InkScape, Fritzing, Raspberry things），ChatGPT 和 GitHub Copilot 也提供了很大的帮助。
@@ -139,9 +141,6 @@ https://discord.gg/M8f2PPQFEA
 
 ## 制作 AIC Pico PN5180
 如果你选择 PN5180 NFC 模块，壳子的设计要你自己来了，确保它适合你的要求就好，或者你可以不使用壳子。与 PN532 版本相比，准备好焊接更多的线。
-
-### 特别注意
-感谢 FDS (Disheng Fan, https://github.com/nonefffds) 及 kormax (https://github.com/kormax/apple-enhanced-contactless-polling/blob/main/examples/README.md) 发现的市场主流 PN5180 模块的致命缺陷 - 它的晶振错误的使用了 27MHz 振荡频率，但是对于 NFC 来说，它必须是 27.12MHz，这样才能正确分频得到 13.56MHz 的 NFC 载波。所以，如果你买到了这样的不良模块，请自行更换为 27.12MHz 的晶振，它的封装是 2520（2.5mm\*2.0mm）。
 
 ### 接线
 <img src="doc/pico_pn5180_wiring.png" width="70%">
