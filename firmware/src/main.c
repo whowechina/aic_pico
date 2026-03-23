@@ -327,6 +327,12 @@ static void find_nfc_module()
     }
 }
 
+static void pico_led_off()
+{
+    gpio_init(25);
+    gpio_set_dir(25, GPIO_IN);
+}
+
 void init()
 {
     tusb_init();
@@ -345,6 +351,8 @@ void init()
     if (!aic_runtime.touch) {
         keypad_init();
     }
+
+    pico_led_off();
 
     spi_overclock();
 
