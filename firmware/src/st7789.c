@@ -13,6 +13,7 @@
 
 #include "pico/stdlib.h"
 
+#include "hardware/clocks.h"
 #include "hardware/gpio.h"
 #include "hardware/spi.h"
 #include "hardware/dma.h"
@@ -65,7 +66,8 @@ static void send_cmd(uint8_t cmd, const void *data, size_t len)
 
 void st7789_init_spi(spi_inst_t *port, uint8_t sck, uint8_t tx, uint8_t csn)
 {
-    spi_init(port, 80 * 1000 * 1000);
+    uint32_t freq = clock_get_hz(clk_sys);
+    spi_init(port, freq / 2); // Coordinated with SPI overclocking for optimal SPI speed
 
     gpio_set_function(tx, GPIO_FUNC_SPI);
     gpio_set_function(sck, GPIO_FUNC_SPI);
