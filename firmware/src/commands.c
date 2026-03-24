@@ -7,6 +7,8 @@
 #include "pico/stdio.h"
 #include "pico/stdlib.h"
 
+#include "hardware/clocks.h"
+
 #include "config.h"
 #include "save.h"
 #include "cli.h"
@@ -35,6 +37,13 @@ void fps_count(int core)
     last[core] = now;
     fps[core] = counter[core];
     counter[core] = 0;
+}
+
+static void display_sys()
+{
+    int mhz = clock_get_hz(clk_sys) / 1000000;
+    printf("[System]\n");
+    printf("  Clock: %d MHz\n", mhz);
 }
 
 static void display_nfc()
@@ -111,6 +120,7 @@ static void display_warning()
 
 static void handle_display()
 {
+    display_sys();
     display_nfc();
     display_light();
     display_lcd();
