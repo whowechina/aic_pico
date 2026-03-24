@@ -41,9 +41,6 @@ static void display_nfc()
 {
     printf("[NFC Module]\n");
     printf("    %s (%s)\n", nfc_module_name(), nfc_module_version());
-    if (strstr(nfc_module_name(), "5180") != NULL) {
-        printf("    TX Tweak: %s\n", aic_cfg->tweak.pn5180_tx ? "ON" : "OFF");
-    }
 }
 
 static void display_light()

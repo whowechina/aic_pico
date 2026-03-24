@@ -28,8 +28,7 @@ typedef struct __attribute__((packed)) {
         uint8_t backlight;
     } lcd;
     struct {
-        bool pn5180_tx;
-        uint8_t reserved[7];
+        uint8_t reserved[8];
     } tweak;
     struct {
         struct {
