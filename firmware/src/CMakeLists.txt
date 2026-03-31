@@ -11,6 +11,10 @@ function(make_firmware board board_def)
         return()
     endif()
 
+    if(PICO_BOARD STREQUAL "pico2")
+        set(board ${board}_rp2350)
+    endif()
+
     add_executable(${board}
                    main.c save.c config.c commands.c light.c keypad.c cardio.c
                    cst816t.c st7789.c gui.c gfx.c rle.c
@@ -36,4 +40,5 @@ function(make_firmware board board_def)
 endfunction()
 
 add_library(aic lib/aime.c lib/bana.c lib/pn532.c lib/pn5180.c lib/nfc.c lib/mode.c)
+
 make_firmware(aic_pico BOARD_AIC_PICO)
