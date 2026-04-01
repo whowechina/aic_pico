@@ -47,7 +47,15 @@ static struct {
     int y;
 } scroll;
 
-static uint16_t vram[HEIGHT * WIDTH];
+#ifdef PICO_RP2350
+static uint16_t vram_buf[2][HEIGHT * WIDTH];
+static int vram_index = 0;
+#else
+static uint16_t vram_buf[1][HEIGHT * WIDTH];
+#endif
+
+static uint16_t *vram = vram_buf[0];
+
 
 static void send_cmd(uint8_t cmd, const void *data, size_t len)
 {
@@ -187,9 +195,12 @@ void st7789_dimmer(uint8_t level)
 void st7789_vsync()
 {
     dma_channel_wait_for_finish_blocking(ctx.spi_dma);
+    while (spi_is_busy(ctx.spi)) {
+        tight_loop_contents();
+    }
 }
 
-void st7789_flush(bool vsync)
+void st7789_flush()
 {
     if (dma_channel_is_busy(ctx.spi_dma)) {
         return;
@@ -203,9 +214,11 @@ void st7789_flush(bool vsync)
                           vram, // read from
                           crop.w * crop.h, // element count
                           true); // start right now
-    if (vsync) {
-        st7789_vsync();
-    }
+#ifdef PICO_RP2350
+    // flip vram buffer for next frame
+    vram_index = 1 - vram_index;
+    vram = vram_buf[vram_index];
+#endif
 }
 
 static void vram_dma(uint32_t offset, const void *src, bool inc, size_t pixels)
