@@ -36,7 +36,7 @@ void gui_init()
     cst816t_crop(10, 230, 35, 250, 240, 280);
     st7789_init_spi(spi1, 10, 11, 9);
     st7789_init(spi1, 8, 7, 0);
-    st7789_crop(0, 20, 240, 280, true);
+    st7789_crop(0, 20, 240, 280);
 }
 
 void gui_level(uint8_t level)
@@ -483,11 +483,16 @@ void gui_loop()
         pages[curr_page].render();
     }
 
-    st7789_flush(false);
+#ifdef PICO_RP2350
+    st7789_vsync();
+#endif
 
+    st7789_flush();
     /* Control things when updating LCD */
     gui_level(aic_cfg->lcd.backlight);
     event_proc();
 
+#ifndef PICO_RP2350
     st7789_vsync();
+#endif
 }
