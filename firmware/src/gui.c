@@ -255,7 +255,7 @@ static void draw_status()
 {
     gfx_text_spacing(1, 0);
 
-    char buf[32];
+    char buf[64];
     status_title(120, 3, "Serial Number", st7789_rgb565(0x00c000));
     sprintf(buf, "%016llx", board_id_64());
     gfx_text_draw(120, 22, buf, &lv_lts18, st7789_rgb565(0xc0c0c0), ALIGN_CENTER);
