@@ -23,6 +23,8 @@
  *
  */
 
+#include <stdio.h>
+
 #include "usb_descriptors.h"
 #include "pico/unique_id.h"
 #include "tusb.h"
