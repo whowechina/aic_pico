@@ -20,6 +20,8 @@
 #include "pico/multicore.h"
 #include "pico/unique_id.h"
 
+#include "tusb.h"
+
 static struct {
     size_t size;
     size_t offset;
@@ -46,27 +48,22 @@ static int data_page = -1;
 static bool requesting_save = false;
 static uint64_t requesting_time = 0;
 
-static mutex_t *io_lock;
-
-static void save_program()
+static void __not_in_flash_func(save_program)()
 {
     old_data = new_data;
 
     data_page = (data_page + 1) % (FLASH_SECTOR_SIZE / FLASH_PAGE_SIZE);
     printf("\nProgram Flash %d %8lx\n", data_page, old_data.magic);
-    if (mutex_enter_timeout_us(io_lock, 100000)) {
-        sleep_ms(10); /* wait for all io operations to finish */
-        uint32_t ints = save_and_disable_interrupts();
-        if (data_page == 0) {
-            flash_range_erase(SAVE_SECTOR_OFFSET, FLASH_SECTOR_SIZE);
-        }
-        flash_range_program(SAVE_SECTOR_OFFSET + data_page * FLASH_PAGE_SIZE,
-                            (uint8_t *)&old_data, FLASH_PAGE_SIZE);
-        restore_interrupts(ints);
-        mutex_exit(io_lock);
-    } else {
-        printf("Program Flash Failed.\n");
+
+    multicore_lockout_start_blocking();
+
+    if (data_page == 0) {
+        flash_range_erase(SAVE_SECTOR_OFFSET, FLASH_SECTOR_SIZE);
     }
+    flash_range_program(SAVE_SECTOR_OFFSET + data_page * FLASH_PAGE_SIZE,
+                        (uint8_t *)&old_data, FLASH_PAGE_SIZE);
+
+    multicore_lockout_end_blocking();
 }
 
 static void load_default()
@@ -130,10 +127,9 @@ uint64_t board_id_64()
     return board_id.id64;
 }
 
-void save_init(uint32_t magic, mutex_t *locker)
+void save_init(uint32_t magic)
 {
     my_magic = magic;
-    io_lock = locker;
     save_load();
     save_loop();
     save_loaded();

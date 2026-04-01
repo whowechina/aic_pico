@@ -120,13 +120,14 @@ static void light_mode_update()
 
 static void core1_init()
 {
+    multicore_lockout_victim_init();
+
     if (aic_runtime.touch) {
         gui_init();
         gui_level(aic_cfg->lcd.backlight);
     }
 }
 
-static mutex_t core1_io_lock;
 static void core1_loop()
 {
     uint64_t next_frame = 0;
@@ -134,14 +135,13 @@ static void core1_loop()
     core1_init();
 
     while (1) {
-        if (mutex_try_enter(&core1_io_lock, NULL)) {
-            if (aic_runtime.touch) {
-                gui_loop();
-            }
-            light_update();
-            mutex_exit(&core1_io_lock);
+        if (aic_runtime.touch) {
+            gui_loop();
         }
+        light_update();
+
         light_mode_update();
+
         cli_fps_count(1);
         sleep_until(next_frame);
         next_frame = time_us_64() + 999; // no faster than 1000Hz
@@ -339,8 +339,7 @@ void init()
     stdio_init_all();
 
     config_init();
-    mutex_init(&core1_io_lock);
-    save_init(0xca340a1c, &core1_io_lock);
+    save_init(0xca340a1c);
 
     identify_touch();
 
