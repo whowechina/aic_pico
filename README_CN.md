@@ -29,7 +29,7 @@
 * 所有源文件开放。
 
 **说明**
-1. 这样就可以把 "AIC Pico" 集成到基于 Raspberry Pi Pico 的其他项目中。可以参考我的 Chu Pico 项目里的用法。  
+1. 这样就可以把 "AIC Pico" 集成到基于 Raspberry Pi Pico (或者 Pico 2) 的其他项目中。可以参考我的 Chu Pico 项目里的用法。  
   <img src="doc/aic_pico_lib.jpg" width="25%">
 
 2. PN532 只支持 14443A (Mifare) 和 FeliCa 卡，而 PN5180 还支持 15693 卡（旧的 e-Amusement 卡）。
@@ -92,8 +92,10 @@ https://discord.gg/M8f2PPQFEA
 ## 制作 AIC Pico PN532
 说真的，这是我所有 Pico 系列项目中最简单的一个。
 ### 组件
-* 1x 树莓派 Pico 或 Pico W (克隆版也可以)。  
-  https://www.raspberrypi.com/products/raspberry-pi-pico
+* 1x 树莓派 Pico 或 Pico 2，推荐带 Type-C 接口的克隆版。  
+  https://www.raspberrypi.com/products/raspberry-pi-pico  
+  https://www.raspberrypi.com/products/raspberry-pi-pico-2
+
 * 1x PN532 模块 (红色方形板版本，便宜的克隆版也可以)。  
   https://www.elechouse.com/product/pn532-nfc-rfid-module-v4/
 * 一些细一点的电线，软一点的硅胶线更好。
@@ -151,12 +153,13 @@ https://discord.gg/M8f2PPQFEA
 AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico" 更难构建，因为它有许多微小的组件需要焊接。
 
 ### 组件
-* 1x 树莓派 Pico 或 Pico W (克隆版也可以)。  
-  https://www.raspberrypi.com/products/raspberry-pi-pico
+* 1x 树莓派 Pico 或 Pico 2，推荐带 Type-C 接口的克隆版。  
+  https://www.raspberrypi.com/products/raspberry-pi-pico  
+  https://www.raspberrypi.com/products/raspberry-pi-pico-2
 
 * 对于 NFC 模块，选择以下选项之一：
   * 1x PN532 模块 (红色方形板版本，便宜的克隆版也可以)。  
-    https://www.elechouse.com/product/pn532-nfc-rfid-module-v4/
+    https://www.elechouse.com/product/pn532-nfc-rfid-module-v4
   * 1x PN5180 模块 (蓝色矩形版本，便宜的克隆版也可以)。PN5180 支持 ISO/IEC 15693 (旧的 e-amusement 卡)。  
     <img src="doc/pn5180.jpg" width="50%">
 
@@ -237,9 +240,9 @@ AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico"
 AIC Touch 是 AIC Pico 的另一种版本，配备了触摸屏。不过它微小的 FPC/FFC 连接器大大增加了焊接和组装的难度。
 
 ### 组件
-* 对于 Raspberry Pi Pico、NFC 模块、6x WS2812B 1204 LED 和 R1 电阻部分，请按照 AIC Key 的指南进行操作。
+* 对于 Pi Pico、NFC 模块、6x WS2812B 1204 LED，请参考 AIC Key 的指南。强烈推荐使用 Pico 2 来获得更流畅的 GUI。
 * C1、C2、C3，0603 0.1uF 电容，它们有助于更稳定的电源供应。
-* R2、R3，I2C 总线的上拉电阻，0603 1Kohm ~ 4.7Kohm。
+* R1、R2，I2C 总线的上拉电阻，0603 1Kohm ~ 4.7Kohm。
 * 1.69 英寸 240x280 LCD 触摸屏（ST7789 + CST816）。有几个供应商在销售这个型号，只要看起来完全相同，就应该可以。它看上去长这个样子。
 
   <img src="doc/touchscreen.jpg" width="30%">

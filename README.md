@@ -26,7 +26,7 @@
 * All source files open.
 
 **Notes:**
-1. So one can integrate "AIC Pico" into other Raspberry Pi Pico based projects. See my Chu Pico project and see how it works.  
+1. So one can integrate "AIC Pico" into other Raspberry Pi Pico (or Pico 2) based projects. See my Chu Pico project and see how it works.  
   <img src="doc/aic_pico_lib.jpg" width="25%">
 
 2. PN532 supports only 14443A (Mifare) and FeliCa cards, while PN5180 also supports 15693 cards (old e-Amusement cards).
@@ -89,10 +89,13 @@ https://discord.gg/M8f2PPQFEA
 ## Building AIC Pico PN532
 Seriously, this is the easiest one among all my Pico series projects.
 ### Components
-* 1x Rasberry Pi Pico or Pico W (clones work too).  
-  https://www.raspberrypi.com/products/raspberry-pi-pico
+* 1x Rasberry Pi Pico or Pico 2, clones with a Type-C port are recommended.  
+  https://www.raspberrypi.com/products/raspberry-pi-pico  
+  https://www.raspberrypi.com/products/raspberry-pi-pico-2
+
 * 1x PN532 Module (the Red Square board version, cheap clones work too).  
-  https://www.elechouse.com/product/pn532-nfc-rfid-module-v4/
+  https://www.elechouse.com/product/pn532-nfc-rfid-module-v4
+
 * Some thin wires.
 * Thin WS2812B LED strip.
 * 4x M2*8mm screws.
@@ -148,8 +151,9 @@ Note: WS2812B LED Strip wiring is the same as the PN532 version.
 AIC Key is a variation of the AIC Pico - a keypad is integrated. Much more difficult to build than the "AIC Pico" as it has many tiny components to solder.
 
 ### Components
-* 1x Rasberry Pi Pico or Pico W (clones work too).  
-  https://www.raspberrypi.com/products/raspberry-pi-pico
+* 1x Rasberry Pi Pico or Pico 2, clones with a Type-C port are recommended.  
+  https://www.raspberrypi.com/products/raspberry-pi-pico  
+  https://www.raspberrypi.com/products/raspberry-pi-pico-2
 
 * For NFC modules, choose one of the following options:
   * 1x PN532 Module (the red square board version, cheap clones work too).  
@@ -235,9 +239,9 @@ You may use some instant adhesive to fix stickers.
 AIC Touch, another variant of AIC Pico, comes with an integrated touchscreen. However, its tiny FPC/FFC connector significantly increases the soldering and assembly difficulty.
 
 ### Components
-* For the Raspberry Pi Pico, NFC module, 6x WS2812B 1204 LEDs and the R1 resistor part, follow the guide for AIC Key.
+* For Pi Pico, NFC module and 6x WS2812B 1204 LEDS, follow the guide for AIC Key. Pico 2 is highly recommened for smoother GUI.
 * C1, C2, C3, 0603 0.1uF capacitors, they contribute to a more stable power supply.
-* R2, R3, pull-up resistors for the I2C bus, 0603 1Kohm ~ 4.7Kohm.
+* R1, R2, pull-up resistors for the I2C bus, 0603 1Kohm ~ 4.7Kohm.
 * 1.69 inch 240x280 LCD touchscreen (ST7789 + CST816). Several vendors are making this model, as long as one has the exact same looking, it will be fine. It looks like this.
 
   <img src="doc/touchscreen.jpg" width="30%">
