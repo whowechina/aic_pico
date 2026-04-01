@@ -149,8 +149,15 @@ void save_loop()
 
 void *save_alloc(size_t size, void *def, void (*after_load)())
 {
+    size_t offset = 0;
+    if (module_num > 0) {
+        offset = modules[module_num - 1].offset + modules[module_num - 1].size;
+    }
+    if (offset + size > sizeof(default_data.data)) {
+        return NULL;
+    }
+
     modules[module_num].size = size;
-    size_t offset = module_num > 0 ? modules[module_num - 1].offset + size : 0;
     modules[module_num].offset = offset;
     modules[module_num].after_load = after_load;
     module_num++;
