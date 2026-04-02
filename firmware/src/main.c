@@ -120,7 +120,7 @@ static void light_mode_update()
 
 static void core1_init()
 {
-    multicore_lockout_victim_init();
+    flash_safe_execute_core_init();
 
     if (aic_runtime.touch) {
         gui_init();

@@ -48,22 +48,27 @@ static int data_page = -1;
 static bool requesting_save = false;
 static uint64_t requesting_time = 0;
 
-static void __not_in_flash_func(save_program)()
+static void do_write(void *param)
 {
-    old_data = new_data;
-
-    data_page = (data_page + 1) % (FLASH_SECTOR_SIZE / FLASH_PAGE_SIZE);
-    printf("\nProgram Flash %d %8lx\n", data_page, old_data.magic);
-
-    multicore_lockout_start_blocking();
-
     if (data_page == 0) {
         flash_range_erase(SAVE_SECTOR_OFFSET, FLASH_SECTOR_SIZE);
     }
     flash_range_program(SAVE_SECTOR_OFFSET + data_page * FLASH_PAGE_SIZE,
                         (uint8_t *)&old_data, FLASH_PAGE_SIZE);
+}
 
-    multicore_lockout_end_blocking();
+static void save_program()
+{
+    old_data = new_data;
+
+    data_page = (data_page + 1) % (FLASH_SECTOR_SIZE / FLASH_PAGE_SIZE);
+    printf("\nProgram Flash %d %8lx ", data_page, old_data.magic);
+
+    if (flash_safe_execute(do_write, NULL, 1000) == PICO_OK) {
+        printf("done!\n");
+    } else {
+        printf("failed\n");
+    }
 }
 
 static void load_default()
