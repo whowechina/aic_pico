@@ -237,19 +237,20 @@ AIC Key 是 AIC Pico 的一个变种 - 集成了一个小键盘。比 "AIC Pico"
 <img src="doc/pico_assemble_4.jpg" width="40%">
 
 ## 制作 AIC Touch
-AIC Touch 是 AIC Pico 的另一种版本，配备了触摸屏。不过它微小的 FPC/FFC 连接器大大增加了焊接和组装的难度。
+AIC Touch 是 AIC Pico 的另一种版本，配备了触摸屏。还可以选装一个加速度传感器。不过它微小的 FPC/FFC 连接器大大增加了焊接和组装的难度。
 
 ### 组件
 * 对于 Pi Pico、NFC 模块、6x WS2812B 1204 LED，请参考 AIC Key 的指南。强烈推荐使用 Pico 2 来获得更流畅的 GUI。
 * C1、C2、C3，0603 0.1uF 电容，它们有助于更稳定的电源供应。
 * R1、R2，I2C 总线的上拉电阻，0603 1Kohm ~ 4.7Kohm。
-* 1.69 英寸 240x280 LCD 触摸屏（ST7789 + CST816）。有几个供应商在销售这个型号，只要看起来完全相同，就应该可以。它看上去长这个样子。
-
+* 1.69 英寸 240x280 LCD 触摸屏（ST7789 + CST816）。有几个供应商在销售这个型号，只要看起来完全相同，就应该可以。它看上去长这个样子。  
   <img src="doc/touchscreen.jpg" width="30%">
 
-* 触摸屏的 FPC/FFC 翻盖连接器。18P，0.5mm 间距，1.0H（1mm 高度），前翻盖下接。它看起来像这样：
-
+* 触摸屏的 FPC/FFC 翻盖连接器。18P，0.5mm 间距，1.0H（1mm 高度），前翻盖下接。它看起来像这样：  
   <img src="doc/fpc_socket.jpg" width="30%">
+
+* LIS3DH 加速度传感器模块（可选）。它可以使 AIC Touch 具备重力方向感应能力。模块的形状不重要，只要它能接 I2C 接口并且能塞进壳子里就行了。  
+  <img src="doc/lis3dh.jpg" width="30%">
 
 * PCB 文件 "aic_touch_v*.zip"。  
   <img src="doc/pcbs.jpg" width="60%">
@@ -264,7 +265,7 @@ AIC Touch 是 AIC Pico 的另一种版本，配备了触摸屏。不过它微小
 
 顶部部分需要上下颠倒打印。
 
-为了获得最佳的外观效果，我建议使用透明 PLA 和黑色 PLA 的组合。其中顶部除了子对象“Top”的最开始两层用黑色外，其他都用透明。    
+为了获得最佳的外观效果，我建议使用透明 PLA 和黑色 PLA 的组合。其中顶部除了子对象“Top”的最开始两层用黑色外，其他都用透明。  
   <img src="doc/touch_3d_print.jpg" width="40%">
 
 ### 组装
@@ -285,13 +286,15 @@ AIC Touch 是 AIC Pico 的另一种版本，配备了触摸屏。不过它微小
   * 在焊接主引脚时，只需要在烙铁尖上附着极少量的焊锡。
   * 如果你用了过多的焊锡，可以用吸锡带去除多余的焊锡。
 
-* 记得贴一层 1mm 厚度的软垫以支撑触摸屏。你可以用 1mm 厚度的 3M VHB 双面胶带，但是不要移除红色的保护层（绝对不要让胶带粘在触摸屏上）。
-
+* 触摸屏背后需要粘一层用于绝缘的薄的胶带。
+* 贴一层 1mm 厚度的软垫以支撑触摸屏。你可以用 1mm 厚度的 3M VHB 双面胶带，但是不要移除红色的保护层（绝对不要让胶带粘在触摸屏上）。  
   <img src="doc/touch_assemble_1.jpg" width="30%">
   <img src="doc/touch_assemble_2.jpg" width="30%">
 
-* 搞定！
+* 加速度传感器的 VCC, GND, SCL 和 SDA 和 PN532 的四个引脚共用，你需要一些细软的电线来连接它们。模块上，请用短电线把 SD0 和 CS 引脚拉高（即连接到 VCC）。传感器可以放 AIC Touch 底部，PCB 和 NFC 模块之间，芯片印字面向 AIC Touch 正面，方向和 AIC Touch Logo 一致。用双面胶固定，同时做好绝缘。图片里我剪掉了它的耳朵让它能适应狭小空间。  
+   <img src="doc/lis3dh_assemble.jpg" width="30%">
 
+* 搞定！  
   <img src="doc/touch_assemble_3.jpg" width="30%">
 
 ## 固件

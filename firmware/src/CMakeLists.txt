@@ -17,7 +17,7 @@ function(make_firmware board board_def)
 
     add_executable(${board}
                    main.c save.c config.c commands.c light.c keypad.c cardio.c
-                   cst816t.c st7789.c gui.c gfx.c rle.c
+                   cst816t.c st7789.c lis3dh.c gui.c gfx.c rle.c
                    cli.c usb_descriptors.c)
 
     target_compile_definitions(${board} PUBLIC ${board_def}

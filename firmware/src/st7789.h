@@ -35,3 +35,4 @@ void st7789_bar(int x, int y, uint16_t w, uint16_t h, uint16_t color, uint8_t mi
 void st7789_line(int x0, int y0, int x1, int y1, uint16_t color, uint8_t mix);
 
 void st7789_scroll(int dx, int dy);
+void st7789_invert(bool enable);

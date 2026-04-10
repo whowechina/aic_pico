@@ -236,19 +236,20 @@ You may use some instant adhesive to fix stickers.
 <img src="doc/pico_assemble_4.jpg" width="40%">
 
 ## Building AIC Touch
-AIC Touch, another variant of AIC Pico, comes with an integrated touchscreen. However, its tiny FPC/FFC connector significantly increases the soldering and assembly difficulty.
+AIC Touch, another variant of AIC Pico, comes with an integrated touchscreen and an optional accelerometer. However, its tiny FPC/FFC connector significantly increases the soldering and assembly difficulty.
 
 ### Components
 * For Pi Pico, NFC module and 6x WS2812B 1204 LEDS, follow the guide for AIC Key. Pico 2 is highly recommened for smoother GUI.
 * C1, C2, C3, 0603 0.1uF capacitors, they contribute to a more stable power supply.
 * R1, R2, pull-up resistors for the I2C bus, 0603 1Kohm ~ 4.7Kohm.
-* 1.69 inch 240x280 LCD touchscreen (ST7789 + CST816). Several vendors are making this model, as long as one has the exact same looking, it will be fine. It looks like this.
-
+* 1.69 inch 240x280 LCD touchscreen (ST7789 + CST816). Several vendors are making this model, as long as one has the exact same looking, it will be fine. It looks like this.  
   <img src="doc/touchscreen.jpg" width="30%">
 
-* The FPC/FFC flip cover connector for the touchscreen. 18P, 0.5mm Pitch, 1.0H (1mm height), front flip (flip cover at cable side), bottom contact. It looks like this:
-
+* The FPC/FFC flip cover connector for the touchscreen. 18P, 0.5mm Pitch, 1.0H (1mm height), front flip (flip cover at cable side), bottom contact. It looks like this:  
   <img src="doc/fpc_socket.jpg" width="30%">
+
+* Optional LIS3DH accelerometer module. It makes the AIC Touch capable of detecting gravity direction. The shape of the module is not important, as long as it can interface with I2C and fit into the case.  
+  <img src="doc/lis3dh.jpg" width="30%">
 
 * PCB file "aic_touch_v*.zip".  
   <img src="doc/pcbs.jpg" width="60%">
@@ -263,7 +264,7 @@ AIC Touch, another variant of AIC Pico, comes with an integrated touchscreen. Ho
 
 Top parts should be printed upside-down.
 
-To achieve the best aesthetic results, I recommend using the combination of clear PLA and black PLA. For the top part, make the first 2 layers of the sub-object "Top" black, and all others clear.    
+To achieve the best aesthetic results, I recommend using the combination of clear PLA and black PLA. For the top part, make the first 2 layers of the sub-object "Top" black, and all others clear.  
   <img src="doc/touch_3d_print.jpg" width="40%">
 
 ### Assembly
@@ -285,10 +286,14 @@ For most of the part, just follow the guide of AIC key.
   * When soldering main pins, only apply a very small amount of solder to the iron tip.
   * If you apply too much solder, a solder wick can be used effectively to remove the excess.
 
-* Remember to put 1mm-thick soft pads to support the touchscreen. You can use 1mm 3M VHB double-sided tape, but do NOT remove the red film liner (don't let the tape stick to the touchscreen).
+* Put some thin insulating tape on the back of the touchscreen.
 
+* Apply 1mm-thick soft pads to support the touchscreen. You can use 1mm 3M VHB double-sided tape, but do NOT remove the red film liner (don't let the tape stick to the touchscreen).  
   <img src="doc/touch_assemble_1.jpg" width="30%">
   <img src="doc/touch_assemble_2.jpg" width="30%">
+
+* The VCC, GND, SCL and SDA of the accelerometer are shared with the PN532's corresponding pins. You need some thin wires to connect them. On the module, pull up the SD0 and CS pins (i.e., connect them to VCC) with short thin wires. The sensor can be placed at the bottom of AIC Touch, between the PCB and the NFC module, with the chip marking facing the front, and oriented in the same direction as the AIC Touch logo. Use double-sided tape to fix it in place and ensure proper insulation. In the picture, I cut off its ears to fit it into the tight space.  
+   <img src="doc/lis3dh_assemble.jpg" width="30%">
 
 * Done!
 

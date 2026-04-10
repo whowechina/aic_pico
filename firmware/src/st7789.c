@@ -43,9 +43,10 @@ static struct crop_ctx {
 } crop = { .w = WIDTH, .h = HEIGHT };
 
 static struct {
-    int x;
-    int y;
-} scroll;
+    int scroll_x;
+    int scroll_y;
+    bool invert;
+} trans;
 
 #ifdef PICO_RP2350
 static uint16_t vram_buf[2][HEIGHT * WIDTH];
@@ -168,6 +169,11 @@ void st7789_reset()
     update_addr();
 }
 
+void st7789_invert(bool enable)
+{
+    trans.invert = enable;
+}
+
 void st7789_crop(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
 {
     crop.x = x;
@@ -231,8 +237,12 @@ static void vram_dma(uint32_t offset, const void *src, bool inc, size_t pixels)
 
 void static inline put_pixel(int x, int y, uint16_t color)
 {
-    x += scroll.x;
-    y += scroll.y;
+    if (trans.invert) {
+        x = crop.w - 1 - x;
+        y = crop.h - 1 - y;
+    }
+    x += trans.scroll_x;
+    y += trans.scroll_y;
     if ((x < 0) || (x >= crop.w) || (y < 0) || (y >= crop.h)) {
         return;
     }
@@ -241,10 +251,10 @@ void static inline put_pixel(int x, int y, uint16_t color)
 
 static void soft_fill(uint16_t *pattern, size_t size)
 {
-    int x = scroll.x > 0 ? scroll.x : 0;
-    int y = scroll.y > 0 ? scroll.y : 0;
-    int w = crop.w - abs(scroll.x);
-    int h = crop.h - abs(scroll.y);
+    int x = trans.scroll_x > 0 ? trans.scroll_x : 0;
+    int y = trans.scroll_y > 0 ? trans.scroll_y : 0;
+    int w = crop.w - abs(trans.scroll_x);
+    int h = crop.h - abs(trans.scroll_y);
     if ((crop.w <= 0) || (crop.h <= 0)) {
         return;
     }
@@ -260,7 +270,7 @@ static void soft_fill(uint16_t *pattern, size_t size)
 
 void st7789_clear(uint16_t color, bool raw)
 {
-    if (raw || !(scroll.x || scroll.y)) {
+    if (raw || !(trans.scroll_x || trans.scroll_y)) {
         uint32_t c32 = (color << 16) | color;
         vram_dma(0, &c32, false, crop.w * crop.h);
         return;
@@ -271,7 +281,7 @@ void st7789_clear(uint16_t color, bool raw)
 
 void st7789_fill(uint16_t *pattern, size_t size, bool raw)
 {
-    if (raw || !(scroll.x || scroll.y)) {
+    if (raw || !(trans.scroll_x || trans.scroll_y)) {
         int remain = crop.w * crop.h;
         int offset = 0;
         while (remain > 0) {
@@ -288,8 +298,8 @@ void st7789_fill(uint16_t *pattern, size_t size, bool raw)
 
 void st7789_scroll(int dx, int dy)
 {
-    scroll.x = dx;
-    scroll.y = dy;
+    trans.scroll_x = dx;
+    trans.scroll_y = dy;
 }
 
 void static inline mix_pixel(int x, int y, uint16_t color, uint8_t mix, uint8_t bits)
@@ -298,8 +308,12 @@ void static inline mix_pixel(int x, int y, uint16_t color, uint8_t mix, uint8_t 
         return;
     }
 
-    x += scroll.x;
-    y += scroll.y;
+    if (trans.invert) {
+        x = crop.w - 1 - x;
+        y = crop.h - 1 - y;
+    }
+    x += trans.scroll_x;
+    y += trans.scroll_y;
     if ((x < 0) || (x >= crop.w) || (y < 0) || (y >= crop.h)) {
         return;
     }

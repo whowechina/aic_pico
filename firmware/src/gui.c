@@ -29,6 +29,8 @@
 #include "gfx.h"
 #include "gui.h"
 
+#include "lis3dh.h"
+
 void gui_init()
 {
     cst816t_init_i2c(i2c1, 3, 2);
@@ -318,7 +320,213 @@ static void gen_pallete(uint16_t pallete[16], uint32_t color)
     }
 }
 
-static void run_background()
+static const int8_t sin_table[256] = {
+     0, 3, 6, 9, 12, 16, 19, 22, 25, 28, 31, 34, 37, 40, 43, 46,
+    48, 51, 54, 57, 60, 62, 65, 68, 70, 73, 75, 78, 80, 83, 85, 87,
+    90, 92, 94, 96, 98,100,102,104,106,107,109,111,112,114,115,117,
+   118,119,121,122,123,124,125,126,126,127,127,127,127,127,127,127,
+   127,127,127,127,127,127,126,126,125,124,123,122,121,119,118,117,
+   115,114,112,111,109,107,106,104,102,100, 98, 96, 94, 92, 90, 87,
+    85, 83, 80, 78, 75, 73, 70, 68, 65, 62, 60, 57, 54, 51, 48, 46,
+    43, 40, 37, 34, 31, 28, 25, 22, 19, 16, 12,  9,  6,  3,  0, -3,
+    -6, -9,-12,-16,-19,-22,-25,-28,-31,-34,-37,-40,-43,-46,-48,-51,
+   -54,-57,-60,-62,-65,-68,-70,-73,-75,-78,-80,-83,-85,-87,-90,-92,
+   -94,-96,-98,-100,-102,-104,-106,-107,-109,-111,-112,-114,-115,-117,
+  -118,-119,-121,-122,-123,-124,-125,-126,-126,-127,-127,-127,-127,-127,
+  -127,-127,-127,-127,-127,-127,-127,-126,-126,-125,-124,-123,-122,-121,
+  -119,-118,-117,-115,-114,-112,-111,-109,-107,-106,-104,-102,-100,-98,
+   -96,-94,-92,-90,-87,-85,-83,-80,-78,-75,-73,-70,-68,-65,-62,-60,
+   -57,-54,-51,-48,-46,-43,-40,-37,-34,-31,-28,-25,-22,-19,-16,-12,
+    -9, -6, -3
+};
+
+#define CELL_SIZE 8
+static void run_particle(uint16_t angle)
+{
+    enum {
+        GRID_W = 240 / CELL_SIZE,
+        GRID_H = 280 / CELL_SIZE,
+        FP_BITS = 8,
+        FP_ONE = 1 << FP_BITS,
+        PARTICLE_COUNT = (GRID_W * GRID_H) * 75 / 100,
+        GRAVITY_ACCEL = 30,
+        PRESSURE_ACCEL = 20,
+        JITTER_ACCEL = 6,
+        MAX_SPEED = FP_ONE * 2,
+    };
+
+    typedef struct {
+        int32_t x;
+        int32_t y;
+        int16_t vx;
+        int16_t vy;
+    } fluid_particle_t;
+
+    static bool inited = false;
+    static fluid_particle_t particles[PARTICLE_COUNT];
+    static uint8_t density[GRID_H][GRID_W]; // each cell stores particle count in low-res tube space
+    static uint32_t rng = 0x6c8e9cf5u;
+    static int last_angle = 0;
+
+    const int tube_x = (st7789_get_crop_width() - GRID_W * CELL_SIZE) / 2;
+    const int tube_y = (st7789_get_crop_height() - GRID_H * CELL_SIZE) / 2;
+    const int max_x = (GRID_W - 1) * FP_ONE;
+    const int max_y = (GRID_H - 1) * FP_ONE;
+
+    uint8_t hue = time_us_32() / 100000 + 127;
+    uint16_t bg_color = 0;
+    uint16_t water_color = st7789_rgb565(rgb32_from_hsv(hue, 255, 180));
+    uint16_t foam_color = st7789_rgb565(rgb32_from_hsv(hue, 160, 160));
+
+    if (!inited) {
+        // Start with 30% fill from the bottom to make initial shape stable.
+        for (int i = 0; i < PARTICLE_COUNT; i++) {
+            int cell_x = i % GRID_W;
+            int cell_y = GRID_H - 1 - (i / GRID_W);
+            particles[i].x = cell_x * FP_ONE + (FP_ONE / 2);
+            particles[i].y = cell_y * FP_ONE + (FP_ONE / 2);
+            particles[i].vx = 0;
+            particles[i].vy = 0;
+        }
+        last_angle = angle;
+        inited = true;
+    }
+
+    memset(density, 0, sizeof(density));
+
+    // 8-bit trig lookup based gravity vector, angle=0 means gravity points down.
+    int angle_norm = angle % 360;
+    if (angle_norm < 0) {
+        angle_norm += 360;
+    }
+    int phase = (angle_norm * 256) / 360;
+    int16_t gx = sin_table[phase & 0xff];
+    int16_t gy = sin_table[(phase + 64) & 0xff];
+
+    int dangle = angle - last_angle;
+    if (dangle > 180) {
+        dangle -= 360;
+    } else if (dangle < -180) {
+        dangle += 360;
+    }
+    last_angle = angle;
+
+    // First pass: build local density field from particle positions.
+    for (int i = 0; i < PARTICLE_COUNT; i++) {
+        int cx = particles[i].x >> FP_BITS;
+        int cy = particles[i].y >> FP_BITS;
+
+        if (cx < 0) cx = 0;
+        if (cx >= GRID_W) cx = GRID_W - 1;
+        if (cy < 0) cy = 0;
+        if (cy >= GRID_H) cy = GRID_H - 1;
+
+        if (density[cy][cx] < 255) {
+            density[cy][cx]++;
+        }
+    }
+
+    for (int i = 0; i < PARTICLE_COUNT; i++) {
+        fluid_particle_t *p = &particles[i];
+
+        int cx = p->x >> FP_BITS;
+        int cy = p->y >> FP_BITS;
+        if (cx < 0) cx = 0;
+        if (cx >= GRID_W) cx = GRID_W - 1;
+        if (cy < 0) cy = 0;
+        if (cy >= GRID_H) cy = GRID_H - 1;
+
+        // Base gravity acceleration.
+        p->vx += (gx * GRAVITY_ACCEL) >> 7;
+        p->vy += (gy * GRAVITY_ACCEL) >> 7;
+
+        // Pressure-like force from neighboring density gradient.
+        int left = (cx > 0) ? density[cy][cx - 1] : density[cy][cx];
+        int right = (cx < GRID_W - 1) ? density[cy][cx + 1] : density[cy][cx];
+        int up = (cy > 0) ? density[cy - 1][cx] : density[cy][cx];
+        int down = (cy < GRID_H - 1) ? density[cy + 1][cx] : density[cy][cx];
+        p->vx += (left - right) * PRESSURE_ACCEL;
+        p->vy += (up - down) * PRESSURE_ACCEL;
+
+        // When angle changes, add a tangential impulse to make visible slosh.
+        if (dangle != 0) {
+            p->vx += ((-gy * dangle) >> 6);
+            p->vy += ((gx * dangle) >> 6);
+        }
+
+        // Overcrowded cells get tiny deterministic jitter to break symmetry.
+        int c = density[cy][cx];
+        if (c > 2) {
+            rng = rng * 1664525u + 1013904223u;
+            p->vx += (int16_t)((int)((rng >> 24) & 0x03) - 1) * JITTER_ACCEL;
+            rng = rng * 1664525u + 1013904223u;
+            p->vy += (int16_t)((int)((rng >> 24) & 0x03) - 1) * JITTER_ACCEL;
+        }
+
+        if (p->vx > MAX_SPEED) p->vx = MAX_SPEED;
+        if (p->vx < -MAX_SPEED) p->vx = -MAX_SPEED;
+        if (p->vy > MAX_SPEED) p->vy = MAX_SPEED;
+        if (p->vy < -MAX_SPEED) p->vy = -MAX_SPEED;
+
+        int nx = p->x + p->vx;
+        int ny = p->y + p->vy;
+
+        if (nx < 0) {
+            nx = 0;
+            p->vx = -(p->vx * 3) / 4;
+        } else if (nx > max_x) {
+            nx = max_x;
+            p->vx = -(p->vx * 3) / 4;
+        }
+
+        if (ny < 0) {
+            ny = 0;
+            p->vy = -(p->vy * 3) / 4;
+        } else if (ny > max_y) {
+            ny = max_y;
+            p->vy = -(p->vy * 3) / 4;
+        }
+
+        p->x = nx;
+        p->y = ny;
+
+        // Viscous damping to keep movement smooth and stable.
+        p->vx = (p->vx * 245) >> 8;
+        p->vy = (p->vy * 245) >> 8;
+    }
+
+    memset(density, 0, sizeof(density));
+    for (int i = 0; i < PARTICLE_COUNT; i++) {
+        int cx = particles[i].x >> FP_BITS;
+        int cy = particles[i].y >> FP_BITS;
+
+        if (cx < 0) cx = 0;
+        if (cx >= GRID_W) cx = GRID_W - 1;
+        if (cy < 0) cy = 0;
+        if (cy >= GRID_H) cy = GRID_H - 1;
+
+        if (density[cy][cx] < 255) {
+            density[cy][cx]++;
+        }
+    }
+
+    st7789_clear(bg_color, false);
+
+    for (int y = 0; y < GRID_H; y++) {
+        for (int x = 0; x < GRID_W; x++) {
+            uint8_t n = density[y][x];
+            if (n == 0) {
+                continue;
+            }
+            uint16_t color = (n > 1) ? foam_color : water_color;
+            uint8_t mix = (n >= 3) ? 0xff : (n == 2 ? 0xe0 : 0xc8);
+            st7789_bar(tube_x + x * CELL_SIZE, tube_y + y * CELL_SIZE,
+                       CELL_SIZE - 1, CELL_SIZE - 1, color, mix);
+        }
+    }
+}
+
+static void bg_deepspace()
 {
     static int phase = 0;
     phase++;
@@ -473,10 +681,73 @@ static void sliding_render()
     }
 }
 
+static bool orient_up = true;
+
+#define ORIENT_BODY_PHASE_DEG 270
+#define ORIENT_UP_ANGLE_DEG 0
+#define ORIENT_SWITCH_WINDOW_DEG 45
+#define ORIENT_NEAR_FLAT_XY_MIN_SQ (400 * 400)
+#define ORIENT_NEAR_FLAT_XY_Z_RATIO 9
+
+static int norm_deg(int deg)
+{
+    deg %= 360;
+    if (deg < 0) {
+        deg += 360;
+    }
+    return deg;
+}
+
+static int angle_sep(int a, int b)
+{
+    int d = abs(norm_deg(a) - norm_deg(b));
+    return (d > 180) ? (360 - d) : d;
+}
+
+static void update_orientation(uint16_t angle)
+{
+    int x = lis3dh_read_x();
+    int y = lis3dh_read_y();
+    int z = lis3dh_read_z();
+
+    int xy_sq = x * x + y * y;
+    int zz = z * z;
+
+    bool near_flat = (xy_sq < ORIENT_NEAR_FLAT_XY_MIN_SQ) ||
+                     (xy_sq * ORIENT_NEAR_FLAT_XY_Z_RATIO < zz);
+
+    int up_angle = norm_deg(ORIENT_UP_ANGLE_DEG);
+    int down_angle = norm_deg(up_angle + 180);
+    bool in_up_window = angle_sep(angle, up_angle) <= ORIENT_SWITCH_WINDOW_DEG;
+    bool in_down_window = angle_sep(angle, down_angle) <= ORIENT_SWITCH_WINDOW_DEG;
+
+    if (near_flat) {
+        return;
+    }
+
+    if (in_down_window && orient_up) {
+        orient_up = false;
+    } else if (in_up_window && !orient_up) {
+        orient_up = true;
+    }
+}
+
 void gui_loop()
 {
-    run_background();
+    st7789_scroll(0, 0);
+    if (lis3dh_is_present()) {
+        uint16_t raw_angle = (uint16_t)(lis3dh_read() * 360 / 4096);
+        uint16_t gravity_angle = norm_deg(raw_angle + ORIENT_BODY_PHASE_DEG);
 
+        st7789_invert(false);
+        run_particle(gravity_angle);
+
+        update_orientation(gravity_angle);
+    } else {
+        bg_deepspace();
+    }
+
+    st7789_invert(!orient_up);
     if (slide.sliding) {
         sliding_render();
     } else {

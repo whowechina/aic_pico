@@ -36,6 +36,7 @@
 #include "cardio.h"
 #include "light.h"
 #include "keypad.h"
+#include "lis3dh.h"
 #include "gui.h"
 
 #define DEBUG(...) if (aic_runtime.debug) printf(__VA_ARGS__)
@@ -281,6 +282,8 @@ static void core0_loop()
         
         keypad_update();
         report_usb_hid();
+
+        lis3dh_update();
     
         save_loop();
         cli_fps_count(0);
@@ -363,6 +366,8 @@ void init()
     aime_init(cdc_reader_putc);
     aime_virtual_aic(aic_cfg->reader.virtual_aic);
     bana_init(cdc_reader_putc);
+
+    lis3dh_init(i2c0, 0x4);
 
     cli_init("aic_pico>", "\n     << AIC Pico >>\n"
                             " https://github.com/whowechina\n\n");

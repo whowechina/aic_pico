@@ -15,6 +15,7 @@
 
 #include "keypad.h"
 #include "light.h"
+#include "lis3dh.h"
 
 #include "aime.h"
 #include "bana.h"
@@ -43,7 +44,14 @@ static void display_sys()
 {
     int mhz = clock_get_hz(clk_sys) / 1000000;
     printf("[System]\n");
+
+    const char *cpu = "RP2040";
+    #ifdef PICO_RP2350
+        cpu = "RP2350";
+    #endif
+    printf("  Processor: %s\n", cpu);
     printf("  Clock: %d MHz\n", mhz);
+    printf("  LIS3DH: %s\n", lis3dh_is_present() ? "Present" : "N/A");
 }
 
 static void display_nfc()
