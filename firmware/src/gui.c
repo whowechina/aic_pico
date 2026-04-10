@@ -89,6 +89,7 @@ void gui_report_card_id(const uint8_t *id, int len, bool virtual)
 }
 
 static int tapped_key = -1;
+static bool orient_up = true;
 
 static void draw_home_keypad()
 {
@@ -238,7 +239,16 @@ static bool proc_home(cst816t_report_t touch)
             tapped_key = -1;
             break;
         case GESTURE_TAP:
-            tapped_key = touch.y / 70 * 3 + touch.x / 80;
+            {
+                int col = touch.x / 80 % 3;
+                int row = touch.y / 70 % 4;
+                
+                if (!orient_up) {
+                    col = 2 - col;
+                    row = 3 - row;
+                }
+                tapped_key = row * 3 + col;
+            }
             break;
         default:
             return false;
@@ -681,12 +691,10 @@ static void sliding_render()
     }
 }
 
-static bool orient_up = true;
-
 #define ORIENT_BODY_PHASE_DEG 270
 #define ORIENT_UP_ANGLE_DEG 0
 #define ORIENT_SWITCH_WINDOW_DEG 45
-#define ORIENT_NEAR_FLAT_XY_MIN_SQ (400 * 400)
+#define ORIENT_NEAR_FLAT_XY_MIN_SQ (1000 * 1000)
 #define ORIENT_NEAR_FLAT_XY_Z_RATIO 9
 
 static int norm_deg(int deg)
@@ -735,16 +743,25 @@ static void update_orientation(uint16_t angle)
 void gui_loop()
 {
     st7789_scroll(0, 0);
+    st7789_invert(false);
+
     if (lis3dh_is_present()) {
         uint16_t raw_angle = (uint16_t)(lis3dh_read() * 360 / 4096);
         uint16_t gravity_angle = norm_deg(raw_angle + ORIENT_BODY_PHASE_DEG);
 
-        st7789_invert(false);
         run_particle(gravity_angle);
 
-        update_orientation(gravity_angle);
+        if (aic_cfg->lcd.orientation == 0) {
+            update_orientation(gravity_angle);
+        }
     } else {
         bg_deepspace();
+    }
+
+    if (aic_cfg->lcd.orientation == 1) {
+        orient_up = true;
+    } else if (aic_cfg->lcd.orientation == 2) {
+        orient_up = false;
     }
 
     st7789_invert(!orient_up);

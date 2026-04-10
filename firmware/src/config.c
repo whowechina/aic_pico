@@ -22,12 +22,13 @@ aic_runtime_t aic_runtime;
 
 static void config_loaded()
 {
+    aic_cfg->lcd.orientation %= 3;
     if ((aic_cfg->reader.mode != MODE_AIME0) &&
         (aic_cfg->reader.mode != MODE_AIME1) &&
         (aic_cfg->reader.mode != MODE_BANA)) {
         aic_cfg->reader.mode = MODE_AUTO;
-        config_changed();
     }
+    config_changed();
 }
 
 void config_changed()

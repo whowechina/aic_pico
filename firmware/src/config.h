@@ -26,10 +26,12 @@ typedef struct __attribute__((packed)) {
     } reader;
     struct {
         uint8_t backlight;
+        uint8_t orientation; // 0: auto, 1: up, 2: down
     } lcd;
     struct {
-        uint8_t reserved[8];
+        uint8_t reserved[4];
     } tweak;
+    uint8_t padding[3];
     struct {
         struct {
             uint8_t uidlen;

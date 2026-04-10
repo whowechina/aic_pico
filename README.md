@@ -292,7 +292,7 @@ For most of the part, just follow the guide of AIC key.
   <img src="doc/touch_assemble_1.jpg" width="30%">
   <img src="doc/touch_assemble_2.jpg" width="30%">
 
-* The VCC, GND, SCL and SDA of the accelerometer are shared with the PN532's corresponding pins. You need some thin wires to connect them. On the module, pull up the SD0 and CS pins (i.e., connect them to VCC) with short thin wires. The sensor can be placed at the bottom of AIC Touch, between the PCB and the NFC module, with the chip marking facing the front, and oriented in the same direction as the AIC Touch logo. Use double-sided tape to fix it in place and ensure proper insulation. In the picture, I cut off its ears to fit it into the tight space.  
+* The VCC, GND, SCL and SDA of the accelerometer are shared with the PN532's corresponding pins. You need some thin wires to connect them. On the module, pull up the SD0 and CS pins (i.e., connect them to VCC) with short thin wires. The sensor can be placed between the PCB and the NFC module in the bottom area, with the chip marking facing the display and upside down relative to the "AIC Touch" logo. Use double-sided tape to fix it in place and ensure proper insulation. In the picture, I cut off its ears to fit it into the tight space.  
    <img src="doc/lis3dh_assemble.jpg" width="30%">
 
 * Done!

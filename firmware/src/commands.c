@@ -74,6 +74,8 @@ static void display_lcd()
 {
     printf("[LCD]\n");
     printf("    Backlight: %d\n", aic_cfg->lcd.backlight);
+    const char *orient_str[] = { "Auto", "Up", "Down" };
+    printf("    Orientation: %s\n", orient_str[aic_cfg->lcd.orientation % 3]);
 }
 
 static void display_reader()
@@ -306,20 +308,38 @@ static void handle_level(int argc, char *argv[])
 
 static void handle_lcd(int argc, char *argv[])
 {
-    const char *usage = "Usage: lcd <backlight>\n"
-                        "    backlight: [0..255]\n";
-    if (argc != 1) {
+    const char *usage = "Usage: lcd backlight [0..255]\n"
+                        "       lcd orientation <auto|up|down>\n"
+                        " Note: Auto orientation needs accelerometer.\n";
+
+    if (argc != 2) {
         printf(usage);
         return;
     }
 
-    int backlight = cli_extract_non_neg_int(argv[0], 0);
-    if ((backlight < 0) || (backlight > 255)) {
+    const char *commands[] = { "backlight", "orientation" };
+    int cmd = cli_match_prefix(commands, count_of(commands), argv[0]);
+
+    if (cmd == 0) {
+        int backlight = cli_extract_non_neg_int(argv[1], 0);
+        if ((backlight < 0) || (backlight > 255)) {
+            printf(usage);
+            return;
+        }
+        aic_cfg->lcd.backlight = backlight;
+    } else if (cmd == 1) {
+        const char *options[] = { "auto", "up", "down" };
+        int orient = cli_match_prefix(options, count_of(options), argv[1]);
+        if (orient < 0) {
+            printf(usage);
+            return;
+        }
+        aic_cfg->lcd.orientation = orient;
+    } else {
         printf(usage);
         return;
     }
 
-    aic_cfg->lcd.backlight = backlight;
     config_changed();
     display_lcd();
 }

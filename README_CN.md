@@ -291,7 +291,7 @@ AIC Touch 是 AIC Pico 的另一种版本，配备了触摸屏。还可以选装
   <img src="doc/touch_assemble_1.jpg" width="30%">
   <img src="doc/touch_assemble_2.jpg" width="30%">
 
-* 加速度传感器的 VCC, GND, SCL 和 SDA 和 PN532 的四个引脚共用，你需要一些细软的电线来连接它们。模块上，请用短电线把 SD0 和 CS 引脚拉高（即连接到 VCC）。传感器可以放 AIC Touch 底部，PCB 和 NFC 模块之间，芯片印字面向 AIC Touch 正面，方向和 AIC Touch Logo 一致。用双面胶固定，同时做好绝缘。图片里我剪掉了它的耳朵让它能适应狭小空间。  
+* 加速度传感器的 VCC, GND, SCL 和 SDA 和 PN532 的四个引脚共用，你需要一些细软的电线来连接它们。模块上，请用短电线把 SD0 和 CS 引脚拉高（即连接到 VCC）。传感器可以放 AIC Touch 底部，PCB 和 NFC 模块之间，芯片印字面向屏幕，方向和 AIC Touch Logo 上下相反。用双面胶固定，同时做好绝缘。图片里我剪掉了它的耳朵让它能适应狭小空间。  
    <img src="doc/lis3dh_assemble.jpg" width="30%">
 
 * 搞定！  
