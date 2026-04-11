@@ -694,8 +694,9 @@ static void sliding_render()
 #define ORIENT_BODY_PHASE_DEG 270
 #define ORIENT_UP_ANGLE_DEG 0
 #define ORIENT_SWITCH_WINDOW_DEG 45
-#define ORIENT_NEAR_FLAT_XY_MIN_SQ (1000 * 1000)
-#define ORIENT_NEAR_FLAT_XY_Z_RATIO 9
+#define ORIENT_SWITCH_HOLD_US 500000
+#define ORIENT_NEAR_FLAT_XY_MIN_SQ (2000 * 2000)
+#define ORIENT_NEAR_FLAT_XY_Z_RATIO 1
 
 static int norm_deg(int deg)
 {
@@ -729,14 +730,28 @@ static void update_orientation(uint16_t angle)
     bool in_up_window = angle_sep(angle, up_angle) <= ORIENT_SWITCH_WINDOW_DEG;
     bool in_down_window = angle_sep(angle, down_angle) <= ORIENT_SWITCH_WINDOW_DEG;
 
-    if (near_flat) {
+    int target = (in_down_window && orient_up) ? 0 :
+                    ((in_up_window && !orient_up) ? 1 : -1);
+
+    static int pending = -1;
+    static uint64_t deadline = 0;
+
+    if (near_flat || (target < 0)) {
+        pending = -1;
         return;
     }
 
-    if (in_down_window && orient_up) {
-        orient_up = false;
-    } else if (in_up_window && !orient_up) {
-        orient_up = true;
+    // delayed orientation switch to avoid jitter
+    uint64_t now = time_us_64();
+    if (pending != target) {
+        pending = target;
+        deadline = now + ORIENT_SWITCH_HOLD_US;
+        return;
+    }
+
+    if (now >= deadline) {
+        orient_up = (target == 1);
+        pending = -1;
     }
 }
 
