@@ -291,7 +291,7 @@ void pn532_rf_field(bool on)
 
 static uint8_t readbuf[255];
 
-bool pn532_poll_mifare(uint8_t uid[7], int *len)
+bool pn532_poll_mifare(uint8_t uid[7], int *len, uint16_t *atqa, uint8_t *sak)
 {
     uint8_t param[] = {0x01, 0x00};
     int ret = pn532_write_command(0x4a, param, sizeof(param));
@@ -302,6 +302,11 @@ bool pn532_poll_mifare(uint8_t uid[7], int *len)
     int result = pn532_read_response(0x4a, readbuf, sizeof(readbuf));
     if (result < 1 || readbuf[0] != 1) {
         return false;
+    }
+
+    if ((result >= 6) && atqa && sak) {
+        *atqa = ((uint16_t)readbuf[3] << 8) | readbuf[2];
+        *sak = readbuf[4];
     }
 
     int idlen = readbuf[5];

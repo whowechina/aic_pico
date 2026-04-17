@@ -49,6 +49,7 @@ void gui_level(uint8_t level)
 static struct {
     uint64_t time;
     nfc_card_name card;
+    nfc_card_type type;
     struct {
         uint8_t len;
         uint8_t octects[15];
@@ -66,7 +67,7 @@ void gui_report_card_name(nfc_card_name card)
     card_splash.time = time_us_64();
 }
 
-void gui_report_card_id(const uint8_t *id, int len, bool virtual)
+void gui_report_card_id(const uint8_t *id, int len, bool virtual, nfc_card_type type)
 {
     if (len > sizeof(card_splash.real.octects)) {
         len = sizeof(card_splash.real.octects);
@@ -86,6 +87,7 @@ void gui_report_card_id(const uint8_t *id, int len, bool virtual)
     card_splash.real.len = len;
     memcpy(card_splash.real.octects, id, len);
     card_splash.virtual.len = 0;
+    card_splash.type = type;
 }
 
 static int tapped_key = -1;
@@ -168,6 +170,17 @@ static void draw_home_card()
 static void draw_card_id()
 {
     char idstr[40];
+    char infostr[80];
+    infostr[0] = '\0';
+
+    if (card_splash.type == NFC_CARD_MIFARE) {
+        uint16_t atqa = nfc_last_atqa();
+        uint8_t sak = nfc_last_sak();
+        sprintf(infostr, "%s (%04X:%02X)", nfc_lookup_14443a_type(sak), atqa, sak);
+    } else if (card_splash.type == NFC_CARD_FELICA) {
+        uint16_t syscode = nfc_last_syscode();
+        sprintf(infostr, "%s (%04X)", nfc_lookup_felica_syscode(syscode), syscode);
+    }
 
     if (card_splash.real.len > 0) {
         int pos = 0;
@@ -180,6 +193,9 @@ static void draw_card_id()
         const char *id_title = "UID";
         gfx_text_draw(120, 196, id_title, &lv_lts13, st7789_rgb565(0xb0b000), ALIGN_CENTER);
         gfx_text_draw(118, 210, idstr, font, st7789_rgb565(0xe0e000), ALIGN_CENTER);
+        if (infostr[0]) {
+            gfx_text_draw(120, 10, infostr, &lv_lts13, st7789_rgb565(0xffffff), ALIGN_CENTER);
+        }
     }
 
     if (card_splash.virtual.len > 0) {

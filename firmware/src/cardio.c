@@ -173,7 +173,7 @@ static void update_cardio(nfc_card_t *card)
             return;
     }
 
-    gui_report_card_id(hid_cardio.current + 1, 8, true);
+    gui_report_card_id(hid_cardio.current + 1, 8, true, NFC_CARD_NONE);
     printf(" -> CardIO ");
     for (int i = 1; i < 9; i++) {
         printf("%02X", hid_cardio.current[i]);
@@ -204,7 +204,7 @@ void cardio_run(bool hid_light)
     nfc_card_t card = nfc_detect_card();
     if (card.card_type != NFC_CARD_NONE) {
         nfc_identify_last_card();
-        gui_report_card_id(card.uid, card.len, false);
+        gui_report_card_id(card.uid, card.len, false, card.card_type);
     }
     nfc_rf_field(false);
 

@@ -18,6 +18,6 @@ void gui_level(uint8_t level);
 void gui_loop();
 uint16_t gui_keypad_read();
 void gui_report_card_name(nfc_card_name card);
-void gui_report_card_id(const uint8_t *id, int len, bool virtual);
+void gui_report_card_id(const uint8_t *id, int len, bool virtual, nfc_card_type type);
 
 #endif

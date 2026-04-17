@@ -82,6 +82,13 @@ void nfc_rf_field(bool on);
 nfc_card_t nfc_detect_card();
 nfc_card_t nfc_detect_card_ex(bool mifare, bool felica, bool vicinity);
 
+uint16_t nfc_last_atqa();
+uint8_t nfc_last_sak();
+uint16_t nfc_last_syscode();
+
+const char *nfc_lookup_14443a_type(uint8_t sak);
+const char *nfc_lookup_felica_syscode(uint16_t syscode);
+
 void display_card(const nfc_card_t *card);
 
 const char *nfc_module_name();

@@ -356,7 +356,7 @@ static void poll_mifare_2()
     }
 }
 
-bool pn5180_poll_mifare(uint8_t uid[7], int *len)
+bool pn5180_poll_mifare(uint8_t uid[7], int *len, uint16_t *atqa, uint8_t *sak)
 {
     poll_mifare_0();
     poll_mifare_1();
@@ -364,6 +364,12 @@ bool pn5180_poll_mifare(uint8_t uid[7], int *len)
 
     memcpy(uid, mi_poll.uid, mi_poll.len);
     *len = mi_poll.len;
+
+    if ((*len > 0) && atqa && sak) {
+        *atqa = ((uint16_t)mi_poll.atqa[1] << 8) | mi_poll.atqa[0];
+        *sak = mi_poll.sak;
+    }
+
     return *len > 0;
 }
 

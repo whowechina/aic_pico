@@ -75,8 +75,59 @@ const char *nfc_card_name_str(nfc_card_name card_name)
     return card_name_str[card_name];
 }
 
+const char *nfc_lookup_14443a_type(uint8_t sak)
+{
+    struct {
+        uint8_t sak;
+        const char *name;
+    } table[] = {
+        { 0x00, "Mifare Ultralight/NTAG" },
+        { 0x08, "Mifare Classic 1K" },
+        { 0x09, "Mifare Mini" },
+        { 0x10, "Mifare Plus 2K SL2" },
+        { 0x11, "Mifare Plus 4K SL2" },
+        { 0x18, "Mifare Classic 4K" },
+        { 0x20, "DESFire/ISO14443-4" },
+        { 0x28, "JCOP/SmartMX" },
+
+    };
+
+    for (int i = 0; i < sizeof(table) / sizeof(table[0]); i++) {
+        if (table[i].sak == sak) {
+            return table[i].name;
+        }
+    }
+
+    return "ISO14443A Unknown";
+}
+
+const char *nfc_lookup_felica_syscode(uint16_t syscode)
+{
+    struct {
+        uint16_t syscode;
+        const char *name;
+    } table[] = {
+        { 0x88B4, "Amusement IC" },
+        { 0x0003, "Suica/Transit" },
+        { 0xFE00, "FeliCa Lite-S" },
+    };
+
+    for (int i = 0; i < sizeof(table) / sizeof(table[0]); i++) {
+        if (table[i].syscode == syscode) {
+            return table[i].name;
+        }
+    }
+
+    return "FeliCa Unknown";
+}
+
 #define CARD_INFO_TIMEOUT_US (1000 * 1000)
 
+static struct {
+    uint16_t atqa;
+    uint8_t sak;
+    uint16_t syscode;
+} last_meta;
 
 static nfc_card_name last_card_name = CARD_NONE;
 static bool last_name_final;
@@ -122,7 +173,7 @@ nfc_card_name nfc_last_card_name()
 #define func_null NULL
 struct {
     const char *(*firmware_ver)();
-    bool (*poll_mifare)(uint8_t uid[7], int *len);
+    bool (*poll_mifare)(uint8_t uid[7], int *len, uint16_t *atqa, uint8_t *sak);
     bool (*poll_felica)(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool from_cache);
     bool (*poll_vicinity)(uint8_t uid[8]);
     void (*rf_field)(bool on);
@@ -293,13 +344,15 @@ static bool nfc_detect_mifare(nfc_card_t *card)
     int len = sizeof(id);
 
     if (!api[nfc_module].poll_mifare ||
-        !api[nfc_module].poll_mifare(id, &len)) {
+        !api[nfc_module].poll_mifare(id, &len, &last_meta.atqa, &last_meta.sak)) {
         return false;
     }
 
     card->card_type = NFC_CARD_MIFARE;
     card->len = len;
     memcpy(card->uid, id, len);
+
+    last_meta.syscode = 0;
 
     return true;
 }
@@ -319,6 +372,10 @@ static bool nfc_detect_felica(nfc_card_t *card)
     memcpy(card->pmm, id + 8, 8);
     memcpy(card->syscode, id + 16, 2);
 
+    last_meta.atqa = 0;
+    last_meta.sak = 0;
+    last_meta.syscode = ((uint16_t)card->syscode[0] << 8) | card->syscode[1];
+
     return true;
 }
 
@@ -334,6 +391,10 @@ static bool nfc_detect_vicinity(nfc_card_t *card)
     card->card_type = NFC_CARD_VICINITY;
     card->len = 8;
     memcpy(card->uid, id, 8);
+
+    last_meta.atqa = 0;
+    last_meta.sak = 0;
+    last_meta.syscode = 0;
 
     return true;
 }
@@ -397,6 +458,21 @@ nfc_card_t nfc_detect_card_ex(bool mifare, bool felica, bool vicinity)
     return card;
 }
 
+uint16_t nfc_last_atqa()
+{
+    return last_meta.atqa;
+}
+
+uint8_t nfc_last_sak()
+{
+    return last_meta.sak;
+}
+
+uint16_t nfc_last_syscode()
+{
+    return last_meta.syscode;
+}
+
 static void identify_felica()
 {
     nfc_felica_read(0x000b, 0x8082, last_card.uid);
@@ -443,7 +519,18 @@ void nfc_identify_last_card()
 void display_card(const nfc_card_t *card)
 {
     if (card->card_type != NFC_CARD_NONE) {
-        printf("\n%s:", nfc_card_type_str(card->card_type));
+        if (card->card_type == NFC_CARD_MIFARE) {
+            const char *name = nfc_lookup_14443a_type(last_meta.sak);
+            printf("\nMifare (%s %04X:%02X):", name, last_meta.atqa, last_meta.sak);
+        } else if (card->card_type == NFC_CARD_FELICA) {
+            const char *name = nfc_lookup_felica_syscode(last_meta.syscode);
+            printf("\nFeliCa (%s %04X):", name, last_meta.syscode);
+        } else if (card->card_type == NFC_CARD_VICINITY) {
+            printf("\nISO15693:");
+        } else {
+            printf("\n%s:", nfc_card_type_str(card->card_type));
+        }
+
         for (int i = 0; i < card->len; i++) {
             printf(" %02X", card->uid[i]);
         }

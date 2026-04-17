@@ -26,7 +26,7 @@ bool pn532_config_rf();
 
 void pn532_rf_field(bool on);
 
-bool pn532_poll_mifare(uint8_t uid[7], int *len);
+bool pn532_poll_mifare(uint8_t uid[7], int *len, uint16_t *atqa, uint8_t *sak);
 bool pn532_poll_felica(uint8_t uid[8], uint8_t pmm[8], uint8_t syscode[2], bool from_cache);
 
 bool pn532_mifare_auth(const uint8_t uid[4], uint8_t block_id, uint8_t key_id, const uint8_t key[6]);
