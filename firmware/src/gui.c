@@ -1,4 +1,3 @@
-
 /*
  * GUI on a Touch Display (ST7789 + CST816)
  * WHowe <github.com/whowechina>
@@ -31,6 +30,13 @@
 
 #include "lis3dh.h"
 
+static uint64_t last_activity = 0;
+
+static void reset_timeout(void)
+{
+    last_activity = time_us_64();
+}
+
 void gui_init()
 {
     cst816t_init_i2c(i2c1, 3, 2);
@@ -39,6 +45,7 @@ void gui_init()
     st7789_init_spi(spi1, 10, 11, 9);
     st7789_init(spi1, 8, 7, 0);
     st7789_crop(0, 20, 240, 280);
+    reset_timeout();
 }
 
 void gui_level(uint8_t level)
@@ -63,12 +70,14 @@ static inline bool card_splash_active()
 
 void gui_report_card_name(nfc_card_name card)
 {
+    reset_timeout();
     card_splash.card = card;
     card_splash.time = time_us_64();
 }
 
 void gui_report_card_id(const uint8_t *id, int len, bool virtual, nfc_card_type type)
 {
+    reset_timeout();
     if (len > sizeof(card_splash.real.octects)) {
         len = sizeof(card_splash.real.octects);
     }
@@ -647,6 +656,8 @@ static void event_proc()
         return;
     }
 
+    reset_timeout();
+
     if ((curr_page >= 0) && pages[curr_page].proc) {
         if (pages[curr_page].proc(touch)) {
             return;
@@ -807,8 +818,21 @@ void gui_loop()
 #endif
 
     st7789_flush();
-    /* Control things when updating LCD */
-    gui_level(aic_cfg->lcd.backlight);
+
+    uint64_t now = time_us_64();
+    if (last_activity == 0) {
+        last_activity = now;
+    }
+
+    uint8_t current_backlight = aic_cfg->lcd.backlight;
+    uint64_t idle = now - last_activity;
+
+    if (idle > 60000000ULL) {
+        uint64_t remaining = (idle < 60500000ULL) ? (60500000ULL - idle) : 0;
+        current_backlight = aic_cfg->lcd.backlight * remaining / 500000ULL;
+    }
+
+    gui_level(current_backlight);
     event_proc();
 
 #ifndef PICO_RP2350

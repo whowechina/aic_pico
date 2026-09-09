@@ -825,7 +825,7 @@
 
                 async updateLcdBacklight() {
                     const backlight = this.lcdSlider.value;
-                    await this.sendCommand(`lcd ${backlight}`);
+                    await this.sendCommand(`lcd backlight ${backlight}`);
                     this.markConfigChanged();
                 }
 
