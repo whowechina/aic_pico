@@ -31,10 +31,23 @@
 #include "lis3dh.h"
 
 static uint64_t last_activity = 0;
+static bool gui_sleep = false;
+
+#define GUI_SLEEP_TIMEOUT_US 60000000ULL
 
 static void reset_timeout(void)
 {
     last_activity = time_us_64();
+}
+
+static void gui_wake(void)
+{
+    if (gui_sleep) {
+        gui_sleep = false;
+        gui_level(aic_cfg->lcd.backlight);
+    }
+
+    reset_timeout();
 }
 
 void gui_init()
@@ -70,14 +83,14 @@ static inline bool card_splash_active()
 
 void gui_report_card_name(nfc_card_name card)
 {
-    reset_timeout();
+    gui_wake();
     card_splash.card = card;
     card_splash.time = time_us_64();
 }
 
 void gui_report_card_id(const uint8_t *id, int len, bool virtual, nfc_card_type type)
 {
-    reset_timeout();
+    gui_wake();
     if (len > sizeof(card_splash.real.octects)) {
         len = sizeof(card_splash.real.octects);
     }
@@ -656,6 +669,12 @@ static void event_proc()
         return;
     }
 
+    if (gui_sleep) {
+        gui_wake();
+        tapped_key = -1;
+        return;
+    }
+
     reset_timeout();
 
     if ((curr_page >= 0) && pages[curr_page].proc) {
@@ -784,6 +803,23 @@ static void update_orientation(uint16_t angle)
 
 void gui_loop()
 {
+    uint64_t now = time_us_64();
+
+    if (last_activity == 0) {
+        last_activity = now;
+    }
+
+    if (!gui_sleep && (now - last_activity) >= GUI_SLEEP_TIMEOUT_US) {
+        gui_sleep = true;
+        gui_level(0);
+    }
+
+    event_proc();
+
+    if (gui_sleep) {
+        return;
+    }
+
     st7789_scroll(0, 0);
     st7789_invert(false);
 
@@ -807,6 +843,7 @@ void gui_loop()
     }
 
     st7789_invert(!orient_up);
+
     if (slide.sliding) {
         sliding_render();
     } else {
@@ -818,22 +855,6 @@ void gui_loop()
 #endif
 
     st7789_flush();
-
-    uint64_t now = time_us_64();
-    if (last_activity == 0) {
-        last_activity = now;
-    }
-
-    uint8_t current_backlight = aic_cfg->lcd.backlight;
-    uint64_t idle = now - last_activity;
-
-    if (idle > 60000000ULL) {
-        uint64_t remaining = (idle < 60500000ULL) ? (60500000ULL - idle) : 0;
-        current_backlight = aic_cfg->lcd.backlight * remaining / 500000ULL;
-    }
-
-    gui_level(current_backlight);
-    event_proc();
 
 #ifndef PICO_RP2350
     st7789_vsync();
